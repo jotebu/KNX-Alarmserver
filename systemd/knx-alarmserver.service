@@ -16,6 +16,9 @@ RestartSec=10
 TimeoutStopSec=30
 UMask=0077
 NoNewPrivileges=true
+# Permit binding port 80 while keeping the service account unprivileged.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
@@ -27,3 +30,4 @@ ProtectControlGroups=true
 
 [Install]
 WantedBy=multi-user.target
+

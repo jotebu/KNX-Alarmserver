@@ -1,7 +1,7 @@
 # Nur generische Beispiele. Keine echten Zugangsdaten oder Gebaeudedaten einchecken.
 [server]
-host = "0.0.0.0" # Direkter LAN-Zugriff: http://RASPBERRY-IP:8080
-port = 8080
+host = "0.0.0.0" # Direkter LAN-Zugriff: http://RASPBERRY-IP
+port = 80
 database = "/var/lib/knx-alarmserver/alarmserver.sqlite3"
 alarms = "/etc/knx-alarmserver/alarms.csv"
 retention_days = 365

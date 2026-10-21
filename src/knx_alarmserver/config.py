@@ -80,7 +80,7 @@ def load_config(path):
     for key, default in (("database", "alarmserver.sqlite3"), ("alarms", "alarms.csv")):
         server[key] = str((path.parent / server.get(key, default)).resolve())
     server.setdefault("host", "0.0.0.0")
-    server.setdefault("port", 8080)
+    server.setdefault("port", 80)
     server.setdefault("retention_days", 365)
     if not 1 <= server["port"] <= 65535 or not 1 <= server["retention_days"] <= 3650:
         raise ValueError("Port oder Aufbewahrungsdauer ungueltig")

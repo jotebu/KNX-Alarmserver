@@ -1,6 +1,15 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.08, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.09, Inbetriebnahmeversion.
+
+## Direkter Webzugriff auf Port 80
+
+- 72 Python-Tests und sechs JavaScript-Tests erfolgreich.
+
+- Port 80 als Vorgabe und Erhalt explizit konfigurierter Ports geprüft.
+- Port allein sowie Host und Port gemeinsam migriert; wiederholte Ausführung, fehlende Schlüssel, Konfigurationserhalt und Dateirechte geprüft. Ungültige oder uneindeutige Ports verändern die Datei nicht.
+- systemd-Datei mit unverändertem Dienstbenutzer und ausschließlich CAP_NET_BIND_SERVICE geprüft; einzig der auf diesem Prüfhost nicht installierte ExecStart-Pfad wird beanstandet. Shellsyntax erfolgreich geprüft.
+- Umstellung und Entfernung von nginx auf dem Raspberry stehen noch aus.
 
 ## Anmeldung und Benutzerrollen
 

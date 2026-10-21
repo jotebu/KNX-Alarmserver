@@ -2,6 +2,15 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.09 – 21.10.2026
+
+- Direkten Webzugriff auf Port 80 als Vorgabe für neue Installationen eingerichtet: `http://RASPBERRY-IP/`, ohne nginx-Proxy.
+- systemd gewährt dem unverändert unprivilegierten Dienstkonto ausschließlich `CAP_NET_BIND_SERVICE` für niedrige Ports. Keine Ausführung des Alarmservers als root.
+- Installer und Update-Skript unterstützen `--port PORT`, kombinierbar mit `--lan`. Bestehende Einstellungen werden nur bei ausdrücklicher Optionswahl geändert.
+- Bei fehlgeschlagenem Start auch die explizite Host-/Portänderung zurücksetzen. Health-Prüfung an die neue Portvorgabe angepasst.
+- Umstellung bestehender Installationen und anschließende Entfernung von nginx dokumentiert. Konten, Rollen, Passwörter, KNX-/ETS-Daten und Alarmzustände bleiben erhalten.
+- Portvorgabe, Erhalt expliziter Ports, wiederholte gezielte Migration, fehlende Schlüssel und Abweisung ungültiger oder uneindeutiger Einstellungen geprüft.
+
 ## 0.10.08 – 21.10.2026
 
 - Anmeldung wieder verpflichtend; den bisherigen Testschalter ohne Login und die Testseite entfernt. Bestehende Kennwörter erhalten, vorhandene Konten als Admin migriert.

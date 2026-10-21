@@ -3,10 +3,18 @@
 set -Eeuo pipefail
 [[ $EUID -eq 0 ]] || { echo 'Bitte mit sudo bash scripts/install.sh starten.' >&2; exit 1; }
 enable_lan=false
-if [[ $# -gt 0 ]]; then
-  [[ $# -eq 1 && $1 == --lan ]] || { echo 'Aufruf: sudo bash scripts/install.sh [--lan]' >&2; exit 1; }
-  enable_lan=true
-fi
+listen_port=
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --lan) enable_lan=true; shift ;;
+    --port)
+      [[ $# -ge 2 && $2 =~ ^[0-9]{1,5}$ ]] || { echo 'Port zwischen 1 und 65535 erforderlich.' >&2; exit 1; }
+      listen_port=$((10#$2))
+      (( listen_port >= 1 && listen_port <= 65535 )) || { echo 'Port zwischen 1 und 65535 erforderlich.' >&2; exit 1; }
+      shift 2 ;;
+    *) echo 'Aufruf: sudo bash scripts/install.sh [--lan] [--port PORT]' >&2; exit 1 ;;
+  esac
+done
 exec 9>/run/lock/knx-alarmserver-install.lock
 flock -n 9 || { echo 'Eine Installation laeuft bereits.' >&2; exit 1; }
 source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -30,9 +38,9 @@ tar -C "$source_dir" --exclude=.git --exclude=.venv --exclude=.test-deps --exclu
 python3 -m venv "$stage/venv"
 "$stage/venv/bin/pip" install --disable-pip-version-check "$stage/source"
 "$stage/venv/bin/pip" check
-if $enable_lan; then
-  python3 "$stage/source/scripts/enable_lan.py" "$settings/config.toml"
-fi
+listener_options=()
+if $enable_lan; then listener_options+=(--lan); fi
+if [[ -n $listen_port ]]; then listener_options+=(--port "$listen_port"); fi
 runuser -u knx-alarmserver -- "$stage/venv/bin/knx-alarmserver" -c "$settings/config.toml" check
 # Consistent backup, including WAL pages, before starting new code.
 db_path=$(python3 -c 'import sys,tomllib,pathlib; p=pathlib.Path(sys.argv[1]); c=tomllib.loads(p.read_text()); print((p.parent / c["server"]["database"]).resolve())' "$settings/config.toml")
@@ -77,12 +85,20 @@ rollback() {
     rm -f -- "$base/current"
   fi
   if $had_unit; then cp "$stage/previous.service" /etc/systemd/system/knx-alarmserver.service; fi
+  if [[ -f $stage/listener-before.toml ]]; then
+    cp "$stage/listener-before.toml" "$settings/config.toml"
+  fi
   systemctl daemon-reload
   if [[ -n $previous ]]; then systemctl restart knx-alarmserver || true; fi
   echo 'Datenbank wird nicht automatisch zurueckgesetzt; Backup liegt unter /var/lib/knx-alarmserver/backups.' >&2
   exit 1
 }
 trap rollback ERR
+if [[ ${#listener_options[@]} -gt 0 ]]; then
+  cp -p "$settings/config.toml" "$stage/listener-before.toml"
+  chmod 0600 "$stage/listener-before.toml"
+  python3 "$stage/source/scripts/enable_lan.py" "$settings/config.toml" "${listener_options[@]}"
+fi
 ln -s "$stage" "$base/current.new"
 mv -Tf "$base/current.new" "$base/current"
 install -m 0644 "$stage/source/systemd/knx-alarmserver.service" /etc/systemd/system/knx-alarmserver.service
@@ -100,7 +116,7 @@ with open(sys.argv[2],'rb') as handle: expected_version=tomllib.load(handle)['pr
 host=server.get('host','127.0.0.1')
 host='127.0.0.1' if host=='0.0.0.0' else host
 host='[::1]' if host=='::' else f'[{host}]' if ':' in host else host
-url=f'http://{host}:{server.get("port",8080)}/health/live'
+url=f'http://{host}:{server.get("port",80)}/health/live'
 for attempt in range(30):
     try:
         with urllib.request.urlopen(url,timeout=1) as response:
@@ -115,5 +131,6 @@ if [[ -n $previous ]]; then
   ln -s "$previous" "$base/previous.new"
   mv -Tf "$base/previous.new" "$base/previous"
 fi
-echo 'Installation erfolgreich. Webadresse gemaess host/port in /etc/knx-alarmserver/config.toml; LAN-Vorgabe: http://RASPBERRY-IP:8080'
+echo 'Installation erfolgreich. Webadresse gemaess host/port in /etc/knx-alarmserver/config.toml; LAN-Vorgabe: http://RASPBERRY-IP'
 echo 'Konfiguration: /etc/knx-alarmserver/config.toml | Protokoll: journalctl -u knx-alarmserver -f'
+

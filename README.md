@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.08 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.09 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -31,19 +31,33 @@ sudo bash scripts/install.sh
 
 Beim ersten Durchlauf wird das Passwort für den Webbenutzer `admin` interaktiv angelegt (mindestens 12 Zeichen). Es gibt kein Standardpasswort. Bestehende Konfigurationen werden erhalten. Die erste Installation verwendet den aktuellen Stand des ausgecheckten Repositorys. Für spätere freigegebene Versionen vor der Installation einen geprüften Tag auschecken.
 
-Standardmäßig lauscht der Dienst auf **0.0.0.0:8080**. Die Weboberfläche ist direkt unter `http://RASPBERRY-IP:8080` erreichbar; SSH-Tunnel sind nicht erforderlich. KNX ist zunächst deaktiviert und die Alarmmatrix leer. nginx auf Port 80 wird nicht verändert.
+Standardmäßig lauscht der Dienst direkt auf **0.0.0.0:80**. Die Weboberfläche ist unter `http://RASPBERRY-IP/` erreichbar, ohne Portangabe und ohne nginx. Port 80 muss frei sein. KNX ist zunächst deaktiviert und die Alarmmatrix leer. Der Dienst läuft weiterhin als Benutzer `knx-alarmserver`; systemd gewährt ausschließlich `CAP_NET_BIND_SERVICE` zum Binden niedriger Ports. nginx wird vom Installer weder installiert noch automatisch entfernt.
 
 Anmeldung und Sitzungscookie sind bei HTTP unverschlüsselt. Diesen Zugriff nur im vertrauenswürdigen LAN oder über VPN verwenden, ohne Internet-Portfreigabe. Für verschlüsselten Webzugriff einen HTTPS-Reverse-Proxy einrichten und bei Bedarf `host = "127.0.0.1"` setzen. Browser melden sich über ein Formular an; Abmelden beendet die Sitzung. Die Rollen Admin, User und Viewer gelten sowohl im Dashboard als auch für direkte API-Aufrufe.
 
-### Bestehende Installation auf LAN-Zugriff umstellen
+### Bestehende Installation direkt auf Port 80 umstellen
 
-Bestehende Konfigurationen werden beim Update erhalten. Mit `--lan` wird gezielt nur `server.host` auf `0.0.0.0` gesetzt; Benutzer, Datenbank, Alarmmatrix und andere Einstellungen bleiben erhalten:
+Bei einem normalen Update bleiben bestehende `host`-/`port`-Einstellungen erhalten. `--lan` setzt gezielt `server.host` auf `0.0.0.0`, `--port 80` setzt `server.port` auf 80. Beide Optionen lassen sich kombinieren; Benutzer, KNX-Verbindungen, ETS-Katalog, Datenbank und Alarmmatrix bleiben erhalten.
+
+Wenn nginx nur als bisheriger Proxy für diesen Alarmserver verwendet wird, zuerst nginx stoppen, damit Port 80 frei ist. Anschließend installieren:
 
 ```bash
-sudo bash scripts/install.sh --lan
+cd ~/KNX-Alarmserver
+git pull --ff-only
+sudo systemctl disable --now nginx
+sudo bash scripts/install.sh --lan --port 80
+curl --fail --max-time 5 http://127.0.0.1/health/live
 ```
 
-Die Option ist idempotent und auch dann verwendbar, wenn LAN-Zugriff bereits manuell aktiviert wurde. Sie ist eine ausdrückliche Konfigurationsänderung; ein Programm-Rückwechsel stellt diese Einstellung nicht automatisch zurück.
+Nach erfolgreicher Prüfung direkt `http://RASPBERRY-IP/` öffnen. Dann den nicht mehr benötigten nginx entfernen:
+
+```bash
+sudo apt-get purge nginx nginx-common
+```
+
+Kein `autoremove` nötig. Bei einer Installation ohne nginx die beiden nginx-Befehle auslassen. Andere Webdienste, die Port 80 belegen, müssen vorab auf einen anderen Port verlegt werden. Der Installer entfernt keine fremden Dienste.
+
+Die Optionen sind idempotent. Bei fehlgeschlagenem Dienststart stellt der Installer neben der bisherigen Programmversion und systemd-Datei auch seine explizite Listeneränderung zurück. Bei erfolgreicher Installation bleibt die neue Einstellung dauerhaft gespeichert; ein späterer manueller Programm-Rückwechsel ändert sie nicht.
 
 Änderungen je Version stehen in [CHANGELOG.md](CHANGELOG.md).
 
@@ -169,7 +183,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.08
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.09
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -179,8 +193,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.08
-git push origin v0.10.08
+git tag v0.10.09
+git push origin v0.10.09
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
