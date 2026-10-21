@@ -105,7 +105,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
 
     @app.exception_handler(HTTPException)
     async def auth_page(request, error):
-        if error.status_code == 401 and request.url.path in {'/', '/telegrams', '/knx', '/ets', '/users', '/versions', '/account/password', '/matrix'}:
+        if error.status_code == 401 and request.url.path in {'/', '/telegrams', '/knx', '/ets', '/users', '/versions', '/account/password', '/matrix', '/priorities'}:
             return FileResponse(STATIC / 'login.html', status_code=401)
         return await http_exception_handler(request, error)
 
@@ -276,6 +276,30 @@ def create_app(config, store, update_manager=None, version_checker=None):
             raise HTTPException(status_code=403, detail='Alarmmatrix nur fuer Admins und User bearbeitbar')
         return username
 
+    @app.get('/priorities')
+    def priorities_page(username=Depends(admin)):
+        return FileResponse(STATIC / 'index.html')
+
+    @app.get('/api/priorities')
+    def priorities_data(username=Depends(user)):
+        return store.priorities()
+
+    @app.put('/api/priorities')
+    async def priorities_save(request: Request, username=Depends(admin)):
+        from .matrix import MatrixConflict
+        action(request, 'manage-priorities')
+        payload = await json_body(request, max_bytes=262144)
+        if set(payload) != {'entries', 'revision'}:
+            raise HTTPException(status_code=422, detail='Prioritaeten und Revision erforderlich')
+        try:
+            result = await asyncio.to_thread(store.save_priorities, payload['entries'], payload['revision'])
+        except MatrixConflict as error:
+            raise HTTPException(status_code=409, detail=str(error)) from None
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        logging.getLogger(__name__).info('Prioritaeten durch %s aktualisiert', username)
+        return result
+
     @app.get('/matrix')
     def matrix_page(username=Depends(matrix_editor)):
         return FileResponse(STATIC / 'index.html')
@@ -287,7 +311,9 @@ def create_app(config, store, update_manager=None, version_checker=None):
     @app.get('/api/matrix/example.csv')
     def matrix_example(username=Depends(matrix_editor)):
         from .matrix import example_csv
-        return Response('\ufeff' + example_csv(), media_type='text/csv; charset=utf-8',
+        entries = store.priorities()['entries']
+        priority = next((row['priority'] for row in entries if row['priority'] == 2), entries[-1]['priority'])
+        return Response('\ufeff' + example_csv(priority), media_type='text/csv; charset=utf-8',
                         headers={'Content-Disposition': 'attachment; filename="alarmmatrix-beispiel.csv"'})
 
     @app.get('/api/matrix/export.csv')

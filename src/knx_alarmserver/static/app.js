@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const labels = {unknown:'Unbekannt',active:'Störung aktiv',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · unquittiert',normal:'Normal'};
 const page=window.location.pathname;
-const managementPages=['/knx','/ets','/users'];
+const managementPages=['/knx','/ets','/users','/priorities'];
 let pageInitialized=false, newerVersionKnown=false, checkingVersionStatus=false;
 let access = {role:null,configure:false,acknowledge:false};
 let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
@@ -38,7 +38,7 @@ function render(){
   const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
   const query=$('search').value.toLocaleLowerCase('de');
   const rows=data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||!$('open-only').checked||r.status!=='normal'||r.quality!=='ok');
-  if(view==='alarms')rows.sort((a,b)=>({active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[a.status]-{active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[b.status]));
+  if(view==='alarms')rows.sort((a,b)=>({active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[a.status]-{active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[b.status])||Number(a.priority)-Number(b.priority));
   const body=document.createDocumentFragment();
   for(const row of rows){
     const tr=document.createElement('tr');
@@ -47,7 +47,7 @@ function render(){
       const state=cell('');state.append(text('span',labels[row.status],'badge '+row.status));
       if(!row.fresh)state.append(text('small',row.last_seen?'Wert vor Neustart':'Noch kein Wert empfangen'));
       if(row.decode_error)state.append(text('small','DPT-/Regelfehler: '+row.decode_error));
-      const name=cell(row.name);name.append(text('small',`${row.area} · ${row.priority}`));
+      const name=cell(row.name);name.append(text('small',`${row.area} · Priorität ${row.priority}${row.priority_name?' · '+row.priority_name:''}`));
       const value=cell(row.display_value===null?'—':`${row.display_value}${row.unit?' '+row.unit:''}`);
       value.append(text('small',`${row.group_address} · DPT ${row.dpt}`));
       value.append(text('small',row.operator==='monitor'?'Nur Anzeige':`${row.field?row.field+' ':''}${row.operator} ${JSON.stringify(row.threshold)}${row.hysteresis?' · Hysterese '+row.hysteresis:''}`));
@@ -206,7 +206,44 @@ $('ets-apply').onclick=()=>etsAction('import');$('ets-reload').onclick=loadEts;
 $('ets-search').oninput=()=>{etsPage=0;renderEts();};
 $('ets-prev').onclick=()=>{etsPage--;renderEts();};$('ets-next').onclick=()=>{etsPage++;renderEts();};
 
+let priorityEntries=[], priorityRevision=null, prioritiesBusy=false, prioritiesDirty=false;
+function renderPriorities(){
+  const fragment=document.createDocumentFragment();
+  for(const entry of priorityEntries){
+    const tr=document.createElement('tr'),number=document.createElement('input'),name=document.createElement('input');
+    number.type='number';number.min='1';number.max='999';number.step='1';number.value=entry.priority;
+    number.setAttribute('aria-label','Prioritätsnummer');name.setAttribute('aria-label','Bezeichnung');
+    name.value=entry.name;name.maxLength=80;
+    const changed=()=>{prioritiesDirty=true;$('priorities-feedback').textContent='Ungespeicherte Änderungen.';};
+    number.oninput=()=>{entry.priority=Number(number.value);changed();};name.oninput=()=>{entry.name=name.value;changed();};
+    for(const input of [number,name]){const td=document.createElement('td');td.append(input);tr.append(td);}
+    const remove=text('button','Entfernen');remove.type='button';remove.onclick=()=>{priorityEntries=priorityEntries.filter(row=>row!==entry);changed();renderPriorities();};
+    const td=document.createElement('td');td.append(remove);tr.append(td);fragment.append(tr);
+  }
+  $('priorities-rows').replaceChildren(fragment);
+}
+async function prioritiesOperation(work){
+  if(prioritiesBusy)return;prioritiesBusy=true;
+  const controls=[...$('priorities-panel').querySelectorAll('input,button')];controls.forEach(node=>node.disabled=true);
+  try{await work();}catch(error){$('priorities-feedback').textContent=error.message;}
+  finally{prioritiesBusy=false;controls.forEach(node=>node.disabled=false);}
+}
+function prioritiesReceived(result){priorityEntries=result.entries;priorityRevision=result.revision;prioritiesDirty=false;renderPriorities();}
+async function loadPriorities(){
+  if(prioritiesDirty&&!confirm('Ungespeicherte Prioritätsänderungen verwerfen?'))return;
+  await prioritiesOperation(async()=>{prioritiesReceived(await api('/api/priorities'));$('priorities-feedback').textContent='Prioritäten geladen.';});
+}
+$('priorities-add').onclick=()=>{if(prioritiesBusy)return;priorityEntries.push({priority:Math.max(0,...priorityEntries.map(row=>row.priority))+1,name:''});prioritiesDirty=true;renderPriorities();};
+$('priorities-reload').onclick=loadPriorities;
+$('priorities-save').onclick=()=>prioritiesOperation(async()=>{
+  if(priorityRevision===null)throw Error('Zuerst Prioritäten laden.');
+  prioritiesReceived(await api('/api/priorities',{method:'PUT',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'manage-priorities'},body:JSON.stringify({entries:priorityEntries,revision:priorityRevision})}));
+  $('priorities-feedback').textContent='Prioritäten gespeichert. Bezeichnungen werden im Dashboard sofort aktualisiert.';
+});
+window.addEventListener('beforeunload',event=>{if(prioritiesDirty){event.preventDefault();event.returnValue='';}});
+
 let matrixRows=[], matrixRevision=null, matrixBusy=false, matrixDirty=false, matrixPage=0;
+let matrixPriorities=[];
 const matrixFields=['name','group_address','dpt','operator','threshold','hysteresis','field','area','priority'];
 function matrixChanged(){matrixDirty=true;$('matrix-feedback').textContent='Ungespeicherte Änderungen.';}
 function renderMatrix(){
@@ -220,9 +257,9 @@ function renderMatrix(){
     const tr=document.createElement('tr');tr.append(text('td',row.id||'Wird vergeben'));
     for(const field of matrixFields){
       const td=document.createElement('td');
-      const choices=field==='operator'?['eq','ne','gt','ge','lt','le','between','outside','contains','in','monitor']:field==='priority'?['info','warning','critical']:null;
+      const choices=field==='operator'?['eq','ne','gt','ge','lt','le','between','outside','contains','in','monitor']:field==='priority'?matrixPriorities.map(entry=>String(entry.priority)):null;
       const input=document.createElement(choices?'select':'input');
-      if(choices)for(const choice of choices){const option=text('option',choice);option.value=choice;input.append(option);}
+      if(choices)for(const choice of choices){const label=field==='priority'?choice+' · '+matrixPriorities.find(entry=>String(entry.priority)===choice).name:choice;const option=text('option',label);option.value=choice;input.append(option);}
       else{input.type='text';input.maxLength=field==='name'?200:2048;}
       input.value=row[field];input.setAttribute('aria-label',field+' · '+(row.id||'neuer Alarm'));
       input.oninput=()=>{row[field]=input.value;matrixChanged();};td.append(input);tr.append(td);
@@ -232,7 +269,7 @@ function renderMatrix(){
   }
   $('matrix-rows').replaceChildren(fragment);$('matrix-count').textContent=matrixRows.length+' Alarme';
 }
-function matrixReceived(result){matrixRows=result.rows;matrixRevision=result.revision;matrixDirty=false;renderMatrix();}
+function matrixReceived(result){matrixRows=result.rows;matrixRevision=result.revision;matrixPriorities=result.priorities||[];matrixDirty=false;renderMatrix();}
 async function loadMatrix(){
   if(matrixBusy)return;
   if(matrixDirty&&!confirm('Ungespeicherte Änderungen verwerfen?'))return;
@@ -247,7 +284,7 @@ async function matrixOperation(work){
 $('matrix-add').onclick=()=>{
   if(matrixBusy)return;
   $('matrix-search').value='';matrixPage=Math.floor(matrixRows.length/100);
-  matrixRows.push({id:'',name:'',group_address:'',dpt:'1.005',operator:'eq',threshold:'true',hysteresis:'0',field:'',area:'',priority:'warning'});
+  matrixRows.push({id:'',name:'',group_address:'',dpt:'1.005',operator:'eq',threshold:'true',hysteresis:'0',field:'',area:'',priority:String(matrixPriorities.find(entry=>entry.priority===2)?.priority||matrixPriorities.at(-1)?.priority||2)});
   matrixChanged();renderMatrix();
 };
 $('matrix-search').oninput=()=>{matrixPage=0;renderMatrix();};
@@ -275,7 +312,7 @@ window.addEventListener('beforeunload',event=>{if(page==='/matrix'&&matrixDirty)
 function applyAccess(){
   $('settings-menu').hidden=!access.configure&&!access.matrix;
   $('matrix-link').hidden=!access.matrix;
-  for(const id of ['telegrams-link','knx-settings-tab','ets-tab','users-tab'])$(id).hidden=!access.configure;
+  for(const id of ['telegrams-link','knx-settings-tab','ets-tab','users-tab','priorities-link'])$(id).hidden=!access.configure;
   if(page==='/matrix'&&!access.matrix)window.location.replace('/');
   $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
   if(!access.configure && (managementPages.includes(page)||page==='/telegrams'))window.location.replace('/');
@@ -288,10 +325,12 @@ async function initializePage(){
   else if(page==='/knx')await loadKnx();
   else if(page==='/ets')await loadEts();
   else if(page==='/users')await loadUsers();
+  else if(page==='/priorities')await loadPriorities();
   else if(page==='/versions'){await loadVersions();if(access.configure)await loadUpdate();}
 }
 function layoutPage(){
-  const names={'/matrix':['Alarmmatrix','Alarmregeln manuell bearbeiten oder als CSV ergänzen.'],
+  const names={'/priorities':['Prioritäten','Rangfolge und Bezeichnungen der Alarmprioritäten festlegen.'],
+    '/matrix':['Alarmmatrix','Alarmregeln manuell bearbeiten oder als CSV ergänzen.'],
     '/telegrams':['Telegramme','Empfangene KNX-Gruppentelegramme und decodierte Werte.'],
     '/knx':['KNX Verbindungen','Verbindungen zum KNX-Netz verwalten.'],
     '/ets':['ETS-Import','Gruppenadressen und Datenpunkttypen importieren.'],
@@ -303,6 +342,7 @@ function layoutPage(){
   if(names[page]){$('page-title').textContent=names[page][0];$('page-description').textContent=names[page][1];document.title=names[page][0]+' · KNX Alarmserver';}
   $('data-panel').hidden=settingsOpen;
   $('knx-settings').hidden=page!=='/knx';$('ets-panel').hidden=page!=='/ets';$('users-panel').hidden=page!=='/users';
+  $('priorities-panel').hidden=page!=='/priorities';
   $('matrix-panel').hidden=page!=='/matrix';
   $('password-panel').hidden=page!=='/account/password';$('versions-panel').hidden=page!=='/versions';
   $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;

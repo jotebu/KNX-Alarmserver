@@ -21,7 +21,11 @@ class Alarm:
     hysteresis: float
     field: str
     area: str
-    priority: str
+    priority: int
+
+    def __post_init__(self):
+        from .priorities import number
+        object.__setattr__(self, 'priority', number(self.priority))
 
 
 def load_alarms(path):
@@ -57,8 +61,8 @@ def parse_alarms(handle):
             row["hysteresis"] = float(row["hysteresis"] or "0")
             if not row["name"] or len(row["name"]) > 200:
                 raise ValueError("Name fehlt oder ist zu lang")
-            if row["priority"] not in {"info", "warning", "critical"}:
-                raise ValueError("priority: info, warning oder critical")
+            from .priorities import number
+            row['priority'] = number(row['priority'])
             if row["id"] in ids or row["group_address"] in addresses:
                 raise ValueError("doppelte ID oder Gruppenadresse")
             ids.add(row["id"])

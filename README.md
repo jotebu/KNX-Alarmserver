@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.1 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.2 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -119,6 +119,14 @@ Unterstützt werden XML-Gruppenadress-Exporte mit dreistufigen, zweistufigen ode
 
 Die genaue Abdeckung und noch fehlende Familien stehen in [DPT-SUPPORT.md](DPT-SUPPORT.md). `20` allein wird als 1-Byte-Zahl 0–255 angezeigt. `20.102` verwendet die deutschen HVAC-Betriebsarten; bitcodierter HVAC-Status bleibt getrennt. Unbekannte konkrete Untertypen werden nicht auf andere DPT umgedeutet. Vier- und fünfstellige Untertypen werden angenommen, wenn der passende Decoder vorhanden ist. Bereits importierte ETS-Zuordnungen nach dem Update über eine neue Vorschau erneut übernehmen, damit bisher abgewiesene DPT neu geprüft werden.
 
+### Prioritäten festlegen
+
+Admins öffnen **Zahnrad → Prioritäten** (`/priorities`). Die Tabelle enthält zunächst **1 Brand, 2 Warnung, 3 Service, 4 Info**. Nummern von 1 bis 999 sind möglich; je kleiner die Zahl, desto höher die Priorität. Bezeichnungen frei ändern, neue Nummern ergänzen oder ungenutzte Nummern entfernen. Mindestens ein Eintrag muss bleiben. Vor dem Entfernen oder Ändern einer verwendeten Nummer die betroffenen Alarme umstellen.
+
+In der Alarmmatrix wählen Admins und User die Nummer mit der aktuellen Bezeichnung. Alarme und CSVs speichern ausschließlich die Nummer. Eine Umbenennung wirkt nach der nächsten Dashboard-Aktualisierung, ohne die Zuordnung, den Alarmzustand oder die Historie zu ändern. Meldungen desselben Status werden nach Prioritätsnummer sortiert. Die Beispieldatei verwendet eine aktuell konfigurierte Nummer.
+
+Alte Werte werden kompatibel gelesen: `critical` → `1`, `warning` → `2`, `info` → `4`. Diese Umstellung bewahrt die bisherige Rangfolge; bereits vorhandene Zuordnungen nach inhaltlicher Bedeutung prüfen, insbesondere wenn „critical“ früher auch für technische Meldungen verwendet wurde. Neue Exporte enthalten Zahlen.
+
 ### Alarmmatrix und Datentypen
 
 Admins und User öffnen über das Zahnrad **Alarmmatrix** (`/matrix`). Zeilen hinzufügen, alle Felder direkt in der Tabelle bearbeiten und **Matrix speichern** wählen. Interne IDs werden ausschließlich vom Server automatisch vergeben; vorhandene IDs bleiben bei Bearbeitungen erhalten. Entfernen wird beim Speichern wirksam. Suche und Seiten mit jeweils 100 Zeilen erleichtern große Matrizen; gespeichert wird immer die gesamte Matrix. Die Oberfläche warnt vor ungespeicherten Änderungen.
@@ -130,9 +138,9 @@ CSV für Dashboard-Import und Export: semikolongetrenntes UTF-8 mit Kopfzeile **
 
 ```csv
 name;group_address;dpt;operator;threshold;hysteresis;field;area;priority
-Pumpenstörung;1/2/3;1.005;eq;true;0;;Technik;critical
-Übertemperatur;1/2/4;9.001;gt;50;2;;Technik;critical
-Statustext;1/2/5;16.001;contains;Störung;0;;Technik;warning
+Pumpenstörung;1/2/3;1.005;eq;true;0;;Technik;2
+Übertemperatur;1/2/4;9.001;gt;50;2;;Technik;2
+Statustext;1/2/5;16.001;contains;Störung;0;;Technik;2
 ```
 
 Diese Gruppenadressen sind ausschließlich Beispiele und dürfen nicht ungeprüft übernommen werden. Weitere Beispiele ohne ID: [config/alarmmatrix.example.csv](config/alarmmatrix.example.csv). Bestehende Installationen lesen vor dem ersten Dashboard-Speichern weiterhin die bisherige `alarms.csv` mit ID-Spalte; vorhandene IDs, Zustände und Historie bleiben erhalten. Danach hat die in SQLite gespeicherte Matrix Vorrang, auch beim CLI-Befehl `check`, nach Neustarts und Updates. Ein SQLite-Backup enthält somit auch die Matrix. Die alte Datei wird nicht überschrieben; Änderungen daran haben nach dem Dashboard-Speichern keine Wirkung mehr. Symcon-Objekt-IDs sind für den direkten KNX-Empfang nicht erforderlich.
@@ -148,7 +156,7 @@ Diese Gruppenadressen sind ausschließlich Beispiele und dürfen nicht ungeprüf
 | `hysteresis` | Nichtnegative Zahl in derselben Einheit wie der dekodierte Messwert; sonst `0` |
 | `field` | Optionaler Feldpfad für strukturierte DPT, z. B. `control`, `hour` oder `items.0`; richtet sich nach der xknx-Dekodierung |
 | `area` | Bereich/Ort |
-| `priority` | `info`, `warning`, `critical` |
+| `priority` | Ganze Prioritätsnummer aus der konfigurierten Tabelle, z. B. `1`, `2`, `3`, `4`; kleinere Zahl = höhere Priorität. Die Bezeichnung wird nicht in der CSV gespeichert. |
 
 JSON-Zahlen werden als Zahlen, `true`/`false` als Boolean behandelt. Text, der wie JSON aussieht (etwa der Text `123`), als JSON-String und mit korrekter CSV-Quotierung speichern; Excel/CSV-Schreibprogramme übernehmen diese Quotierung. Textsuche ist groß-/kleinschreibungsabhängig. `eq` vergleicht dekodierte Werte; bei Fließkommazahlen sind Grenzwertregeln meist geeigneter.
 
@@ -190,7 +198,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.1
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.2
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -200,8 +208,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.12.1
-git push origin v0.12.1
+git tag v0.12.2
+git push origin v0.12.2
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -211,7 +219,7 @@ Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentli
 Die Hauptseite zeigt Zähler, Meldungen und Historie. Die Kopfzeile bleibt auf allen Seiten beim Scrollen sichtbar; die Versionsnummer befindet sich ebenfalls dort. Der bisherige Fußtext entfällt. Auf schmalen Bildschirmen nutzt die Leiste zwei Zeilen, und Menüs öffnen darunter innerhalb des sichtbaren Bereichs. Der bisherige KNX-Informationskasten und die Verwaltungsreiter entfallen. Oben rechts stehen:
 
 - **KNX-Symbol:** grün, wenn alle aktiven Verbindungen bereit sind; rot bei Verbindungs- oder Speicherfehlern; gelb bei deaktiviertem bzw. noch nicht konfiguriertem Empfang. Beim Aufklappen erscheinen Einzelzustände und letzter Empfang. Ohne aktuelle Serverantwort wird der Status rot als unbekannt markiert.
-- **Zahnrad:** Admins und User können die Alarmmatrix (`/matrix`) verwalten. Die folgenden weiteren Funktionen sind ausschließlich für Admins sichtbar: Telegramme (`/telegrams`), KNX Verbindungen (`/knx`), ETS-Import (`/ets`), Benutzerverwaltung (`/users`). Jede Funktion hat eine eigene URL mit direkter serverseitiger Rechteprüfung.
+- **Zahnrad:** Admins und User können die Alarmmatrix (`/matrix`) verwalten. Die folgenden weiteren Funktionen sind ausschließlich für Admins sichtbar: Telegramme (`/telegrams`), KNX Verbindungen (`/knx`), ETS-Import (`/ets`), Prioritäten (`/priorities`), Benutzerverwaltung (`/users`). Jede Funktion hat eine eigene URL mit direkter serverseitiger Rechteprüfung.
 - **Benutzersymbol mit Rang:** Aufklappen zeigt den Benutzernamen, Kennwort ändern (`/account/password`) und Abmelden. Alle Rollen können ausschließlich ihr eigenes Kennwort mit Prüfung des bisherigen Kennworts ändern. Danach erneut anmelden; sämtliche bisherigen Sitzungen dieses Kontos werden beendet.
 
 Menüs lassen sich per Maus, Tastatur und Touch bedienen, außerhalb anklicken oder mit Escape schließen. Ein Link führt von jeder Unterseite zum Dashboard zurück.

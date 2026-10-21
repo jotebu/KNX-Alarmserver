@@ -20,6 +20,7 @@ def editable(alarm):
     row = asdict(alarm)
     row['threshold'] = json.dumps(alarm.threshold, ensure_ascii=False, allow_nan=False)
     row['hysteresis'] = str(alarm.hysteresis)
+    row['priority'] = str(alarm.priority)
     return row
 
 
@@ -69,8 +70,8 @@ def csv_text(rows):
     return handle.getvalue()
 
 
-def example_csv():
+def example_csv(priority=2):
     return csv_text([
-        dict(zip(FIELDS, ['Beispiel Pumpenstoerung', '31/7/250', '1.005', 'eq', 'true', '0', '', 'Technik', 'critical'])),
-        dict(zip(FIELDS, ['Beispiel Uebertemperatur', '31/7/251', '9.001', 'gt', '50', '2', '', 'Technik', 'warning'])),
+        dict(zip(FIELDS, ['Beispiel Pumpenstoerung', '31/7/250', '1.005', 'eq', 'true', '0', '', 'Technik', str(priority)])),
+        dict(zip(FIELDS, ['Beispiel Uebertemperatur', '31/7/251', '9.001', 'gt', '50', '2', '', 'Technik', str(priority)])),
     ])

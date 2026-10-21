@@ -1,10 +1,14 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.12.1, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.12.2, Inbetriebnahmeversion.
+
+## Zahlenprioritäten
+
+- Nummer und Bezeichnung getrennt; Standardwerte 1 Brand, 2 Warnung, 3 Service, 4 Info. Tests für Live-Umbenennung ohne Zustandsverlust, CSV-Zahlen, Legacy-Migration, unbekannte Nummern, Löschschutz, Revisionen und Rollen.
 
 ## Alarmmatrix im Dashboard
 
-- Gesamter Prüfstand: 95 Python-Tests und 16 Dashboard-Tests erfolgreich.
+- Gesamter Prüfstand: 102 Python-Tests und 17 Dashboard-Tests erfolgreich.
 
 - Gemeinsame Validierung für Tabellenzeilen und CSV, automatische IDs, sofortige Auswertung, Neustart-Persistenz, Bearbeitung mit Zustandserhalt bzw. gezieltem Reset, unveränderte Historie und Datenbankfehler mit Rücknahme geprüft.
 - API-Prüfungen für Admin/User/Viewer, fremde Herkunft, fehlenden Aktionsheader, parallele Revisionen, CSV-Vorlage und abgelehnten Doppelimport.
@@ -16,7 +20,7 @@ Stand: 21.10.2026. Projektversion 0.12.1, Inbetriebnahmeversion.
 
 ## Update-Erfolgsmeldung
 
-- Dashboard-Test prüft: gespeicherter früherer Erfolg bleibt ausgeblendet; beobachteter Installationsabschluss wird angezeigt; erneutes Öffnen blendet die Meldung und den Neuladen-Button wieder aus. Alle sechzehn Dashboard-Tests erfolgreich.
+- Dashboard-Test prüft: gespeicherter früherer Erfolg bleibt ausgeblendet; beobachteter Installationsabschluss wird angezeigt; erneutes Öffnen blendet die Meldung und den Neuladen-Button wieder aus. Alle siebzehn Dashboard-Tests erfolgreich.
 - Update-Polling mit altem und anschließend neuem Serverstand geprüft: Versionshinweis wechselt ohne Seitenneuladen auf „Installierte Version ist aktuell.“; Versionslink und Update-Kasten werden gleichzeitig angepasst.
 
 ## Manuelle Versionsprüfung und Update-Kasten

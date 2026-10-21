@@ -2,6 +2,13 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.2 – 21.10.2026
+
+- Prioritäten als stabile ganze Zahlen speichern: zunächst 1 Brand, 2 Warnung, 3 Service, 4 Info; kleine Zahl bedeutet hohe Priorität.
+- Neue bearbeitbare Prioritätentabelle für Admins: Bezeichnungen ändern, weitere Nummern anlegen und ungenutzte Nummern entfernen. Verwendete Nummern sind vor versehentlichem Entfernen geschützt; parallele Änderungen werden erkannt.
+- Alarmmatrix für Admins und User bietet Nummer und aktuelle Bezeichnung zur Auswahl. Dashboard zeigt beide; Umbenennen ändert weder Alarmzuordnung noch Zustände oder Historie.
+- CSV-Vorlage und Export enthalten ausschließlich die Prioritätsnummer. Ältere critical/warning/info-Werte werden beim Laden in 1/2/4 übersetzt, damit vorhandene Installationen und CSVs lesbar bleiben.
+
 ## 0.12.1 – 21.10.2026
 
 - Dashboard-Updates abgeschlossen; automatisches Neuladen nach erfolgreichem Update auf 0,5 Sekunden verkürzt.

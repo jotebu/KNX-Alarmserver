@@ -85,12 +85,42 @@ class Store:
         with self.lock, self.db:
             yield
 
+    def priorities(self):
+        from .priorities import DEFAULTS
+        with self.lock:
+            saved = self.db.execute("SELECT value FROM settings WHERE name='priorities'").fetchone()
+            entries = json.loads(saved['value']) if saved else [dict(row) for row in DEFAULTS]
+            # Preserve imported legacy/custom numbers until explicitly reconfigured.
+            present = {row['priority'] for row in entries}
+            for alarm in self.alarms.values():
+                if alarm.priority not in present:
+                    entries.append({'priority': alarm.priority, 'name': f'Prioritaet {alarm.priority}'})
+                    present.add(alarm.priority)
+            entries.sort(key=lambda row: row['priority'])
+            revision = hashlib.sha256(json.dumps(entries, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+            return {'entries': entries, 'revision': revision}
+
+    def save_priorities(self, entries, revision):
+        from .priorities import validate
+        from .matrix import MatrixConflict
+        proposed = validate(entries)
+        with self.transaction():
+            if revision != self.priorities()['revision']:
+                raise MatrixConflict('Prioritaeten inzwischen geaendert. Neu laden und erneut bearbeiten.')
+            allowed = {row['priority'] for row in proposed}
+            used = {alarm.priority for alarm in self.alarms.values()}
+            if used - allowed:
+                raise ValueError('Verwendete Prioritaeten zuerst in der Alarmmatrix umstellen: ' + ', '.join(map(str, sorted(used - allowed))))
+            self.db.execute("INSERT OR REPLACE INTO settings(name,value) VALUES ('priorities',?)",
+                            (json.dumps(proposed, ensure_ascii=False),))
+        return self.priorities()
+
     def matrix(self):
         from .matrix import editable
         with self.lock:
             rows = [editable(alarm) for alarm in self.alarms.values()]
             revision = hashlib.sha256(json.dumps(rows, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
-            return {'rows': rows, 'revision': revision}
+            return {'rows': rows, 'revision': revision, 'priorities': self.priorities()['entries']}
 
     def save_matrix(self, rows, revision, username, append=False):
         from .matrix import MatrixConflict, validate_rows
@@ -123,6 +153,9 @@ class Store:
                 seen.add(identifier)
                 proposed.append(row)
             alarms = validate_rows(proposed)
+            allowed = {row['priority'] for row in self.priorities()['entries']}
+            if any(alarm.priority not in allowed for alarm in alarms):
+                raise ValueError('Unbekannte Prioritaet. Zuerst in der Prioritaetentabelle anlegen.')
             replacement = {alarm.id: alarm for alarm in alarms}
             with self.transaction():
                 for identifier, alarm in old.items():
@@ -201,11 +234,13 @@ class Store:
         with self.lock:
             rows = {r["id"]: dict(r) for r in self.db.execute("SELECT * FROM states")}
             result = []
+            priority_names = {row['priority']: row['name'] for row in self.priorities()['entries']}
             for alarm in self.alarms.values():
                 row = rows[alarm.id]
                 row.pop("signature")
                 row["value"] = json.loads(row.pop("value_json")) if row["value_json"] is not None else None
                 row.update(asdict(alarm))
+                row['priority_name'] = priority_names.get(alarm.priority, str(alarm.priority))
                 row["fresh"] = row["last_seen"] is not None and row["last_seen"] >= self.started_at
                 row["quality"] = "decode_error" if row["decode_error"] else "ok" if row["fresh"] else "restored" if row["last_seen"] else "unseen"
                 row["status"] = ("unknown" if row["active"] is None else
