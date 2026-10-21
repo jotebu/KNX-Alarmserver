@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.9 – 22.10.2026
+
+- Auch den Zähler „Unbekannt“ als Filterbutton anbieten. Bei expliziter Auswahl ausschließlich unbekannte Alarme aus der gesamten Matrix laden, unabhängig von ihrer Ausblendung in der normalen Meldungsliste.
+- Erneutes Anklicken oder Filter zurücksetzen kehrt zur normalen Meldungsansicht zurück. Filterauswahl und leere Ergebnisliste passend beschriften.
+
 ## 0.12.8 – 22.10.2026
 
 - Drei Statuszähler als zugängliche Filterbuttons: Aktiv/offen, Aktiv/quittiert und Gegangen/offen. Erneutes Anklicken oder Filter zurücksetzen hebt die Auswahl auf. Prioritäts-/Zeitsortierung bleibt erhalten, Gesamtsummen bleiben unabhängig vom Listenfilter.

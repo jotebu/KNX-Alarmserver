@@ -49,14 +49,14 @@ function render(){
   const active=Boolean(listFilters.search||listFilters.from||listFilters.until||(view==='alarms'&&alarmStatusFilter));
   $('filter-toggle').textContent=(filtersOpen?'Filter ausblenden':'Filter anzeigen')+(active?' · aktiv':'');
   $('filter-toggle').setAttribute('aria-expanded',String(filtersOpen));
-  $('list-summary').textContent=listing?(view==='history'?`${listing.shown} von ${listing.total} Treffern · höchstens 500 neueste Einträge`:`${listing.total} Meldungen${alarmStatusFilter?' · '+({active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen'})[alarmStatusFilter]:''}`):'';
+  $('list-summary').textContent=listing?(view==='history'?`${listing.shown} von ${listing.total} Treffern · höchstens 500 neueste Einträge`:`${listing.total} Meldungen${alarmStatusFilter?' · '+({active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen',unknown:'Unbekannt'})[alarmStatusFilter]:''}`):'';
   const titles={alarms:'Meldungen',history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
   const heads={alarms:['Status','Meldung / Bereich','Status','Zeitstempel','Quittierung'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
   $('message-table').className=view==='alarms'?'alarm-list-table':'';
   const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
   const query=$('search').value.toLocaleLowerCase('de');
-  const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||['active','active_ack','clear_pending'].includes(r.status)&&(!alarmStatusFilter||r.status===alarmStatusFilter));
+  const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||(alarmStatusFilter?r.status===alarmStatusFilter:['active','active_ack','clear_pending'].includes(r.status)));
   if(view==='alarms'&&!listing)rows.sort((a,b)=>Number(a.priority)-Number(b.priority)||(Date.parse(b.last_seen)||0)-(Date.parse(a.last_seen)||0)||String(a.id).localeCompare(String(b.id)));
   const body=document.createDocumentFragment();
   for(const row of rows){
@@ -77,7 +77,7 @@ function render(){
     body.append(tr);
   }
   $('table-body').replaceChildren(body);$('empty').hidden=rows.length>0;
-  $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. Admins und User können Alarme im Bereich Alarmmatrix einrichten.':view==='alarms'?'Keine aktiven oder noch zu quittierenden Meldungen.':'Keine passenden Einträge.';
+  $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. Admins und User können Alarme im Bereich Alarmmatrix einrichten.':view==='alarms'?(alarmStatusFilter==='unknown'?'Keine unbekannten Meldungen.':'Keine aktiven oder noch zu quittierenden Meldungen.'):'Keine passenden Einträge.';
   $('hint').textContent={alarms:'Aktive oder noch zu quittierende Alarme und Störungen. Sortierung: Priorität, danach neuester Zeitstempel.',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
 }
 async function refresh(){

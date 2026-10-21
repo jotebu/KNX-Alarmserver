@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.8, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.9, Inbetriebnahmeversion.
+
+## Unbekannt-Filter
+
+- Bestehenden API-Test um unbekannten Zustand erweitert: dieser wird gezielt außerhalb der normalen Meldungsliste geladen, Gesamtsummen bleiben gleich.
 
 ## Statuszähler als Filter
 

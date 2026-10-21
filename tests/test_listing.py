@@ -110,7 +110,7 @@ class ListingTests(unittest.TestCase):
                     store.db.execute("UPDATE states SET active=?,pending=?,last_seen='2020-01-01T00:00:00+00:00' WHERE id=?",(active,pending,f's{i}'))
             self.assertEqual(store.snapshot()[0]['quality'],'ok')
             with TestClient(create_app({'knx':{'enabled':False}},store)) as client:
-                for status,identifier in [('active','s0'),('active_ack','s1'),('clear_pending','s2')]:
+                for status,identifier in [('active','s0'),('active_ack','s1'),('clear_pending','s2'),('unknown','s4')]:
                     response=client.get('/api/dashboard?list_mode=true&status_filter='+status,auth=('reader','test-password-123'))
                     self.assertEqual(response.status_code,200,response.text)
                     body=response.json()
