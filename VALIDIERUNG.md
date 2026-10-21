@@ -1,4 +1,4 @@
-# Prüfstand 0.1.0
+# Prüfstand 0.10.01
 
 Stand: 21.10.2026. Erste Implementierung, noch keine produktive Freigabe.
 
