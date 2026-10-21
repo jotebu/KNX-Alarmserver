@@ -347,6 +347,7 @@ async function checkVersionStatus(){
 }
 let updatePoll=null;
 let updateObserved=false;
+let updateReloadTimer=null;
 async function loadUpdate(){
   clearTimeout(updatePoll);
   try{
@@ -360,6 +361,9 @@ async function loadUpdate(){
     $('update-refresh').hidden=!showSuccess;
     $('update-feedback').textContent=(state.state==='success'&&!showSuccess?'':state.message)||((newerVersionKnown&&!state.available)?'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.':'');
     $('update-detail').textContent=state.target_version?'Zielversion: '+state.target_version+(state.updated_at?' · '+date(state.updated_at):''):'';
+    if(showSuccess&&updateReloadTimer===null){
+      updateReloadTimer=setTimeout(()=>window.location.reload(),2000);
+    }
     if(active)updatePoll=setTimeout(loadUpdate,3000);
   }catch(error){$('update-start').disabled=true;$('update-feedback').textContent='Verbindung unterbrochen. Der Status wird nach dem Neustart erneut geprüft.';updatePoll=setTimeout(loadUpdate,5000);}
 }

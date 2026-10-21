@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.16 – 21.10.2026
+
+- Oberfläche zwei Sekunden nach einem auf der Seite beobachteten erfolgreichen Update automatisch einmal neu laden. Gespeicherte frühere Erfolge lösen kein Neuladen aus.
+
 ## 0.10.15 – 21.10.2026
 
 - Versionshinweis beim Abruf des Update-Fortschritts ebenfalls aktualisieren: Nach bestätigtem aktuellem Installationsstand ersetzt „Installierte Version ist aktuell.“ den bisherigen Hinweis auf eine neue Version, ohne manuelles Neuladen.

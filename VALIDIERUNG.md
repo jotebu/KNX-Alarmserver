@@ -1,10 +1,14 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.15, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.16, Inbetriebnahmeversion.
+
+## Automatisches Neuladen nach Updates
+
+- Timer-Test bestätigt genau einen Aufruf zum Neuladen nach 2000 Millisekunden bei beobachtetem Update-Erfolg. Ein gespeicherter Erfolg beim Seitenaufruf und laufende Updates lösen keinen solchen Timer aus.
 
 ## Update-Erfolgsmeldung
 
-- Dashboard-Test prüft: gespeicherter früherer Erfolg bleibt ausgeblendet; beobachteter Installationsabschluss wird angezeigt; erneutes Öffnen blendet die Meldung und den Neuladen-Button wieder aus. Alle dreizehn Dashboard-Tests erfolgreich.
+- Dashboard-Test prüft: gespeicherter früherer Erfolg bleibt ausgeblendet; beobachteter Installationsabschluss wird angezeigt; erneutes Öffnen blendet die Meldung und den Neuladen-Button wieder aus. Alle vierzehn Dashboard-Tests erfolgreich.
 - Update-Polling mit altem und anschließend neuem Serverstand geprüft: Versionshinweis wechselt ohne Seitenneuladen auf „Installierte Version ist aktuell.“; Versionslink und Update-Kasten werden gleichzeitig angepasst.
 
 ## Manuelle Versionsprüfung und Update-Kasten
