@@ -6,10 +6,11 @@ const managementPages=['/knx','/ets','/users','/priorities'];
 let pageInitialized=false, newerVersionKnown=false, checkingVersionStatus=false;
 let access = {role:null,configure:false,acknowledge:false};
 let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
-let listing=null, listGeneration=0;
+let listing=null, listGeneration=0, alarmStatusFilter='';
 let listFilters={search:'',from:'',until:''};
 function listQuery(selected){
   let query='&list_mode=true&search='+encodeURIComponent(listFilters.search);
+  if(selected==='alarms'&&alarmStatusFilter)query+='&status_filter='+encodeURIComponent(alarmStatusFilter);
   if(listFilters.from)query+='&from_time='+encodeURIComponent(listFilters.from);
   if(listFilters.until)query+='&until_time='+encodeURIComponent(listFilters.until);
   return query;
@@ -39,22 +40,23 @@ function scheduleRefresh(){
 function failure(error) {$('error').hidden=false;$('error').textContent=`Keine aktuellen Daten: ${error.message}. Die angezeigten Werte können veraltet sein.`;}
 function render(){
   if(settingsOpen)return;
+  for(const card of document.querySelectorAll('[data-status-filter]')){const selected=view==='alarms'&&card.dataset.statusFilter===alarmStatusFilter;card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));}
   const filterable=view!=='telegrams';
   $('filter-toggle').hidden=!filterable;
   $('list-filters').hidden=filterable&&!filtersOpen;
   $('date-filters').hidden=!filterable;
   $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: Zeitstempel; ohne Empfangszeit nicht im Datumsfilter enthalten';
-  const active=Boolean(listFilters.search||listFilters.from||listFilters.until);
+  const active=Boolean(listFilters.search||listFilters.from||listFilters.until||(view==='alarms'&&alarmStatusFilter));
   $('filter-toggle').textContent=(filtersOpen?'Filter ausblenden':'Filter anzeigen')+(active?' · aktiv':'');
   $('filter-toggle').setAttribute('aria-expanded',String(filtersOpen));
-  $('list-summary').textContent=listing?(view==='history'?`${listing.shown} von ${listing.total} Treffern · höchstens 500 neueste Einträge`:`${listing.total} Meldungen`):'';
+  $('list-summary').textContent=listing?(view==='history'?`${listing.shown} von ${listing.total} Treffern · höchstens 500 neueste Einträge`:`${listing.total} Meldungen${alarmStatusFilter?' · '+({active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen'})[alarmStatusFilter]:''}`):'';
   const titles={alarms:'Meldungen',history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
   const heads={alarms:['Status','Meldung / Bereich','Status','Zeitstempel','Quittierung'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
   $('message-table').className=view==='alarms'?'alarm-list-table':'';
   const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
   const query=$('search').value.toLocaleLowerCase('de');
-  const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||['active','active_ack','clear_pending'].includes(r.status));
+  const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||['active','active_ack','clear_pending'].includes(r.status)&&(!alarmStatusFilter||r.status===alarmStatusFilter));
   if(view==='alarms'&&!listing)rows.sort((a,b)=>Number(a.priority)-Number(b.priority)||(Date.parse(b.last_seen)||0)-(Date.parse(a.last_seen)||0)||String(a.id).localeCompare(String(b.id)));
   const body=document.createDocumentFragment();
   for(const row of rows){
@@ -76,7 +78,7 @@ function render(){
   }
   $('table-body').replaceChildren(body);$('empty').hidden=rows.length>0;
   $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. Admins und User können Alarme im Bereich Alarmmatrix einrichten.':view==='alarms'?'Keine aktiven oder noch zu quittierenden Meldungen.':'Keine passenden Einträge.';
-  $('hint').textContent={alarms:'Nach einem Neustart bleiben gespeicherte Zustände als alte Werte gekennzeichnet, bis ein neues Telegramm eintrifft. „Normal“ bedeutet zuletzt empfangener Normalwert; es ist keine zyklische Erreichbarkeitsprüfung.',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
+  $('hint').textContent={alarms:'Aktive oder noch zu quittierende Alarme und Störungen. Sortierung: Priorität, danach neuester Zeitstempel.',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
 }
 async function refresh(){
   if(busy)return;
@@ -99,7 +101,7 @@ async function refresh(){
     $('active').textContent=snapshot.counts?snapshot.counts.active:data.alarms.filter(r=>r.status==='active').length;
     $('acked').textContent=snapshot.counts?snapshot.counts.acked:data.alarms.filter(r=>r.status==='active_ack').length;
     $('pending').textContent=snapshot.counts?snapshot.counts.pending:data.alarms.filter(r=>r.status==='clear_pending').length;
-    $('unknown').textContent=snapshot.counts?snapshot.counts.unknown:data.alarms.filter(r=>r.quality!=='ok').length;
+    $('unknown').textContent=snapshot.counts?snapshot.counts.unknown:data.alarms.filter(r=>r.status==='unknown').length;
     $('connection-status').textContent=!status.knx.enabled?'KNX deaktiviert':status.knx.ready?'Verbindungen bereit':'Verbindung gestört / wird aufgebaut';
     $('connection-detail').textContent=status.knx.connections.map(c=>`${c.name}: ${c.state} · letzter Empfang ${date(c.last_received)}`).join(' | ')||'KNX-Empfang in der Konfiguration noch nicht aktiviert.';
     if(status.knx.storage_error)$('connection-detail').textContent+=' | FEHLER beim Speichern; Dienstprotokoll prüfen.';
@@ -168,6 +170,12 @@ $('knx-form').onsubmit=event=>{
   if(editingConnection===null)next.connections.push(c);else next.connections[editingConnection]=c;
   saveKnx(next);
 };
+document.querySelectorAll('[data-status-filter]').forEach(card=>card.onclick=()=>{
+  alarmStatusFilter=alarmStatusFilter===card.dataset.statusFilter?'':card.dataset.statusFilter;
+  view='alarms';listing=null;listGeneration++;
+  document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('selected',button.dataset.view==='alarms'));
+  refresh();
+});
 document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{view=button.dataset.view;listing=null;listGeneration++;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));refresh();});
 let etsRows=[], etsPage=0, etsPreview=null, etsFile=null, etsBusy=false;
 function resetEtsPreview(){etsPreview=null;etsFile=null;$('ets-apply').disabled=true;}
@@ -557,7 +565,7 @@ function applyListFilters(){
 }
 $('search').oninput=()=>{if(view==='telegrams')render();else{clearTimeout(searchTimer);searchTimer=setTimeout(applyListFilters,300);}};
 $('date-apply').onclick=applyListFilters;
-$('date-clear').onclick=()=>{$('date-from').value='';$('date-until').value='';$('search').value='';applyListFilters();};
+$('date-clear').onclick=()=>{alarmStatusFilter='';$('date-from').value='';$('date-until').value='';$('search').value='';applyListFilters();};
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
 refresh();
 

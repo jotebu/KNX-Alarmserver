@@ -252,7 +252,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
     def dashboard(request: Request, view: str = "alarms", paged: bool = False, list_mode: bool = False,
                   page: int = Query(1, ge=1), from_time: datetime | None = None,
                   until_time: datetime | None = None, search: str = Query('', max_length=200),
-                  open_only: bool = False, username=Depends(user)):
+                  open_only: bool = False, status_filter: str = Query('', pattern='^(active|active_ack|clear_pending)?$'), username=Depends(user)):
         if view not in {"alarms", "history", "telegrams"}:
             raise HTTPException(status_code=400, detail="Unbekannte Dashboard-Ansicht")
         result = {"status": {"version": __version__, **identity(request, username),
@@ -268,9 +268,9 @@ def create_app(config, store, update_manager=None, version_checker=None):
             result['counts'] = {'active': sum(row['status'] == 'active' for row in rows),
                                 'acked': sum(row['status'] == 'active_ack' for row in rows),
                                 'pending': sum(row['status'] == 'clear_pending' for row in rows),
-                                'unknown': sum(row['quality'] != 'ok' for row in rows)}
+                                'unknown': sum(row['status'] == 'unknown' for row in rows)}
             if list_mode:
-                listing = store.history_page(1, start, end, search, page_size=500) if view == 'history' else alarms_page(rows, 1, start, end, search, open_only, unlimited=True, incidents_only=True)
+                listing = store.history_page(1, start, end, search, page_size=500) if view == 'history' else alarms_page(rows, 1, start, end, search, open_only, unlimited=True, incidents_only=True, status_filter=status_filter)
             else:
                 listing = store.history_page(page, start, end, search) if view == 'history' else alarms_page(rows, page, start, end, search, open_only)
             result['alarms'] = listing['rows'] if view == 'alarms' else []

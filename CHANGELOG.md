@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.8 – 22.10.2026
+
+- Drei Statuszähler als zugängliche Filterbuttons: Aktiv/offen, Aktiv/quittiert und Gegangen/offen. Erneutes Anklicken oder Filter zurücksetzen hebt die Auswahl auf. Prioritäts-/Zeitsortierung bleibt erhalten, Gesamtsummen bleiben unabhängig vom Listenfilter.
+- Unbekannt-Zähler auf tatsächlich unbekannte Alarmzustände beschränken. Gespeicherte bekannte Werte nach Neustart nicht als alt klassifizieren; entsprechende Hinweise und Auswahltexte entfernen. KNX-Abfrage „Unbekannte Werte“ liest nur noch Adressen ohne bekannten Zustand.
+
 ## 0.12.7 – 22.10.2026
 
 - Wertspalte in „Status“ umbenennen. Gruppenadresse und DPT unter Meldung/Bereich anzeigen; Operator, Grenzwert und Hysterese dort entfernen (weiterhin in der Alarmmatrix verfügbar).

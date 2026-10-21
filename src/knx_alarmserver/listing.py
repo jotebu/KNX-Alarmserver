@@ -25,12 +25,13 @@ def page_info(total, page, page_size=PAGE_SIZE):
             'last': min(page * page_size, total)}
 
 
-def alarms_page(rows, page=1, start=None, end=None, query='', open_only=False, unlimited=False, incidents_only=False):
+def alarms_page(rows, page=1, start=None, end=None, query='', open_only=False, unlimited=False, incidents_only=False, status_filter=''):
     import json
     filtered = [row for row in rows if (not start or row['last_seen'] and row['last_seen'] >= start)
                 and (not end or row['last_seen'] and row['last_seen'] < end)
                 and (not open_only or row['status'] != 'normal' or row['quality'] != 'ok')
                 and (not incidents_only or row['status'] in {'active', 'active_ack', 'clear_pending'})
+                and (not status_filter or row['status'] == status_filter)
                 and query.casefold() in json.dumps(row, ensure_ascii=False).casefold()]
     def received(row):
         value = row.get('last_seen')

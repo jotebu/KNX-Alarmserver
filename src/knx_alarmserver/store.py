@@ -242,7 +242,7 @@ class Store:
                 row.update(asdict(alarm))
                 row['priority_name'] = priority_names.get(alarm.priority, str(alarm.priority))
                 row["fresh"] = row["last_seen"] is not None and row["last_seen"] >= self.started_at
-                row["quality"] = "decode_error" if row["decode_error"] else "ok" if row["fresh"] else "restored" if row["last_seen"] else "unseen"
+                row["quality"] = "decode_error" if row["decode_error"] else "ok" if row["last_seen"] else "unseen"
                 row["status"] = ("unknown" if row["active"] is None else
                                  "active" if row["active"] and row["pending"] else
                                  "active_ack" if row["active"] else

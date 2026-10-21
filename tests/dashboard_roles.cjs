@@ -8,7 +8,7 @@ class Node {
 }
 async function setup(role,knx={enabled:false,ready:false,connections:[]},page='/'){
  const nodes=new Map(),redirects=[];
- const document={getElementById(id){if(!nodes.has(id))nodes.set(id,new Node());return nodes.get(id);},createElement:tag=>new Node(tag),createDocumentFragment:()=>new Node('fragment')};
+ const document={querySelectorAll:()=>[],getElementById(id){if(!nodes.has(id))nodes.set(id,new Node());return nodes.get(id);},createElement:tag=>new Node(tag),createDocumentFragment:()=>new Node('fragment')};
  const snapshot={status:{user:'person@example.org',role,version:'test',permissions:{configure:role==='admin',acknowledge:role!=='viewer'},knx},alarms:[{status:'active',pending:1,fresh:true,name:'Alarm',display_value:'1',group_address:'1/2/3',dpt:'1.005',operator:'eq',threshold:1}]};
  const context=vm.createContext({document,Date,JSON,Math,window:{location:{pathname:page,replace:p=>redirects.push(p)}},setTimeout:()=>0,clearTimeout(){},encodeURIComponent,snapshot});
  const prefix=source.slice(0,source.indexOf('async function api('));

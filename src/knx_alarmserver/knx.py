@@ -91,7 +91,7 @@ class Monitor:
             raise ValueError('Gewaehlte KNX-Verbindung ist nicht bereit')
         connection = connection or ready[0]
         rows = self.store.snapshot()
-        addresses = sorted({row['group_address'] for row in rows if mode == 'all' or row['quality'] != 'ok'},
+        addresses = sorted({row['group_address'] for row in rows if mode == 'all' or row['status'] == 'unknown'},
                            key=lambda address: tuple(map(int, address.split('/'))))
         self.read_responses.clear()
         self.read_targets = set(addresses)

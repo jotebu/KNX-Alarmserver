@@ -99,6 +99,26 @@ class ListingTests(unittest.TestCase):
         self.assertEqual(result['total'],4)
         self.assertEqual(alarms_page(rows,query='normal',unlimited=True,incidents_only=True)['total'],0)
 
+    def test_status_card_filters_and_unknown_count_ignore_restart(self):
+        from fastapi.testclient import TestClient
+        from knx_alarmserver.web import create_app
+        alarms=[replace(ALARM,id=f's{i}',group_address=f'1/2/{i}') for i in range(5)]
+        store=Store(':memory:',alarms);store.create_user('reader','test-password-123','viewer')
+        try:
+            with store.transaction():
+                for i,(active,pending) in enumerate([(1,1),(1,0),(0,1),(0,0)]):
+                    store.db.execute("UPDATE states SET active=?,pending=?,last_seen='2020-01-01T00:00:00+00:00' WHERE id=?",(active,pending,f's{i}'))
+            self.assertEqual(store.snapshot()[0]['quality'],'ok')
+            with TestClient(create_app({'knx':{'enabled':False}},store)) as client:
+                for status,identifier in [('active','s0'),('active_ack','s1'),('clear_pending','s2')]:
+                    response=client.get('/api/dashboard?list_mode=true&status_filter='+status,auth=('reader','test-password-123'))
+                    self.assertEqual(response.status_code,200,response.text)
+                    body=response.json()
+                    self.assertEqual([row['id'] for row in body['alarms']],[identifier])
+                    self.assertEqual(body['counts'],{'active':1,'acked':1,'pending':1,'unknown':1})
+                self.assertEqual(client.get('/api/dashboard?list_mode=true&status_filter=normal',auth=('reader','test-password-123')).status_code,422)
+        finally:store.close()
+
     def test_read_api_roles_headers_and_reported_start(self):
         from fastapi.testclient import TestClient
         from unittest.mock import patch

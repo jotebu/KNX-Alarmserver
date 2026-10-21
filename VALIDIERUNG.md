@@ -1,6 +1,11 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.7, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.8, Inbetriebnahmeversion.
+
+## Statuszähler als Filter
+
+- API für alle drei Zustandsfilter geprüft, einschließlich unveränderter Gesamtsummen und exakt eines unbekannten Zustands trotz alter Empfangszeiten bekannter Werte. Ungültiger Filter wird abgewiesen. DOM-Prüfung für alle Rollen: Auswahl per Klick, aria-pressed, erneuter Klick hebt Filter auf.
+- Bekannte gespeicherte Zustände erhalten unabhängig vom Dienststart die Qualität ok; keine Einstufung als restored.
 
 ## Kompakte Detailspalten
 
@@ -33,7 +38,7 @@ Stand: 22.10.2026. Projektversion 0.12.7, Inbetriebnahmeversion.
 
 ## Alarmmatrix im Dashboard
 
-- Gesamter Prüfstand: 111 Python-Tests und 19 Dashboard-Tests erfolgreich.
+- Gesamter Prüfstand: 112 Python-Tests und 19 Dashboard-Tests erfolgreich.
 
 - Gemeinsame Validierung für Tabellenzeilen und CSV, automatische IDs, sofortige Auswertung, Neustart-Persistenz, Bearbeitung mit Zustandserhalt bzw. gezieltem Reset, unveränderte Historie und Datenbankfehler mit Rücknahme geprüft.
 - API-Prüfungen für Admin/User/Viewer, fremde Herkunft, fehlenden Aktionsheader, parallele Revisionen, CSV-Vorlage und abgelehnten Doppelimport.
