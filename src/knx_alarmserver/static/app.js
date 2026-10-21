@@ -272,6 +272,11 @@ window.addEventListener('beforeunload',event=>{if(prioritiesDirty){event.prevent
 let matrixRows=[], matrixRevision=null, matrixBusy=false, matrixDirty=false, matrixPage=0;
 let matrixPriorities=[];
 const matrixFields=['name','group_address','dpt','operator','threshold','hysteresis','field','area','priority'];
+$('matrix-tools-toggle').onclick=()=>{
+  const tools=$('matrix-tools');tools.hidden=!tools.hidden;
+  $('matrix-tools-toggle').setAttribute('aria-expanded',String(!tools.hidden));
+  $('matrix-tools-toggle').textContent=tools.hidden?'Werkzeuge anzeigen':'Werkzeuge ausblenden';
+};
 function matrixChanged(){matrixDirty=true;$('matrix-feedback').textContent='Ungespeicherte Änderungen.';}
 function renderMatrix(){
   const fragment=document.createDocumentFragment();

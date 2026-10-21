@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.12 – 22.10.2026
+
+- Matrix-Werkzeuge samt Erläuterungen, Speichern, Hinzufügen, CSV-Import und Downloads zunächst einklappen; über „Werkzeuge anzeigen“ einblenden.
+- Suche, Seitenauswahl und Alarmanzahl in einer Zeile belassen; Alarmanzahl am rechten Rand. Rückmeldungen zu Änderungen/Speichern bleiben sichtbar.
+- Überschrift und Zurück-Link wieder an der gemeinsamen Breite des Matrixbereichs ausrichten; Tabellenbreite bei FullHD unverändert gegenüber dem vorherigen Stand.
+
 ## 0.12.11 – 22.10.2026
 
 - Überschrift und Zurück-Link der Alarmmatrix wieder mit dem normalen Seitencontainer und denselben Abständen wie auf den anderen Verwaltungsseiten ausrichten.

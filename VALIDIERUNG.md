@@ -1,8 +1,12 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.11, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.12, Inbetriebnahmeversion.
 
-## Matrixabstände
+## Einklappbare Matrix-Werkzeuge
+
+- Werkzeuge einschließlich CSV und Erläuterungen initial verborgen; Toggle samt aria-expanded geprüft. Suche und Alarmanzahl außerhalb des Werkzeugbereichs, Anzahl rechts. Überschrift/Zurück-Link und Tabelle im gemeinsamen, maximal 1808 Pixel breiten Container mit 24 Pixel Innenabstand.
+
+## Matrixabstände (vorheriger Stand)
 
 - Überschrift nutzt wieder die unveränderte globale main-Breite von 1500 Pixeln und globale Seitenabstände. Nur Matrixpanel zentriert und maximal 1760 Pixel breit; DOM/CSS-Prüfung erfolgreich. Sichtprüfung weiterhin auf dem Raspberry erforderlich.
 

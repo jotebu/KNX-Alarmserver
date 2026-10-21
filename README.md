@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.11 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.12 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -129,7 +129,7 @@ Alte Werte werden kompatibel gelesen: `critical` → `1`, `warning` → `2`, `in
 
 ### Alarmmatrix und Datentypen
 
-Admins und User öffnen über das Zahnrad **Alarmmatrix** (`/matrix`). Zeilen hinzufügen, alle Felder direkt in der Tabelle bearbeiten und **Matrix speichern** wählen. Interne IDs werden ausschließlich vom Server automatisch vergeben; vorhandene IDs bleiben bei Bearbeitungen erhalten. Entfernen wird beim Speichern wirksam. Suche und Seiten mit jeweils 100 Zeilen erleichtern große Matrizen; gespeichert wird immer die gesamte Matrix. Die Oberfläche warnt vor ungespeicherten Änderungen.
+Admins und User öffnen über das Zahnrad **Alarmmatrix** (`/matrix`). Über **Werkzeuge anzeigen** Hinzufügen, Speichern und CSV-Funktionen einblenden. Die Suche und die rechts angeordnete Alarmanzahl bleiben immer sichtbar. Zeilen hinzufügen, alle Felder direkt in der Tabelle bearbeiten und **Matrix speichern** wählen. Interne IDs werden ausschließlich vom Server automatisch vergeben; vorhandene IDs bleiben bei Bearbeitungen erhalten. Entfernen wird beim Speichern wirksam. Suche und Seiten mit jeweils 100 Zeilen erleichtern große Matrizen; gespeichert wird immer die gesamte Matrix. Die Oberfläche warnt vor ungespeicherten Änderungen.
 
 **Beispiel-CSV herunterladen** liefert eine direkt importierbare Vorlage. **Gespeicherte Matrix als CSV** exportiert den aktuellen gespeicherten Stand. **CSV ergänzen** importiert zusätzliche Alarme mit neuen IDs. Vorhandene Gruppenadressen werden nicht überschrieben; doppelte Adressen oder ungültige Zeilen lehnen den gesamten Import ab. Erst manuelle Änderungen speichern oder verwerfen. Maximal 5000 Alarme und 2 MiB je Import. Eine parallel gespeicherte Änderung wird erkannt und muss vor dem erneuten Speichern geladen werden.
 
@@ -216,7 +216,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.11
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.12
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -226,8 +226,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.12.11
-git push origin v0.12.11
+git tag v0.12.12
+git push origin v0.12.12
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.

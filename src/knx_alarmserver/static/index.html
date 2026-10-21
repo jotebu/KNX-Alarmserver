@@ -75,15 +75,17 @@
 <table><thead><tr><th>Priorität</th><th>Bezeichnung</th><th>Aktion</th></tr></thead><tbody id="priorities-rows"></tbody></table>
 <p>Nummern von 1 bis 999. Bezeichnungen frei wählbar. Vor dem Entfernen oder Ändern einer bereits verwendeten Nummer die betroffenen Alarme auf eine andere Nummer umstellen.</p></section>
 <section id="matrix-panel" class="panel" hidden aria-labelledby="matrix-title">
-<h2 id="matrix-title">Alarmmatrix</h2>
+<div class="toolbar"><button id="matrix-tools-toggle" type="button" aria-expanded="false" aria-controls="matrix-tools">Werkzeuge anzeigen</button></div>
+<div id="matrix-tools" hidden><h2 id="matrix-title">Alarmmatrix</h2>
 <p>Jede Zeile definiert einen Alarm. Interne IDs werden automatisch vergeben. Änderungen gelten nach dem Speichern sofort, ohne KNX-Neustart. Bei Änderung von Adresse, DPT oder Regel beginnt die Auswertung mit unbekanntem Zustand; die Historie bleibt erhalten.</p>
 <div class="toolbar"><button id="matrix-add" type="button">Alarm hinzufügen</button><button id="matrix-save" type="button">Matrix speichern</button><button id="matrix-reload" type="button">Gespeicherten Stand laden</button><a href="/api/matrix/example.csv" download>Beispiel-CSV herunterladen</a><a href="/api/matrix/export.csv" download>Gespeicherte Matrix als CSV</a></div>
 <p>CSV: UTF-8, Semikolon als Trennzeichen, gleiche Spalten wie in der Tabelle, ohne ID. Import ergänzt neue Alarme; doppelte Gruppenadressen und ungültige Zeilen verhindern die gesamte Übernahme. Beispieladressen vor dem Import anpassen.</p>
 <form id="matrix-import-form"><div class="toolbar"><label>Alarmmatrix-CSV (max. 2 MiB)<input id="matrix-file" type="file" accept=".csv,text/csv" required></label><button id="matrix-import" type="submit">CSV ergänzen</button></div></form>
-<p id="matrix-feedback" role="status" aria-live="polite"></p><p id="matrix-count"></p>
-<div class="toolbar"><label>Suche<input id="matrix-search" type="search" placeholder="Name, ID, Bereich, Gruppenadresse"></label><button id="matrix-prev" type="button">Zurück</button><span id="matrix-page"></span><button id="matrix-next" type="button">Weiter</button></div>
+<p>Operatoren: eq = gleich, ne = ungleich, gt/ge = größer / größer gleich, lt/le = kleiner / kleiner gleich, between/outside = innerhalb / außerhalb, contains = Text enthält, in = Werteliste, monitor = nur anzeigen. Werte als JSON (z. B. true, 50, [20,80] oder &quot;Störung&quot;), Hysterese als Zahl mit Dezimalpunkt. DPT-Feld optional für strukturierte Werte (z. B. status.fault).</p></div>
+<p id="matrix-feedback" role="status" aria-live="polite"></p>
+<div class="toolbar matrix-list-toolbar"><label>Suche<input id="matrix-search" type="search" placeholder="Name, ID, Bereich, Gruppenadresse"></label><button id="matrix-prev" type="button">Zurück</button><span id="matrix-page"></span><button id="matrix-next" type="button">Weiter</button><span id="matrix-count" role="status" aria-live="polite"></span></div>
 <div class="table-scroll"><table class="matrix-table"><thead><tr><th>Interne ID</th><th>Name</th><th>Gruppenadresse</th><th>DPT</th><th>Operator</th><th>Grenzwert / Wert</th><th>Hysterese</th><th>DPT-Feld</th><th>Bereich</th><th>Priorität</th><th>Aktion</th></tr></thead><tbody id="matrix-rows"></tbody></table></div>
-<p>Operatoren: eq = gleich, ne = ungleich, gt/ge = größer / größer gleich, lt/le = kleiner / kleiner gleich, between/outside = innerhalb / außerhalb, contains = Text enthält, in = Werteliste, monitor = nur anzeigen. Werte als JSON (z. B. true, 50, [20,80] oder &quot;Störung&quot;), Hysterese als Zahl mit Dezimalpunkt. DPT-Feld optional für strukturierte Werte (z. B. status.fault).</p>
+
 </section>
 <section id="password-panel" class="panel narrow-panel" hidden aria-labelledby="password-title"><h2 id="password-title">Kennwort ändern</h2>
 <form id="password-form"><div class="knx-fields single-column">
