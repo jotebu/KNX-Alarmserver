@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.5 – 22.10.2026
+
+- Such- und Datumsfilter in Meldungen und Historie über „Filter anzeigen“ ein-/ausklappen; aktive Filter bleiben beim Einklappen wirksam und sind am Button erkennbar.
+- Tabellen innerhalb der verfügbaren Seitenhöhe scrollen, mit sichtbaren Spaltenüberschriften. Seitennavigation entfernen und alle passenden Meldungen zusammen anzeigen.
+- Historie auf die neuesten 500 Treffer beschränken; Suche und Datum filtern weiterhin den vollständigen gespeicherten Ereignisbestand vor der Begrenzung. Trefferzahl anzeigen.
+
 ## 0.12.4 – 22.10.2026
 
 - KNX-Statusabfrage aus der Meldungsliste auf die bestehende Admin-Seite Telegramme verschieben, einschließlich Verbindungsauswahl und Fortschritt.

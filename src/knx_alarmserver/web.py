@@ -249,7 +249,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
         return {"version": __version__, **identity(request, username), "knx": monitor.status(), "started_at": store.started_at}
 
     @app.get("/api/dashboard")
-    def dashboard(request: Request, view: str = "alarms", paged: bool = False,
+    def dashboard(request: Request, view: str = "alarms", paged: bool = False, list_mode: bool = False,
                   page: int = Query(1, ge=1), from_time: datetime | None = None,
                   until_time: datetime | None = None, search: str = Query('', max_length=200),
                   open_only: bool = False, username=Depends(user)):
@@ -258,7 +258,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
         result = {"status": {"version": __version__, **identity(request, username),
                              "knx": monitor.status(), "started_at": store.started_at},
                   "alarms": store.snapshot()}
-        if paged and view in {'alarms', 'history'}:
+        if (paged or list_mode) and view in {'alarms', 'history'}:
             from .listing import bounds, alarms_page
             try:
                 start, end = bounds(from_time, until_time)
@@ -269,11 +269,17 @@ def create_app(config, store, update_manager=None, version_checker=None):
                                 'acked': sum(row['status'] == 'active_ack' for row in rows),
                                 'pending': sum(row['status'] == 'clear_pending' for row in rows),
                                 'unknown': sum(row['quality'] != 'ok' for row in rows)}
-            listing = store.history_page(page, start, end, search) if view == 'history' else alarms_page(rows, page, start, end, search, open_only)
+            if list_mode:
+                listing = store.history_page(1, start, end, search, page_size=500) if view == 'history' else alarms_page(rows, 1, start, end, search, open_only, unlimited=True)
+            else:
+                listing = store.history_page(page, start, end, search) if view == 'history' else alarms_page(rows, page, start, end, search, open_only)
             result['alarms'] = listing['rows'] if view == 'alarms' else []
             if view == 'history':
                 result['history'] = listing['rows']
-            result['pagination'] = {key: value for key, value in listing.items() if key != 'rows'}
+            if list_mode:
+                result['list_info'] = {'total': listing['total'], 'shown': len(listing['rows']), 'limit': 500 if view == 'history' else None}
+            else:
+                result['pagination'] = {key: value for key, value in listing.items() if key != 'rows'}
         elif view == "history":
             result["history"] = store.history()
         elif view == "telegrams":

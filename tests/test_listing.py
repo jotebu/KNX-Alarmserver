@@ -54,6 +54,36 @@ class ListingTests(unittest.TestCase):
                 self.assertEqual(client.post('/api/knx/read',auth=auth,json={'mode':'all','connection':''},headers={'X-Alarmserver-Action':'read-knx'}).status_code,403)
         finally:store.close()
 
+    def test_scroll_lists_return_all_alarms_and_search_history_before_limit(self):
+        from fastapi.testclient import TestClient
+        from knx_alarmserver.web import create_app
+        alarms=[replace(ALARM,id=f'p{i}',name=f'Alarm {i}',group_address=f'{i//2048}/{i//256%8}/{i%256}') for i in range(601)]
+        store=Store(':memory:',alarms);store.create_user('reader','test-password-123','viewer')
+        try:
+            with store.transaction():
+                store._event(replace(ALARM,name='Alter Sondertreffer'),'active','2026-10-20T12:00:00+00:00')
+                for i in range(600):store._event(ALARM,'active','2026-10-21T12:00:00+00:00')
+            with TestClient(create_app({'knx':{'enabled':False}},store)) as client:
+                def get(view,extra=''):
+                    response=client.get('/api/dashboard?list_mode=true&view='+view+extra,auth=('reader','test-password-123'))
+                    self.assertEqual(response.status_code,200,response.text)
+                    return response.json()
+                result=get('alarms')
+                self.assertEqual(len(result['alarms']),601)
+                self.assertEqual(result['list_info'],{'total':601,'shown':601,'limit':None})
+                self.assertEqual(result['counts']['unknown'],601)
+                history=get('history')
+                self.assertEqual(len(history['history']),500)
+                self.assertEqual(history['list_info'],{'total':601,'shown':500,'limit':500})
+                self.assertNotIn('pagination',history)
+                found=get('history','&search=Sondertreffer')
+                self.assertEqual(len(found['history']),1)
+                self.assertEqual(found['history'][0]['alarm_name'],'Alter Sondertreffer')
+                dated=get('history','&until_time=2026-10-21T00:00:00Z')
+                self.assertEqual(dated['list_info']['total'],1)
+                self.assertEqual(len(get('alarms','&search=notfound')['alarms']),0)
+        finally:store.close()
+
     def test_read_api_roles_headers_and_reported_start(self):
         from fastapi.testclient import TestClient
         from unittest.mock import patch

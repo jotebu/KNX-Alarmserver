@@ -254,7 +254,7 @@ class Store:
         with self.lock:
             return [dict(r) for r in self.db.execute("SELECT * FROM events ORDER BY seq DESC LIMIT ?", (min(max(limit, 1), 1000),))]
 
-    def history_page(self, page=1, start=None, end=None, query=''):
+    def history_page(self, page=1, start=None, end=None, query='', page_size=200):
         from .listing import PAGE_SIZE, page_info
         clauses, args = [], []
         if start:
@@ -268,9 +268,9 @@ class Store:
         where = ' WHERE ' + ' AND '.join(clauses) if clauses else ''
         with self.lock:
             total = self.db.execute('SELECT count(*) FROM events' + where, args).fetchone()[0]
-            info = page_info(total, page)
+            info = page_info(total, page, page_size)
             rows = self.db.execute('SELECT * FROM events' + where + ' ORDER BY seq DESC LIMIT ? OFFSET ?',
-                                   [*args, PAGE_SIZE, (info['page'] - 1) * PAGE_SIZE]).fetchall()
+                                   [*args, page_size, (info['page'] - 1) * page_size]).fetchall()
         return {'rows': [dict(row) for row in rows], **info}
 
     def prune(self):

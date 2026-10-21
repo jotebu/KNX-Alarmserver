@@ -9,21 +9,20 @@ function setup(){
  vm.runInContext(source.slice(source.indexOf('let searchTimer='),source.indexOf("document.addEventListener('visibilitychange'")),ctx);
  return {get,ctx,errors,calls:()=>calls};
 }
-test('date range includes the full local end day and filter changes return to page one',()=>{
+test('date range includes the full local end day and filters search the full list',()=>{
  const s=setup();s.get('date-from').value='2026-10-21';s.get('date-until').value='2026-10-21';s.get('search').value='Pumpe';
- vm.runInContext('listPages.alarms=3;listPages.history=4;applyListFilters()',s.ctx);
+ vm.runInContext('applyListFilters()',s.ctx);
  assert.equal(vm.runInContext('listFilters.from',s.ctx),'2026-10-20T22:00:00.000Z');
  assert.equal(vm.runInContext('listFilters.until',s.ctx),'2026-10-21T22:00:00.000Z');
- assert.equal(vm.runInContext('listPages.history',s.ctx),1);assert.equal(s.calls(),1);
- const query=vm.runInContext("listQuery('alarms')",s.ctx);assert.match(query,/paged=true&page=1&search=Pumpe/);
+ assert.equal(s.calls(),1);
+ const query=vm.runInContext("listQuery('alarms')",s.ctx);assert.match(query,/list_mode=true&search=Pumpe/);
  s.get('date-from').value='2026-10-22';vm.runInContext('applyListFilters()',s.ctx);
  assert.equal(s.calls(),1);assert.match(s.errors[0],/Von/);
 });
-test('page navigation is bounded and resetting filters clears dates',()=>{
- const s=setup();vm.runInContext('listing={pages:3};goToPage(2)',s.ctx);
- assert.equal(vm.runInContext('listPages.alarms',s.ctx),2);
- vm.runInContext('goToPage(99)',s.ctx);assert.equal(vm.runInContext('listPages.alarms',s.ctx),3);
+test('filters start collapsed, toggle without requests and reset clears dates',()=>{
+ const s=setup();assert.equal(vm.runInContext('filtersOpen',s.ctx),false);
+ s.get('filter-toggle').onclick();assert.equal(vm.runInContext('filtersOpen',s.ctx),true);assert.equal(s.calls(),0);
+ s.get('filter-toggle').onclick();assert.equal(vm.runInContext('filtersOpen',s.ctx),false);
  s.get('date-from').value='2026-10-21';s.get('date-until').value='2026-10-22';s.get('date-clear').onclick();
- assert.equal(s.get('date-from').value,'');assert.equal(s.get('date-until').value,'');
- assert.equal(vm.runInContext('listPages.alarms',s.ctx),1);
+ assert.equal(s.get('date-from').value,'');assert.equal(s.get('date-until').value,'');assert.equal(s.calls(),1);
 });

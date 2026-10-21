@@ -15,7 +15,7 @@ async function setup(role,knx={enabled:false,ready:false,connections:[]},page='/
  const schedule=source.slice(source.indexOf('let pollTimer='),source.indexOf('function failure('));
  const render=source.slice(source.indexOf('function render(){'),source.indexOf('let settingsOpen='));
  const access=source.slice(source.indexOf('function applyAccess(){'),source.indexOf('async function initializePage(){'));
- vm.runInContext(prefix+schedule+'\nlet settingsOpen=false;function failure(){}function renderReadStatus(){}async function api(){return snapshot;}async function initializePage(){}\n'+render+access,context);
+ vm.runInContext(prefix+schedule+'\nlet settingsOpen=false,filtersOpen=false;function failure(){}function renderReadStatus(){}async function api(){return snapshot;}async function initializePage(){}\n'+render+access,context);
  await vm.runInContext('refresh()',context);
  return {nodes,context,redirects};
 }

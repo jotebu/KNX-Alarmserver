@@ -1,17 +1,21 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.4, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.5, Inbetriebnahmeversion.
+
+## Scrollbare Listen und Filter
+
+- Alle 601 Meldungen in einer Antwort; Historie auf 500 begrenzt, gezielter Suchtreffer und Datumsfilter außerhalb der neuesten 500 nachgewiesen. Zähler unabhängig von Filtern, alte paginierte API weiterhin kompatibel. Filter zunächst eingeklappt und ohne neue Abfrage umschaltbar.
 
 ## Meldungstabelle
 
 - KNX-Leseabfrage ausschließlich auf der Admin-Seite Telegramme anzeigen; Meldungsliste enthält keine Abfrage-Steuerung mehr.
 
-- Regel in der Meldungszelle unter Bereich/Priorität, Überschrift Zeitstempel und auf die Meldungsansicht begrenzte Spaltenausrichtung umgesetzt. 19 JavaScript-Prüfungen sowie DOM-Prüfung für drei Rollen und Seitennavigation erfolgreich. Visuelle Abnahme auf dem Raspberry steht aus.
+- Regel in der Meldungszelle unter Bereich/Priorität, Überschrift Zeitstempel und auf die Meldungsansicht begrenzte Spaltenausrichtung umgesetzt. 19 JavaScript-Prüfungen sowie DOM-Prüfung für drei Rollen, alle 601 Meldungen, 500 Historienzeilen und Filterumschaltung erfolgreich. Visuelle Abnahme auf dem Raspberry steht aus.
 
-## Seiten, Datumsfilter und KNX-Leseabfrage
+## Datumsfilter, kompatible Seiten-API und KNX-Leseabfrage
 
 - 501 Historienereignisse über drei Seiten vollständig und ohne Überschneidungen, Grenzen 201–400, Tagesfilter, leere Suche und Seitenbegrenzung geprüft. 466 Meldungen mit 200/200/66 Einträgen und Filter auf den letzten Empfang geprüft.
-- Gesamte Zähler trotz Seitenfilter, lokale Tagesgrenzen einschließlich Endtag, Zurücksetzen auf Seite 1 und direkte Seitenwahl geprüft. DOM-Prüfung mit 200 Tabellenzeilen, Seitennavigation, Datumsfilter und drei Rollen erfolgreich.
+- Gesamte Zähler trotz Seitenfilter, lokale Tagesgrenzen einschließlich Endtag, Zurücksetzen auf Seite 1 und direkte Seitenwahl geprüft. Die frühere Seiten-API bleibt kompatibel; die Oberfläche verwendet die neue Listenansicht.
 - Leseabfrage mit echten GroupValueRead-Telegrammobjekten und simulierter Übertragung geprüft: keine Schreibtelegramme, kein erfundener Zustand, nur gültige Antworten zählen, Sperre paralleler Abfragen, Verbindungsauswahl und Abbruch beim Stoppen. API-Rechte für Admin/User/Viewer und Aktionsheader geprüft.
 - KNX-Abfrage auf dem realen Raspberry/Bus und visuelle Browserabnahme stehen aus; Antworten hängen von ETS-Flags und der Gerätetopologie ab.
 
@@ -21,7 +25,7 @@ Stand: 22.10.2026. Projektversion 0.12.4, Inbetriebnahmeversion.
 
 ## Alarmmatrix im Dashboard
 
-- Gesamter Prüfstand: 109 Python-Tests und 19 Dashboard-Tests erfolgreich.
+- Gesamter Prüfstand: 110 Python-Tests und 19 Dashboard-Tests erfolgreich.
 
 - Gemeinsame Validierung für Tabellenzeilen und CSV, automatische IDs, sofortige Auswertung, Neustart-Persistenz, Bearbeitung mit Zustandserhalt bzw. gezieltem Reset, unveränderte Historie und Datenbankfehler mit Rücknahme geprüft.
 - API-Prüfungen für Admin/User/Viewer, fremde Herkunft, fehlenden Aktionsheader, parallele Revisionen, CSV-Vorlage und abgelehnten Doppelimport.

@@ -6,10 +6,10 @@ const managementPages=['/knx','/ets','/users','/priorities'];
 let pageInitialized=false, newerVersionKnown=false, checkingVersionStatus=false;
 let access = {role:null,configure:false,acknowledge:false};
 let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
-let listPages={alarms:1,history:1}, listing=null, listGeneration=0;
+let listing=null, listGeneration=0;
 let listFilters={search:'',openOnly:true,from:'',until:''};
 function listQuery(selected){
-  let query='&paged=true&page='+listPages[selected]+'&search='+encodeURIComponent(listFilters.search)+'&open_only='+listFilters.openOnly;
+  let query='&list_mode=true&search='+encodeURIComponent(listFilters.search)+'&open_only='+listFilters.openOnly;
   if(listFilters.from)query+='&from_time='+encodeURIComponent(listFilters.from);
   if(listFilters.until)query+='&until_time='+encodeURIComponent(listFilters.until);
   return query;
@@ -40,14 +40,15 @@ function failure(error) {$('error').hidden=false;$('error').textContent=`Keine a
 function render(){
   if(settingsOpen)return;
   $('filter-wrap').hidden=view!=='alarms';
-  const paged=view!=='telegrams';
-  $('date-filters').hidden=!paged;$('list-pagination').hidden=!paged;
-  $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: letzter Empfang; ohne Empfangszeit nicht im Datumsfilter enthalten';
-  if(paged&&listing){
-    $('list-prev').disabled=listing.page<=1;$('list-next').disabled=listing.page>=listing.pages;
-    $('list-page-number').value=listing.page;$('list-page-number').max=listing.pages;
-    $('list-page').textContent=`Einträge ${listing.first}–${listing.last} von ${listing.total} · Seite ${listing.page} / ${listing.pages}`;
-  }
+  const filterable=view!=='telegrams';
+  $('filter-toggle').hidden=!filterable;
+  $('list-filters').hidden=filterable&&!filtersOpen;
+  $('date-filters').hidden=!filterable;
+  $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: Zeitstempel; ohne Empfangszeit nicht im Datumsfilter enthalten';
+  const active=Boolean(listFilters.search||listFilters.from||listFilters.until||!listFilters.openOnly);
+  $('filter-toggle').textContent=(filtersOpen?'Filter ausblenden':'Filter anzeigen')+(active?' · aktiv':'');
+  $('filter-toggle').setAttribute('aria-expanded',String(filtersOpen));
+  $('list-summary').textContent=listing?(view==='history'?`${listing.shown} von ${listing.total} Treffern · höchstens 500 neueste Einträge`:`${listing.total} Meldungen`):'';
   const titles={alarms:'Meldungen',history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
   const heads={alarms:['Status','Meldung / Bereich','Wert / Regel','Zeitstempel','Quittierung'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
@@ -78,7 +79,7 @@ function render(){
   }
   $('table-body').replaceChildren(body);$('empty').hidden=rows.length>0;
   $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. Admins und User können Alarme im Bereich Alarmmatrix einrichten.':'Keine passenden Einträge.';
-  $('hint').textContent={alarms:'Nach einem Neustart bleiben gespeicherte Zustände als alte Werte gekennzeichnet, bis ein neues Telegramm eintrifft. „Normal“ bedeutet zuletzt empfangener Normalwert; es ist keine zyklische Erreichbarkeitsprüfung.',history:'Alle gespeicherten Ereignisse, 200 je Seite. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
+  $('hint').textContent={alarms:'Nach einem Neustart bleiben gespeicherte Zustände als alte Werte gekennzeichnet, bis ein neues Telegramm eintrifft. „Normal“ bedeutet zuletzt empfangener Normalwert; es ist keine zyklische Erreichbarkeitsprüfung.',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
 }
 async function refresh(){
   if(busy)return;
@@ -88,8 +89,7 @@ async function refresh(){
     const requestedView=settingsOpen?'alarms':view;
     const snapshot=await api('/api/dashboard?view='+encodeURIComponent(requestedView)+(!settingsOpen&&requestedView!=='telegrams'?listQuery(requestedView):''));
     if(generation!==listGeneration)return;
-    listing=snapshot.pagination||null;
-    if(listing)listPages[requestedView]=listing.page;
+    listing=snapshot.list_info||null;
     const status=snapshot.status;
     access={role:status.role,matrix:['admin','user'].includes(status.role),...status.permissions};
     applyAccess();
@@ -385,6 +385,7 @@ function layoutPage(){
     '/users':['Benutzerverwaltung','Benutzerkonten, Kennwörter und Zugriffsrechte verwalten.'],
     '/account/password':['Kennwort ändern','Dein persönliches Kennwort aktualisieren.'],
     '/versions':['Versionshistorie','Änderungen, Softwarestand und verfügbare Updates.']};
+  document.body.classList.toggle('scroll-list-page',!settingsOpen);
   const separate=page!=='/';
   $('counters').hidden=separate;$('main-nav').hidden=separate;$('back-dashboard').hidden=!separate;
   if(names[page]){$('page-title').textContent=names[page][0];$('page-description').textContent=names[page][1];document.title=names[page][0]+' · KNX Alarmserver';}
@@ -545,7 +546,8 @@ document.addEventListener('click',event=>{for(const menu of menus)if(!menu.conta
 document.addEventListener('keydown',event=>{if(event.key==='Escape')for(const menu of menus)menu.open=false;});
 layoutPage();
 if(page!=='/versions')checkVersion();
-let searchTimer=null;
+let searchTimer=null, filtersOpen=false;
+$('filter-toggle').onclick=()=>{filtersOpen=!filtersOpen;render();};
 function applyListFilters(){
   try{
     const from=$('date-from').value,until=$('date-until').value;
@@ -553,15 +555,12 @@ function applyListFilters(){
     const after=until?new Date(until+'T00:00:00'):null;if(after)after.setDate(after.getDate()+1);
     listFilters={search:$('search').value,openOnly:$('open-only').checked,
       from:from?new Date(from+'T00:00:00').toISOString():'',until:after?after.toISOString():''};
-    listPages.alarms=listPages.history=1;listGeneration++;refresh();
+    listGeneration++;refresh();
   }catch(error){failure(error);}
 }
 $('search').oninput=()=>{if(view==='telegrams')render();else{clearTimeout(searchTimer);searchTimer=setTimeout(applyListFilters,300);}};
 $('open-only').onchange=applyListFilters;$('date-apply').onclick=applyListFilters;
 $('date-clear').onclick=()=>{$('date-from').value='';$('date-until').value='';$('search').value='';$('open-only').checked=true;applyListFilters();};
-function goToPage(value){if(!listing)return;listPages[view]=Math.max(1,Math.min(listing.pages,Math.trunc(value)||1));listGeneration++;refresh();}
-$('list-prev').onclick=()=>goToPage(listPages[view]-1);$('list-next').onclick=()=>goToPage(listPages[view]+1);
-$('list-go').onclick=()=>goToPage(Number($('list-page-number').value));
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
 refresh();
 

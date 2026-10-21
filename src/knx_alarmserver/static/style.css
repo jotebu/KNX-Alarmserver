@@ -17,7 +17,16 @@
 
 .matrix-table input{min-width:140px;width:100%;font:inherit}.matrix-table select{min-width:110px;font:inherit}.matrix-table th:first-child{min-width:130px}.matrix-table input[aria-label^="name"]{min-width:230px}#matrix-feedback{min-height:24px;color:#ffcf8a}#matrix-panel .toolbar a{color:#65dbc1;font-size:13px}
 
-#list-page-number{max-width:90px}#knx-read-feedback{color:#b7c7db;font-size:13px}
+#knx-read-feedback{color:#b7c7db;font-size:13px}
 
 /* Meldung und Bereich erhalten den freien Platz; kompakte Details rechts. */
 .alarm-list-table{min-width:900px}.alarm-list-table th:first-child,.alarm-list-table td:first-child{width:1%;min-width:150px}.alarm-list-table th:nth-child(2),.alarm-list-table td:nth-child(2){width:100%;min-width:260px;overflow-wrap:anywhere}.alarm-list-table th:nth-child(n+3),.alarm-list-table td:nth-child(n+3){width:1%;text-align:right;white-space:nowrap}
+
+[hidden]{display:none!important}
+body.scroll-list-page{height:100dvh;overflow:hidden}
+.scroll-list-page main{height:calc(100dvh - var(--header-height));width:100%;display:flex;flex-direction:column;min-height:0;padding-top:20px;padding-bottom:16px}
+.scroll-list-page .heading{flex-shrink:0;margin-bottom:12px}.scroll-list-page .heading h1{font-size:27px}.scroll-list-page .heading p{margin:4px 0}.scroll-list-page .cards{flex-shrink:0}.scroll-list-page .cards article{padding:12px 18px}.scroll-list-page .cards strong{font-size:28px;margin-top:5px}.scroll-list-page nav{flex-shrink:0}
+.scroll-list-page #data-panel{display:flex;flex-direction:column;flex:1;min-height:0;margin-top:12px;padding:12px 18px}.scroll-list-page #data-panel>.toolbar{flex-shrink:0;gap:12px}.scroll-list-page #data-panel h2{margin:4px auto 4px 0}
+.scroll-list-page #list-filters{flex-shrink:0;max-height:30dvh;overflow:auto;padding:8px 0}.scroll-list-page #list-summary{font-size:11px}.scroll-list-page #data-panel>.table-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;margin-top:8px}
+.scroll-list-page #message-table{margin-top:0}.scroll-list-page #message-table th{position:sticky;top:0;z-index:1;background:#111e2e}.scroll-list-page #hint{margin:8px 0 0;flex-shrink:0}.scroll-list-page #empty{padding:10px}
+@media(max-height:600px){.scroll-list-page .heading{display:none}.scroll-list-page .cards article{padding:6px 10px}.scroll-list-page .cards strong{font-size:22px}.scroll-list-page #hint{display:none}}
