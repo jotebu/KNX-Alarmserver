@@ -53,6 +53,7 @@ class Store:
                 CREATE INDEX IF NOT EXISTS events_time ON events(timestamp);
                 CREATE TABLE IF NOT EXISTS users (
                     username TEXT PRIMARY KEY, salt TEXT NOT NULL, password_hash TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS settings (name TEXT PRIMARY KEY, value TEXT NOT NULL);
                 PRAGMA user_version=1;
             """)
             for alarm in alarms:
@@ -172,3 +173,16 @@ class Store:
     def backup(self, path):
         with self.lock, closing(sqlite3.connect(path)) as target:
             self.db.backup(target)
+
+
+    def knx_settings(self, fallback):
+        with self.lock:
+            row = self.db.execute("SELECT value FROM settings WHERE name='knx'").fetchone()
+        value = json.loads(row["value"]) if row else json.loads(json.dumps(fallback))
+        revision = hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+        return {"config": value, "revision": revision, "source": "dashboard" if row else "toml"}
+
+    def save_knx_settings(self, config):
+        with self.transaction():
+            self.db.execute("INSERT OR REPLACE INTO settings(name,value) VALUES ('knx',?)",
+                            (json.dumps(config, ensure_ascii=False),))

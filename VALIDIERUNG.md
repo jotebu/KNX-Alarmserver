@@ -1,28 +1,29 @@
-# Prüfstand 0.10.02
+# Prüfstand
 
-Stand: 21.10.2026. Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.03, weiterhin Inbetriebnahmeversion.
 
-## Für 0.10.02 ausgeführt
+## Für die KNX-Verbindungsverwaltung geprüft
 
-- Python 3.12: 35 Tests, davon 22 erfolgreich und 13 wegen fehlender Web-/KNX-Abhängigkeiten übersprungen.
-- LAN-Umstellung mit bestehender Konfiguration geprüft: andere Einstellungen, Dateirechte und einleitende Kommentare bleiben erhalten; wiederholte Anwendung funktioniert.
-- Konfigurationslader: LAN-Vorgabe und ausdrücklich gesetztes Loopback geprüft.
-- Ungültige Eingaben bleiben unverändert.
-- Bash-Syntaxprüfung für Installer und Update erfolgreich.
+- Python 3.12 mit FastAPI 0.143.0, Uvicorn 0.53.0, xknx 4.0.0 und HTTPX 0.28.1: 41 Tests erfolgreich, keine übersprungen.
+- Echte xknx-Decoder und Konstruktoren, Alarmregeln, SQLite-Zustände und HTTP-Endpunkte geprüft.
+- Verbindungen hinzufügen, bearbeiten und löschen, Speicherung über erneuten App-Start sowie Aufnahme ins SQLite-Backup geprüft.
+- Authentifizierung, Aktionsheader, Cross-Site-Abweisung, Größenlimit, Eingabevalidierung und Konflikte bei veralteten Revisionen geprüft.
+- Neuaufbau der Monitor-Verbindungen und Überspringen deaktivierter Verbindungen ohne reale Router-Sockets getestet.
+- Simulierter Datenbankschreibfehler: bisherige Einstellungen und Monitor werden beibehalten beziehungsweise wieder aktiviert.
+- Dashboard mit DOM-Simulation geprüft: Navigation, Hinzufügen, Bearbeiten, Wechsel zu Routing, Löschen und übertragene Formulardaten.
+- JavaScript- und Shellsyntax geprüft.
 
 ## Auf dem Raspberry bestätigt
 
-- Anwender hat Installation und Webstart von 0.10.01 bestätigt.
-- systemd-Dienst aktiv, Health-Endpunkt liefert HTTP 200 und Version 0.10.01.
-- Zabbix, PostgreSQL und PHP wurden im Zuge des Umbaus entfernt; SSH, nginx, ntfy und Statusdisplay laufen.
-- Update auf 0.10.02 und LAN-Zugriff sind anschließend auf dem Raspberry zu prüfen.
+- Installation und lokaler Webstart von 0.10.01 sowie direkter Zugriff nach dem LAN-Umbau bestätigt.
+- Zabbix, PostgreSQL und PHP entfernt; SSH, nginx, ntfy und Statusdisplay laufen.
 
 ## Noch offen
 
-- Vollständige Web-/xknx-Tests mit installierten Abhängigkeiten; GitHub-CI-Ergebnis separat prüfen.
-- Echter KNX/IP-Empfang am MDT-Router und Abnahme der Alarmmatrix.
+- Visuelle Abnahme der neuen Einstellungen im echten Browser, einschließlich mobiler Ansicht.
+- Update auf die neue Version und persistente Verbindungsverwaltung auf Raspberry Pi OS prüfen.
+- Echter KNX/IP-Empfang am MDT-Router, Wiederverbindung und Abnahme der Alarmmatrix.
 - Update-Rückwechsel auf Raspberry Pi OS testen.
-- Weboberfläche im Browser und auf mobilen Geräten abnehmen.
-- Bestehendes NAS-Backup an SQLite, neue Verzeichnisse und weiterhin genutzte Dienste anpassen. Alter Backup-Timer bleibt bis dahin deaktiviert.
+- NAS-Backup an SQLite, neue Verzeichnisse und weiterhin genutzte Dienste anpassen. Alter Backup-Timer bleibt bis dahin deaktiviert.
 
 Das Changelog steht in [CHANGELOG.md](CHANGELOG.md).

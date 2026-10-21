@@ -69,7 +69,7 @@ class Monitor:
             self.connections[name]["changed_at"] = now()
 
         kind = ConnectionType.ROUTING if item.get("type", "tunneling") == "routing" else ConnectionType.TUNNELING
-        kwargs = {k: v for k, v in item.items() if k not in {"name", "type"}}
+        kwargs = {k: v for k, v in item.items() if k not in {"name", "type", "enabled"}}
         while True:
             xknx = XKNX(connection_config=ConnectionConfig(connection_type=kind, **kwargs),
                         telegram_received_cb=lambda telegram: self.received(telegram, name),
@@ -99,6 +99,8 @@ class Monitor:
         if not self.config.get("enabled", False):
             return
         for item in self.config["connections"]:
+            if not item.get("enabled", True):
+                continue
             self.connections[item["name"]] = {"name": item["name"], "state": "CONNECTING", "last_received": None, "error": None}
             self.tasks.append(asyncio.create_task(self._run_connection(item)))
 
@@ -106,3 +108,6 @@ class Monitor:
         for task in self.tasks:
             task.cancel()
         await asyncio.gather(*self.tasks, return_exceptions=True)
+        self.tasks.clear()
+        self.connections.clear()
+

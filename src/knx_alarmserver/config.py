@@ -1,6 +1,7 @@
 """Strict configuration and alarm matrix loading; no guessed group addresses."""
 
 import csv
+import ipaddress
 from dataclasses import dataclass
 from pathlib import Path
 import re
@@ -81,17 +82,32 @@ def load_config(path):
     server.setdefault("retention_days", 365)
     if not 1 <= server["port"] <= 65535 or not 1 <= server["retention_days"] <= 3650:
         raise ValueError("Port oder Aufbewahrungsdauer ungueltig")
-    knx = config.setdefault("knx", {})
+    validate_knx(config.setdefault("knx", {}))
+    return config
+
+
+
+def validate_knx(knx):
+    if not isinstance(knx, dict):
+        raise ValueError("KNX-Konfiguration muss ein Objekt sein")
     if set(knx) - {"enabled", "connections"}:
         raise ValueError("Unbekannte knx-Option")
     knx.setdefault("enabled", False)
+    if type(knx["enabled"]) is not bool:
+        raise ValueError("enabled muss Boolean sein")
     connections = knx.setdefault("connections", [])
+    if not isinstance(connections, list) or len(connections) > 32:
+        raise ValueError("Maximal 32 KNX-Verbindungen")
     names = set()
     for connection in connections:
-        if set(connection) - {"name", "type", "gateway_ip", "gateway_port", "local_ip", "individual_address", "multicast_group"}:
+        if not isinstance(connection, dict):
+            raise ValueError("Ungueltige KNX-Verbindung")
+        if type(connection.get("enabled", True)) is not bool:
+            raise ValueError("Verbindungsaktivierung muss Boolean sein")
+        if set(connection) - {"name", "type", "gateway_ip", "gateway_port", "local_ip", "individual_address", "multicast_group", "enabled"}:
             raise ValueError("Unbekannte KNX-Verbindungsoption")
         name = connection.get("name", "")
-        if not name or name in names:
+        if not isinstance(name, str) or not name.strip() or len(name) > 64 or name in names:
             raise ValueError("KNX-Verbindungsnamen muessen eindeutig sein")
         names.add(name)
         kind = connection.get("type", "tunneling")
@@ -101,6 +117,28 @@ def load_config(path):
             raise ValueError("gateway_ip fehlt")
         if kind == "routing" and not connection.get("individual_address"):
             raise ValueError("Routing benoetigt eine in ETS abgestimmte individual_address")
-    if knx["enabled"] and not connections:
-        raise ValueError("KNX aktiviert, aber keine Verbindung konfiguriert")
-    return config
+        for key in ("gateway_ip", "local_ip", "multicast_group"):
+            if key in connection:
+                try:
+                    if not isinstance(connection[key], str):
+                        raise ValueError("IPv4-Adresse als Text angeben")
+                    address = ipaddress.IPv4Address(connection[key])
+                except (ValueError, TypeError, ipaddress.AddressValueError) as error:
+                    raise ValueError(f"{key}: gueltige IPv4-Adresse erforderlich") from error
+                if key == "multicast_group" and not address.is_multicast:
+                    raise ValueError("Multicast-Adresse erforderlich")
+                if key in {"gateway_ip", "local_ip"} and (address.is_multicast or address.is_unspecified or int(address) == 0xffffffff):
+                    raise ValueError(f"{key}: Unicast-Adresse erforderlich")
+        port = connection.get("gateway_port", 3671)
+        if type(port) is not int or not 1 <= port <= 65535:
+            raise ValueError("gateway_port muss zwischen 1 und 65535 liegen")
+        if "individual_address" in connection:
+            value = connection["individual_address"]
+            if not isinstance(value, str) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", value):
+                raise ValueError("individual_address als Bereich.Linie.Teilnehmer angeben")
+            a, b, c = map(int, value.split("."))
+            if not (0 <= a <= 15 and 0 <= b <= 15 and 0 <= c <= 255):
+                raise ValueError("Physikalische Adresse ausserhalb KNX-Bereich")
+    if knx["enabled"] and not any(c.get("enabled", True) for c in connections):
+        raise ValueError("KNX aktiviert, aber keine aktive Verbindung konfiguriert")
+    return knx

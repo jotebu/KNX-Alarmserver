@@ -1,6 +1,9 @@
 """Authenticated API and German local dashboard. Single uvicorn worker only."""
 
 import asyncio
+import copy
+import json
+import logging
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
@@ -10,12 +13,16 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from . import __version__
 from .knx import Monitor
+from .config import validate_knx
 
 STATIC = Path(__file__).parent / "static"
 
 
 def create_app(config, store):
-    monitor = Monitor(config["knx"], store)
+    initial = store.knx_settings(config["knx"])["config"]
+    validate_knx(initial)
+    monitor = Monitor(initial, store)
+    settings_lock = asyncio.Lock()
 
     async def housekeeping():
         while True:
@@ -86,6 +93,48 @@ def create_app(config, store):
         from .dpt import catalog
         return catalog()
 
+    @app.get("/api/knx/config")
+    def knx_config(username=Depends(user)):
+        return store.knx_settings(config["knx"])
+
+    @app.put("/api/knx/config")
+    async def save_knx_config(request: Request, username=Depends(user)):
+        nonlocal monitor
+        if request.headers.get("X-Alarmserver-Action") != "configure-knx" or request.headers.get("Sec-Fetch-Site") == "cross-site":
+            raise HTTPException(status_code=403, detail="Aktionsheader fehlt oder fremde Herkunft")
+        try:
+            raw = bytearray()
+            async for chunk in request.stream():
+                raw.extend(chunk)
+                if len(raw) > 65536:
+                    raise HTTPException(status_code=413, detail="Konfiguration zu gross")
+            payload = json.loads(raw)
+            if not isinstance(payload, dict) or set(payload) != {"config", "revision"}:
+                raise ValueError("config und revision erforderlich")
+            proposed = copy.deepcopy(payload["config"])
+            validate_knx(proposed)
+        except (ValueError, TypeError, KeyError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        async with settings_lock:
+            current = store.knx_settings(config["knx"])
+            if payload["revision"] != current["revision"]:
+                raise HTTPException(status_code=409, detail="Konfiguration inzwischen geaendert. Neu laden und erneut bearbeiten.")
+            previous = monitor
+            replacement = Monitor(proposed, store)
+            await previous.stop()
+            try:
+                await replacement.start()
+                store.save_knx_settings(proposed)
+            except Exception:
+                await replacement.stop()
+                await previous.start()
+                logging.getLogger(__name__).exception("KNX-Konfiguration konnte nicht uebernommen werden")
+                raise HTTPException(status_code=500, detail="Speichern fehlgeschlagen; bisherige Konfiguration wieder aktiviert") from None
+            monitor = replacement
+            app.state.monitor = monitor
+            logging.getLogger(__name__).info("KNX-Konfiguration durch %s aktualisiert", username)
+            return store.knx_settings(config["knx"])
+
     @app.post("/api/alarms/{alarm_id}/acknowledge")
     def acknowledge(alarm_id: str, request: Request, username=Depends(user)):
         # A foreign HTML form cannot set this header. CORS is deliberately disabled.
@@ -109,3 +158,4 @@ def create_app(config, store):
         return FileResponse(STATIC / filename)
 
     return app
+

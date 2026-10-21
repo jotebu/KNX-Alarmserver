@@ -10,11 +10,13 @@ retention_days = 365
 # Erst nach Abgleich von ETS, Router und Alarmmatrix aktivieren.
 enabled = false
 
-[[knx.connections]]
-name = "Hauptlinie"
-type = "tunneling"
-gateway_ip = "192.0.2.30" # Dokumentationsadresse: durch echte MDT-IP ersetzen
-gateway_port = 3671
+# Verbindungen im Dashboard unter KNX-Verbindungen anlegen.
+# Alternative manuelle Beispielkonfiguration:
+# [[knx.connections]]
+# name = "Hauptlinie"
+# type = "tunneling"
+# gateway_ip = "192.0.2.30" # Durch echte Router-IP ersetzen
+# gateway_port = 3671
 # local_ip = "192.0.2.50" # Pi-IP bei mehreren Netzwerkschnittstellen
 
 # Weitere Tunnel nur, wenn die Hauptlinie nicht alle Alarmadressen liefert.
@@ -30,3 +32,4 @@ gateway_port = 3671
 # local_ip = "192.0.2.50"
 # individual_address = "1.0.250" # Freie Adresse vorher mit ETS abstimmen
 # multicast_group = "224.0.23.12"
+

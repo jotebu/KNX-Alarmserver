@@ -6,11 +6,12 @@ const date = value => value ? new Date(value).toLocaleString('de-DE') : '—';
 const text = (tag, value, cls) => {const node=document.createElement(tag);node.textContent=value;if(cls)node.className=cls;return node;};
 async function api(path, options={}) {
   const response=await fetch(path,{...options,cache:'no-store',credentials:'same-origin'});
-  if(!response.ok) throw new Error(response.status===401?'Anmeldung abgelaufen. Seite neu laden.':`Anfrage fehlgeschlagen (${response.status})`);
+  if(!response.ok){let message;try{message=(await response.json()).detail;}catch{}throw new Error(response.status===401?'Anmeldung erforderlich. Seite neu laden.':message||`Anfrage fehlgeschlagen (${response.status})`);}
   return response.json();
 }
 function failure(error) {$('error').hidden=false;$('error').textContent=`Keine aktuellen Daten: ${error.message}. Die angezeigten Werte können veraltet sein.`;}
 function render(){
+  if(settingsOpen)return;
   $('filter-wrap').hidden=view!=='alarms';
   const titles={alarms:'Meldungen',history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
@@ -61,6 +62,66 @@ async function refresh(){
     $('clock').textContent='Aktualisiert: '+new Date().toLocaleTimeString('de-DE');$('error').hidden=true;render();
   }catch(error){failure(error);}finally{busy=false;}
 }
-document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
+let settingsOpen=false, knxConfig=null, knxRevision=null, editingConnection=null, savingKnx=false;
+function knxFeedback(message){$('knx-feedback').textContent=message;}
+function renderKnx(){
+  $('knx-enabled').checked=knxConfig.enabled;
+  const list=document.createDocumentFragment();
+  if(!knxConfig.connections.length)list.append(text('p','Noch keine Verbindung eingerichtet. Klicke auf „Verbindung hinzufügen“.'));
+  for(const [index, connection] of knxConfig.connections.entries()){
+    const row=document.createElement('article');row.className='knx-connection';
+    row.append(text('strong',connection.name));
+    row.append(text('p',`${connection.type==='routing'?'Routing':'Tunneling'} · ${connection.gateway_ip||connection.multicast_group||'224.0.23.12'} · ${connection.enabled===false?'Deaktiviert':'Aktiv'}`));
+    const edit=text('button','Bearbeiten');edit.type='button';edit.onclick=()=>openKnxForm(index);
+    const remove=text('button','Löschen');remove.type='button';remove.onclick=async()=>{
+      if(!confirm(`Verbindung „${connection.name}“ löschen?`))return;
+      const next=structuredClone(knxConfig);next.connections.splice(index,1);
+      if(!next.connections.some(c=>c.enabled!==false))next.enabled=false;
+      await saveKnx(next);
+    };
+    row.append(edit,remove);list.append(row);
+  }
+  $('knx-list').replaceChildren(list);
+}
+async function loadKnx(){
+  try{const result=await api('/api/knx/config');knxConfig=result.config;knxRevision=result.revision;renderKnx();$('knx-form').hidden=true;knxFeedback('Konfiguration geladen.');}
+  catch(error){knxFeedback(error.message);}
+}
+function switchKnxType(){const routing=$('knx-type').value==='routing';$('knx-routing-fields').hidden=!routing;$('knx-routing-fields').disabled=!routing;$('knx-tunnel-fields').hidden=routing;$('knx-tunnel-fields').disabled=routing;}
+function openKnxForm(index=null){
+  if(!knxConfig)return;
+  editingConnection=index;const c=index===null?{}:knxConfig.connections[index];
+  $('knx-form-title').textContent=index===null?'Neue Verbindung':'Verbindung bearbeiten';
+  $('knx-name').value=c.name||'';$('knx-type').value=c.type||'tunneling';$('knx-connection-enabled').checked=c.enabled!==false;
+  $('knx-gateway').value=c.gateway_ip||'';$('knx-port').value=c.gateway_port||3671;$('knx-local').value=c.local_ip||'';
+  $('knx-individual').value=c.individual_address||'';$('knx-multicast').value=c.multicast_group||'224.0.23.12';
+  switchKnxType();$('knx-form').hidden=false;$('knx-name').focus();
+}
+async function saveKnx(next){
+  if(savingKnx)return;savingKnx=true;
+  const controls=[...$('knx-settings').querySelectorAll('button,input,select')];const disabled=controls.map(c=>c.disabled);controls.forEach(c=>c.disabled=true);
+  try{
+    const result=await api('/api/knx/config',{method:'PUT',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'configure-knx'},body:JSON.stringify({config:next,revision:knxRevision})});
+    knxConfig=result.config;knxRevision=result.revision;renderKnx();$('knx-form').hidden=true;
+    knxFeedback('Gespeichert. Verbindungen werden neu aufgebaut; Status und Telegrammempfang oben prüfen.');await refresh();
+  }catch(error){knxFeedback(error.message);}
+  finally{controls.forEach((c,i)=>c.disabled=disabled[i]);savingKnx=false;switchKnxType();}
+}
+$('knx-settings-tab').onclick=async()=>{settingsOpen=true;$('knx-settings').hidden=false;$('data-panel').hidden=true;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.add('selected');await loadKnx();};
+$('knx-add').onclick=()=>openKnxForm();$('knx-cancel').onclick=()=>{$('knx-form').hidden=true;};$('knx-type').onchange=switchKnxType;
+$('knx-reload').onclick=loadKnx;
+$('knx-apply').onclick=()=>{if(knxConfig){const next=structuredClone(knxConfig);next.enabled=$('knx-enabled').checked;saveKnx(next);}};
+$('knx-form').onsubmit=event=>{
+  event.preventDefault();if(!knxConfig)return;
+  const c={name:$('knx-name').value.trim(),type:$('knx-type').value,enabled:$('knx-connection-enabled').checked};
+  if($('knx-local').value.trim())c.local_ip=$('knx-local').value.trim();
+  if(c.type==='tunneling'){c.gateway_ip=$('knx-gateway').value.trim();c.gateway_port=Number($('knx-port').value);}
+  else{c.individual_address=$('knx-individual').value.trim();c.multicast_group=$('knx-multicast').value.trim();}
+  const next=structuredClone(knxConfig);next.enabled=$('knx-enabled').checked;
+  if(editingConnection===null)next.connections.push(c);else next.connections[editingConnection]=c;
+  saveKnx(next);
+};
+document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{settingsOpen=false;$('knx-settings').hidden=true;$('data-panel').hidden=false;$('knx-settings-tab').classList.remove('selected');view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
 $('search').oninput=render;$('open-only').onchange=render;
 refresh();setInterval(refresh,5000);
+

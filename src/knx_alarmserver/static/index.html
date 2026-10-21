@@ -9,7 +9,32 @@
 <div id="error" role="alert" hidden></div>
 <section class="cards" aria-label="Übersicht"><article><span>Aktiv · offen</span><strong id="active">—</strong></article><article><span>Aktiv · quittiert</span><strong id="acked">—</strong></article><article><span>Gegangen · offen</span><strong id="pending">—</strong></article><article><span>Unbekannt / alter Wert</span><strong id="unknown">—</strong></article></section>
 <section class="connection"><div><b>KNX-Verbindung</b><span id="connection-status">Wird geprüft …</span></div><p id="connection-detail"></p></section>
-<nav aria-label="Ansichten"><button data-view="alarms" class="selected">Meldungen</button><button data-view="history">Historie</button><button data-view="telegrams">Telegramme</button></nav>
-<section class="panel"><div class="toolbar"><h2 id="view-title">Meldungen</h2><label>Suche <input id="search" type="search" placeholder="Name, Bereich, Gruppenadresse"></label><label id="filter-wrap"><input id="open-only" type="checkbox" checked> Nur offene / unbekannte</label></div><div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div><p id="empty" hidden></p><p id="hint" class="muted"></p></section>
+<nav aria-label="Ansichten"><button data-view="alarms" class="selected">Meldungen</button><button data-view="history">Historie</button><button data-view="telegrams">Telegramme</button><button id="knx-settings-tab">KNX-Verbindungen</button></nav>
+<section id="data-panel" class="panel"><div class="toolbar"><h2 id="view-title">Meldungen</h2><label>Suche <input id="search" type="search" placeholder="Name, Bereich, Gruppenadresse"></label><label id="filter-wrap"><input id="open-only" type="checkbox" checked> Nur offene / unbekannte</label></div><div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div><p id="empty" hidden></p><p id="hint" class="muted"></p></section>
+<section id="knx-settings" class="panel" hidden aria-labelledby="knx-title">
+<div class="toolbar"><h2 id="knx-title">KNX-Verbindungen</h2><button id="knx-add" type="button">Verbindung hinzufügen</button></div>
+<p>Verwalte hier die Verbindung zu deinem KNX/IP-Router. Zum Start einen freien Tunneling-Kanal verwenden. KNX Secure wird noch nicht unterstützt.</p>
+<div class="toolbar"><label><input id="knx-enabled" type="checkbox"> KNX-Empfang aktivieren</label><button id="knx-apply" type="button">Aktivierung speichern</button><button id="knx-reload" type="button">Neu laden</button></div>
+<p id="knx-feedback" role="status" aria-live="polite"></p><div id="knx-list"></div>
+<form id="knx-form" hidden>
+<h3 id="knx-form-title">Neue Verbindung</h3>
+<div class="knx-fields">
+<label>Name<input id="knx-name" required maxlength="64" placeholder="z. B. Hauptlinie"></label>
+<label>Verbindungsart<select id="knx-type"><option value="tunneling">Tunneling (UDP)</option><option value="routing">Routing (Multicast)</option></select></label>
+<label><input id="knx-connection-enabled" type="checkbox" checked> Verbindung aktiv</label>
+<label>Lokale IPv4-Adresse (optional)<input id="knx-local" placeholder="Bei mehreren Netzwerkschnittstellen"></label>
+<fieldset id="knx-tunnel-fields"><legend>Tunneling</legend>
+<label>Router-IP<input id="knx-gateway" required placeholder="IPv4-Adresse des KNX/IP-Routers"></label>
+<label>Port<input id="knx-port" type="number" min="1" max="65535" value="3671" required></label></fieldset>
+<fieldset id="knx-routing-fields" hidden disabled><legend>Routing</legend>
+<label>Physikalische Adresse<input id="knx-individual" required placeholder="In ETS abgestimmte freie Adresse"></label>
+<label>Multicast-Adresse<input id="knx-multicast" value="224.0.23.12" required></label></fieldset>
+</div>
+<p>Die physikalische Adresse beim Routing muss frei und mit ETS abgestimmt sein. Multicast muss im Netzwerk erreichbar sein.</p>
+<div class="toolbar"><button type="submit">Speichern und übernehmen</button><button id="knx-cancel" type="button">Abbrechen</button></div>
+</form>
+<p>Änderungen werden sofort übernommen und bleiben nach Neustarts erhalten. Ein gespeicherter Eintrag bestätigt noch keinen Telegrammempfang.</p>
+</section>
 <footer>Lokale Quittierung mit angemeldetem Benutzer · Keine Schaltbefehle an den KNX-Bus</footer>
 </main></body></html>
+

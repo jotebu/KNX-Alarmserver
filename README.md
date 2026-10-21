@@ -1,10 +1,10 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.02 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.03 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
 
 ## Funktionen
 
-- Deutsche, responsive Weboberfläche mit Meldungen, Historie und Telegrammmonitor.
+- Deutsche, responsive Weboberfläche mit Meldungen, Historie, Telegrammmonitor und KNX-Verbindungsverwaltung.
 - KNX/IP-Tunneling per UDP oder Multicast-Routing über xknx; mehrere Tunnel konfigurierbar.
 - Typisierte DPT-Auswertung über den vollständigen verfügbaren xknx-DPT-Katalog: Binärwerte, Ganzzahlen, Fließkommazahlen, Prozentwerte, Aufzählungen, Text, Datum, Zeit und strukturierte Werte. Nicht jeder von KNX definierte oder herstellerspezifische DPT ist in xknx implementiert. Unbekannte DPT werden abgewiesen; es gibt keinen stillen Rückfall auf einen anderen Untertyp.
 - Flexible Alarmregeln: Gleichheit, Ungleichheit, obere/untere Grenzwerte, Wertebereiche, Listen und Textsuche. Numerische Hysterese verhindert Flattern an der Schaltschwelle.
@@ -56,7 +56,24 @@ sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver ch
 sudo systemctl restart knx-alarmserver
 ```
 
-Die genaue Struktur steht in [config/config.example.toml](config/config.example.toml). Bei Tunneling `gateway_ip` auf die tatsächliche MDT-IP setzen und `enabled = true` aktivieren. Beispiel-IP-Adressen im Repository stammen aus einem reservierten Dokumentationsnetz. Private Gebäudeadressen, echte Alarmmatrizen, Passwörter und KNX-Schlüssel gehören nicht ins öffentliche Repository.
+### KNX-Verbindungen im Dashboard
+
+1. Weboberfläche öffnen und anmelden, dann **KNX-Verbindungen** wählen.
+2. **Verbindung hinzufügen** wählen und einen eindeutigen Namen angeben.
+3. Für **Tunneling (UDP)** die tatsächliche Router-IPv4-Adresse und den Port (gewöhnlich 3671) eintragen. Die lokale IPv4-Adresse ist bei mehreren Netzwerkschnittstellen optional anzugeben.
+4. Für **Routing (Multicast)** eine in ETS abgestimmte freie physikalische Adresse sowie die Multicast-Adresse eintragen. Routing benötigt passende Netzwerkeinstellungen.
+5. **Verbindung aktiv** und für den Empfang zusätzlich **KNX-Empfang aktivieren** auswählen; **Speichern und übernehmen** anklicken.
+6. Oben Verbindungsstatus und letzten Empfang prüfen; unter **Telegramme** den tatsächlichen Verkehr kontrollieren.
+
+Einträge lassen sich bearbeiten, einzeln deaktivieren oder nach Bestätigung löschen. **Aktivierung speichern** übernimmt den globalen Empfangsschalter. **Neu laden** verwirft ungespeicherte Formulareingaben und lädt die aktuelle Konfiguration. Bei gleichzeitiger Bearbeitung wird eine veraltete Version mit einem Hinweis abgewiesen; dann neu laden und die Änderung erneut vornehmen.
+
+Verbindungsänderungen werden ohne Webserver-Neustart übernommen. Dafür werden die bisherigen KNX-Verbindungen geschlossen und neu aufgebaut; während dieser kurzen Unterbrechung können Telegramme fehlen. Speichern bestätigt die Konfiguration, nicht die Erreichbarkeit des Routers. Verbindungsfehler erscheinen im Status und Protokoll.
+
+Die anfänglichen KNX-Einstellungen stammen aus `config.toml`. Ab dem ersten Speichern im Dashboard hat der in SQLite gespeicherte KNX-Abschnitt Vorrang, auch nach Neustarts und Updates. Webserver-Einstellungen und Alarmmatrix bleiben weiterhin dateibasiert. Ein SQLite-Backup enthält somit auch die Dashboard-Verbindungen. Alle angemeldeten Benutzer können derzeit Verbindungen ändern; Rollenverwaltung ist noch nicht enthalten.
+
+Neuinstallationen enthalten keine vorgegebenen Router-Verbindungen. Bei Updates bleibt die bestehende Konfiguration erhalten. Ein vorhandener Beispielrouter mit `192.0.2.30` muss im Dashboard bearbeitet oder gelöscht werden; diese Dokumentationsadresse ist kein realer Router.
+
+Die manuelle Alternative steht in [config/config.example.toml](config/config.example.toml). Private Gebäudeadressen, echte Alarmmatrizen, Passwörter und KNX-Schlüssel gehören nicht ins öffentliche Repository. KNX IP Secure und Data Secure bleiben noch nicht unterstützt.
 
 ### MDT, Linienkopplung und Routing
 
@@ -105,7 +122,7 @@ Verfügbare DPT auflisten:
 sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver dpt-list
 ```
 
-Es ist in Version 0.10.02 ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Werden Gruppenadresse, DPT oder Regel eines bereits gespeicherten Alarms geändert, eine neue ID verwenden; vorhandene Zustände werden nicht stillschweigend umgedeutet.
+Es ist in dieser Version ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Werden Gruppenadresse, DPT oder Regel eines bereits gespeicherten Alarms geändert, eine neue ID verwenden; vorhandene Zustände werden nicht stillschweigend umgedeutet.
 
 ## Zustände und Quittierung
 
@@ -133,7 +150,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.02
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.03
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -143,8 +160,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.02
-git push origin v0.10.02
+git tag v0.10.03
+git push origin v0.10.03
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -165,6 +182,7 @@ GitHub CI prüft Python 3.11 und 3.13, die echten Decoder von xknx, Alarmregeln 
 
 1. Routermodell, KNX-Secure-Nutzung, Filtertabellen und tatsächlichen Telegrammempfang prüfen.
 2. Echte Alarmmatrix importieren und mit Testalarmen abnehmen.
-3. Konfigurationsverwaltung in der Weboberfläche, Benutzerrollen und Login-Sitzungen.
+3. Alarmmatrix-Verwaltung in der Weboberfläche, Benutzerrollen und Login-Sitzungen.
 4. Push/E-Mail, Zeitprogramme, Eskalation und zyklische Erreichbarkeitsüberwachung.
 5. Debian-Paket/APT-Verteilung, vollständige Dependency-Lockdatei und weitere Hardwaretests.
+
