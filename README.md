@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.09 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.10 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -72,7 +72,7 @@ sudo systemctl restart knx-alarmserver
 
 ### KNX-Verbindungen im Dashboard
 
-1. Weboberfläche öffnen und anmelden, dann **KNX-Verbindungen** wählen.
+1. Als Admin anmelden, oben rechts das Zahnrad öffnen und **KNX Verbindungen** wählen.
 2. **Verbindung hinzufügen** wählen und einen eindeutigen Namen angeben.
 3. Für **Tunneling (UDP)** die tatsächliche Router-IPv4-Adresse und den Port (gewöhnlich 3671) eintragen. Die lokale IPv4-Adresse ist bei mehreren Netzwerkschnittstellen optional anzugeben.
 4. Für **Routing (Multicast)** eine in ETS abgestimmte freie physikalische Adresse sowie die Multicast-Adresse eintragen. Routing benötigt passende Netzwerkeinstellungen.
@@ -93,7 +93,7 @@ Die manuelle Alternative steht in [config/config.example.toml](config/config.exa
 
 In ETS im Gruppenadressen-Fenster den gewünschten Baum auswählen, rechts anklicken und **Gruppenadressen exportieren** wählen. Für Namen, Beschreibungen und DPT vorzugsweise das aktuelle **XML-Format** verwenden; das alte ETS4-kompatible XML enthält keine DPT-Angaben. Siehe [KNX-Exportdokumentation](https://support.knx.org/hc/en-us/articles/360022237580-Group-Address-Export).
 
-1. Im Dashboard **ETS-Import** öffnen und `.xml` oder `.csv` auswählen (maximal 4 MiB / 10000 Adressen je Datei).
+1. Als Admin im Zahnradmenü **ETS-Import** öffnen und `.xml` oder `.csv` auswählen (maximal 4 MiB / 10000 Adressen je Datei).
 2. **Vorschau prüfen** klicken. Noch nichts wird gespeichert. Namen, DPT, Änderungen und Hinweise kontrollieren; über Suche und Seitenwechsel auch größere Exporte prüfen.
 3. Standardmäßig **Ergänzen / vorhandene Adressen aktualisieren** verwenden. Dabei bleiben Adressen außerhalb der Datei erhalten. **Gesamten ETS-Katalog ersetzen** entfernt nach Bestätigung die nicht enthaltenen Katalogeinträge; Alarmregeln werden in beiden Modi erhalten.
 4. **Vorschau übernehmen** klicken. Die Zuordnungen gelten sofort für danach empfangene Telegramme. Bereits im Telegrammring vorhandene Einträge werden nicht nachträglich umgedeutet.
@@ -183,7 +183,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.09
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.10
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -193,23 +193,54 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.09
-git push origin v0.10.09
+git tag v0.10.10
+git push origin v0.10.10
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
 
+## Dashboard und eigene Verwaltungsseiten
+
+Die Hauptseite zeigt Zähler, Meldungen und Historie. Der bisherige KNX-Informationskasten und die Verwaltungsreiter entfallen. Oben rechts stehen:
+
+- **KNX-Symbol:** grün, wenn alle aktiven Verbindungen bereit sind; rot bei Verbindungs- oder Speicherfehlern; gelb bei deaktiviertem bzw. noch nicht konfiguriertem Empfang. Beim Aufklappen erscheinen Einzelzustände und letzter Empfang. Ohne aktuelle Serverantwort wird der Status rot als unbekannt markiert.
+- **Zahnrad, nur Admin:** Telegramme (`/telegrams`), KNX Verbindungen (`/knx`), ETS-Import (`/ets`), Benutzerverwaltung (`/users`). Jede Funktion hat eine eigene URL mit direkter serverseitiger Rechteprüfung.
+- **Benutzersymbol mit Rang:** Aufklappen zeigt den Benutzernamen, Kennwort ändern (`/account/password`) und Abmelden. Alle Rollen können ausschließlich ihr eigenes Kennwort mit Prüfung des bisherigen Kennworts ändern. Danach erneut anmelden; sämtliche bisherigen Sitzungen dieses Kontos werden beendet.
+
+Menüs lassen sich per Maus, Tastatur und Touch bedienen, außerhalb anklicken oder mit Escape schließen. Ein Link führt von jeder Unterseite zum Dashboard zurück.
+
+## Versionsanzeige und Update über das Dashboard
+
+Die Versionsnummer im Fußbereich öffnet `/versions` mit der Versionshistorie. Beim Öffnen wird unabhängig von den Alarmabfragen die Version auf GitHub geprüft. Nur wenn eine numerisch neuere Version bestätigt ist, erscheint die Nummer rot; der Tooltip nennt die neue Version. Eine nicht mögliche Prüfung bleibt ohne Fehlermeldung und ohne rote Markierung. Der Server puffert erfolgreiche Prüfungen fünf Minuten, erfolglose für 30 Sekunden. Die Prüfung sendet keine Gebäudedaten oder Zugangsdaten an GitHub.
+
+Die Historie ist für alle angemeldeten Rollen lesbar. Sie wird als sicherer Text mit Versionsüberschriften und Listen dargestellt; bei fehlendem GitHub-Zugriff dient die lokal installierte CHANGELOG.md als Rückfall. Update-Schaltflächen und Fortschritt sehen nur Admins auf dieser Seite. Ein direkter Update-API-Aufruf durch User oder Viewer wird weiterhin abgewiesen.
+
+Einmalig diese Version per PuTTY mit `git pull --ff-only` und `sudo bash scripts/install.sh` installieren. Dadurch werden neben dem Webdienst auch ein root-eigener Update-Helfer und `knx-alarmserver-update.path` eingerichtet. Danach als Admin über **Versionsnummer → Versionshistorie → Update installieren** starten.
+
+Das Dashboard zeigt angefordert, Herunterladen, Installation und anschließend Erfolg oder Fehler an. Nach einer Verbindungsunterbrechung beim Dienstneustart wird der Status erneut abgefragt. Bei Erfolg lässt sich die Oberfläche neu laden. Der Update-Status bleibt unabhängig vom Webprozess bestehen; es läuft höchstens eine Dashboard-Anforderung gleichzeitig.
+
+Installiert wird ausdrücklich der aktuelle Stand von **main** aus `https://github.com/jotebu/KNX-Alarmserver.git`, kein Release-Tag und keine vom Browser gewählte Quelle. Vor dem Klick erscheint ein Hinweis auf den kurzzeitigen Ausfall von Oberfläche und KNX-Empfang. Vorhandene Konten, Kennwörter, Rollen, Host/Port, KNX-Verbindungen, ETS-Katalog und Alarmdaten bleiben erhalten. Der vorhandene Installer erstellt vor dem Update eine konsistente SQLite-Sicherung und aktiviert bei einem erkannten Startfehler wieder die bisherige Programmversion.
+
+Der Webprozess bleibt ohne root-Rechte und ohne sudo-Berechtigung. Er darf nur eine leere Anforderungsdatei in seinem Datenverzeichnis erstellen. Ein separater systemd-Dienst mit fest installiertem, root-eigenem Python-Helfer liest keine Anforderungsparameter, lädt ausschließlich das feste Repository und ruft den Installer auf. Statusdateien werden atomar in einem root-eigenen Laufzeitverzeichnis geschrieben. Es werden keine GitHub-Zugangsdaten benötigt oder gespeichert. Fehlerdetails auf dem Raspberry prüfen:
+
+```bash
+sudo journalctl -u knx-alarmserver-update -n 100 --no-pager
+systemctl status knx-alarmserver-update.path --no-pager
+```
+
+Die Update-Funktion ist nur mit dem über den Installer eingerichteten systemd-Dienst verfügbar. Installationen in anderen Umgebungen melden den fehlenden Helfer und bieten keinen aktiven Update-Button an. Bei einem Update aus dem Dashboard wird der lokale Checkout `~/KNX-Alarmserver` nicht verändert; installiert wird eine neue Kopie des Repositorys. Für spätere manuelle Installationen diesen Checkout zuerst mit `git pull --ff-only` aktualisieren.
+
 ## Anmeldung und Benutzerverwaltung
 
-| Rolle | Meldungen, Historie und Telegramme sehen | Quittieren | KNX / ETS / Benutzer verwalten |
+| Rolle | Meldungen / Historie sehen | Quittieren | KNX / ETS / Benutzer verwalten |
 |---|---|---|---|
 | Admin | Ja | Ja | Ja |
 | User | Ja | Ja | Nein |
 | Viewer | Ja | Nein | Nein |
 
-Nach dem Update im Browser die Serveradresse öffnen und mit dem bisherigen Konto anmelden. Bestehende Konten erhalten bei der Migration die Rolle **Admin**, ihre Kennwörter bleiben gültig. Neue Konten legt ein Admin unter **Benutzerverwaltung** an; die vorausgewählte Rolle ist Viewer. Dort können Admins auch Rollen ändern, Kennwörter setzen und Konten löschen. Der Benutzername bleibt beim Bearbeiten unverändert. Der letzte Admin kann nicht gelöscht oder herabgestuft werden.
+Nach dem Update im Browser die Serveradresse öffnen und mit dem bisherigen Konto anmelden. Bestehende Konten erhalten bei der Migration die Rolle **Admin**, ihre Kennwörter bleiben gültig. Neue Konten legt ein Admin im Zahnradmenü unter **Benutzerverwaltung** an; die vorausgewählte Rolle ist Viewer. Dort können Admins auch Rollen ändern, Kennwörter setzen und Konten löschen. Der Benutzername bleibt beim Bearbeiten unverändert. Der letzte Admin kann nicht gelöscht oder herabgestuft werden.
 
-Die Einstellungsreiter sind bei User und Viewer ausgeblendet; Viewer sehen auch keine Quittierschaltflächen. Der Server verweigert die entsprechenden API-Aufrufe unabhängig vom Dashboard mit HTTP 403. Quittierungen protokollieren weiterhin den angemeldeten Benutzer und Zeitpunkt. Bisherige Quittierungsnamen bleiben auch nach Löschen eines Kontos erhalten.
+Das Zahnradmenü und die Verwaltungsseiten sind nur für Admins zugänglich; Viewer sehen auch keine Quittierschaltflächen. Telegramme sind eine Admin-Verwaltungsseite. Der Server verweigert die entsprechenden API-Aufrufe unabhängig vom Dashboard mit HTTP 403. Quittierungen protokollieren weiterhin den angemeldeten Benutzer und Zeitpunkt. Bisherige Quittierungsnamen bleiben auch nach Löschen eines Kontos erhalten.
 
 Eine Browser-Sitzung gilt 12 Stunden und überlebt einen Dienstneustart. Ein zufälliges Sitzungstoken liegt im HttpOnly-Cookie mit SameSite=Strict; in SQLite wird nur sein SHA256-Hash gespeichert. Bei direktem HTTPS setzt der Server zusätzlich Secure. Das Cookie ist nicht an eine IP-Adresse gebunden. Bei den regelmäßigen Dashboard-Abfragen wird die Sitzung geprüft, nicht erneut PBKDF2 berechnet. Passwörter bleiben individuell gesalzen mit PBKDF2-SHA256 und 600.000 Durchläufen gespeichert. Weder Passwörter noch Tokens erscheinen in API-Benutzerlisten. Es gibt keine Standardkennwörter.
 

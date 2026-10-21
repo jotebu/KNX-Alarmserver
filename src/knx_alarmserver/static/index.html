@@ -3,13 +3,19 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KNX · Alarmserver</title><link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script></head>
 <body>
-<header><div class="brand">KNX<span>ALARM SERVER</span></div><div><span id="identity">Verbindung wird hergestellt …</span> <button id="logout" type="button">Abmelden</button></div></header>
+<header>
+<a class="brand" href="/" aria-label="Zum Dashboard">KNX<span>ALARM SERVER</span></a>
+<div class="header-tools">
+<details id="knx-status-menu" class="header-menu"><summary id="knx-status-icon" class="icon-button status-yellow" title="KNX-Status wird geprüft" aria-label="KNX-Status wird geprüft"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M5 17v-4h14v4M12 13v4"/><rect x="8" y="2" width="8" height="6" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="9" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/></svg></summary><div class="dropdown status-dropdown"><b>KNX-Verbindung</b><p id="connection-status">Wird geprüft …</p><p id="connection-detail"></p></div></details>
+<details id="settings-menu" class="header-menu" hidden><summary class="icon-button" title="Einstellungen" aria-label="Einstellungen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 3 2 2-.1 2 3.5-1 2v3l1 2-2 3.5-2-.1-3 2-1 2h-4l-1-2-3-2-2 .1-2-3.5 1-2v-3l-1-2L4 4.9l2 .1z" transform="translate(0 0) scale(.95)"/><circle cx="11.4" cy="11.4" r="3"/></svg></summary><div class="dropdown"><p class="menu-caption">Verwaltung</p><a id="telegrams-link" href="/telegrams">Telegramme</a><a id="knx-settings-tab" href="/knx">KNX Verbindungen</a><a id="ets-tab" href="/ets">ETS-Import</a><a id="users-tab" href="/users">Benutzerverwaltung</a></div></details>
+<details id="profile-menu" class="header-menu"><summary class="profile-summary" aria-label="Benutzermenü"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span id="identity">…</span></summary><div class="dropdown"><p id="profile-user" class="menu-user">…</p><a href="/account/password">Kennwort ändern</a><button id="logout" type="button">Abmelden</button></div></details>
+</div></header>
 <main>
-<div class="heading"><div><p class="eyebrow">GEBÄUDEÜBERWACHUNG</p><h1>Störungen &amp; Alarme</h1><p class="muted">Aktuelle Meldungen, Quittierungen und Ereignisverlauf.</p></div><span id="clock"></span></div>
+<a id="back-dashboard" href="/" hidden>← Dashboard</a>
+<div class="heading"><div><p class="eyebrow">GEBÄUDEÜBERWACHUNG</p><h1 id="page-title">Störungen &amp; Alarme</h1><p id="page-description" class="muted">Aktuelle Meldungen, Quittierungen und Ereignisverlauf.</p></div><span id="clock"></span></div>
 <div id="error" role="alert" hidden></div>
-<section class="cards" aria-label="Übersicht"><article><span>Aktiv · offen</span><strong id="active">—</strong></article><article><span>Aktiv · quittiert</span><strong id="acked">—</strong></article><article><span>Gegangen · offen</span><strong id="pending">—</strong></article><article><span>Unbekannt / alter Wert</span><strong id="unknown">—</strong></article></section>
-<section class="connection"><div><b>KNX-Verbindung</b><span id="connection-status">Wird geprüft …</span></div><p id="connection-detail"></p></section>
-<nav aria-label="Ansichten"><button data-view="alarms" class="selected">Meldungen</button><button data-view="history">Historie</button><button data-view="telegrams">Telegramme</button><button id="knx-settings-tab" hidden>KNX-Verbindungen</button><button id="ets-tab" hidden>ETS-Import</button><button id="users-tab" hidden>Benutzerverwaltung</button></nav>
+<section id="counters" class="cards" aria-label="Übersicht"><article><span>Aktiv · offen</span><strong id="active">—</strong></article><article><span>Aktiv · quittiert</span><strong id="acked">—</strong></article><article><span>Gegangen · offen</span><strong id="pending">—</strong></article><article><span>Unbekannt / alter Wert</span><strong id="unknown">—</strong></article></section>
+<nav id="main-nav" aria-label="Ansichten"><button data-view="alarms" class="selected">Meldungen</button><button data-view="history">Historie</button></nav>
 <section id="data-panel" class="panel"><div class="toolbar"><h2 id="view-title">Meldungen</h2><label>Suche <input id="search" type="search" placeholder="Name, Bereich, Gruppenadresse"></label><label id="filter-wrap"><input id="open-only" type="checkbox" checked> Nur offene / unbekannte</label></div><div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div><p id="empty" hidden></p><p id="hint" class="muted"></p></section>
 <section id="knx-settings" class="panel" hidden aria-labelledby="knx-title">
 <div class="toolbar"><h2 id="knx-title">KNX-Verbindungen</h2><button id="knx-add" type="button">Verbindung hinzufügen</button></div>
@@ -58,6 +64,16 @@
 <p>Mindestens 12 Zeichen. Beim Bearbeiten beide Passwortfelder leer lassen, um das Kennwort beizubehalten. Änderungen melden den betroffenen Benutzer ab.</p>
 <div class="toolbar"><button id="users-save" type="submit">Speichern</button><button id="users-cancel" type="button">Abbrechen</button></div></form>
 </section>
-<footer>Lokale Quittierung mit angemeldetem Benutzer · Keine Schaltbefehle an den KNX-Bus</footer>
+<section id="password-panel" class="panel narrow-panel" hidden aria-labelledby="password-title"><h2 id="password-title">Kennwort ändern</h2>
+<form id="password-form"><div class="knx-fields single-column">
+<label>Bisheriges Kennwort<input id="password-current" type="password" autocomplete="current-password" required maxlength="1024"></label>
+<label>Neues Kennwort<input id="password-new" type="password" autocomplete="new-password" required minlength="12" maxlength="1024"></label>
+<label>Neues Kennwort wiederholen<input id="password-confirm" type="password" autocomplete="new-password" required minlength="12" maxlength="1024"></label></div>
+<p>Mindestens 12 Zeichen. Nach dem Speichern bitte mit dem neuen Kennwort anmelden.</p><p id="password-feedback" role="status" aria-live="polite"></p><button id="password-save" type="submit">Kennwort speichern</button></form></section>
+<section id="versions-panel" class="panel" hidden aria-labelledby="versions-title"><h2 id="versions-title">Versionshistorie</h2><p id="versions-feedback" role="status"></p><div id="update-panel" hidden><h3 id="update-title">Alarmserver aktualisieren</h3>
+<p>Installierte Version: <strong id="update-version">—</strong></p><p>Installiert den aktuellen Stand aus dem GitHub-Repository. Einstellungen und Daten bleiben erhalten. Während des Dienstneustarts sind Weboberfläche und KNX-Empfang kurz unterbrochen.</p>
+<div class="toolbar"><button id="update-start" type="button" disabled>Update installieren</button><button id="update-reload" type="button">Status prüfen</button><button id="update-refresh" type="button" hidden>Oberfläche neu laden</button></div>
+<p id="update-feedback" role="status" aria-live="polite">Update-Dienst wird geprüft …</p><p id="update-detail" class="muted"></p></div><div id="versions-history" class="version-history"></div></section>
+<footer><span>Lokale Quittierung mit angemeldetem Benutzer · Keine Schaltbefehle an den KNX-Bus</span><a id="version-link" href="/versions" title="Versionshistorie öffnen">Version …</a></footer>
 </main></body></html>
 

@@ -1,6 +1,17 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.09, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.10, Inbetriebnahmeversion.
+
+## Dashboard-Menüs, eigene Seiten und Update
+
+- 82 Python-Tests und neun JavaScript-Tests erfolgreich: Rollenmatrix einschließlich Admin-Telegrammseite, eigene Kennwortänderung für alle Rollen mit Sitzungssperre und Rollenerhalt, CSRF-/Parameterprüfung und verweigerte direkte Fremdzugriffe.
+- Update-Anforderungsdatei und Statusanzeige mit lokal isolierten Testpfaden geprüft. Fehlender Helfer, aktive oder doppelte Anforderung und Symlinks behandelt.
+- Root-Worker und Installer verwenden für veröffentlichte Programmdateien eine lesbare Maske; private Daten-/Konfigurationsverzeichnisse bleiben explizit geschützt.
+- Root-Worker mit simuliertem Git-/Installationsprozess geprüft: feste Quelle und main-Zweig, keine Auswertung der Anforderungsbytes, atomarer lesbarer Status, Erfolg erst nach erfolgreicher Installation und Fehler nach Abbruch. Keine echte Paketinstallation im Prüfcontainer durchgeführt.
+- JavaScript-Prüfung für Rang/Benutzername, Adminmenü, Quittierschaltflächen, separate Navigation und grüne/rote/gelbe KNX-Anzeige erfolgreich.
+- Versionen numerisch statt lexikalisch verglichen; neuere/gleiche/ältere Version, Pufferung, fehlgeschlagene Prüfung ohne Meldung, lokale Historie und Rechte für alle Rollen getestet.
+- Vollständige DOM-Simulation für alle Seiten und Rollen: sichere Historientexte, Kennwortbestätigung, Update-Anforderung, rote Versionsmarkierung nur bei neuer Version und stille Offline-Prüfung erfolgreich. Keine visuelle Browserabnahme; ein lokaler Browser war nicht verfügbar.
+- systemd-Update auf einem echten Raspberry und vollständige Betriebsabnahme stehen noch aus.
 
 ## Direkter Webzugriff auf Port 80
 

@@ -235,6 +235,21 @@ class Store:
             self.db.execute('DELETE FROM sessions WHERE username=?', (username,))
             self.db.execute('DELETE FROM users WHERE username=?', (username,))
 
+    def change_own_password(self, username, current_password, new_password):
+        self._validate_account(username, new_password)
+        if new_password is None:
+            raise ValueError('Neues Passwort erforderlich')
+        with self.lock:
+            before = self.db.execute('SELECT password_hash FROM users WHERE username=?', (username,)).fetchone()
+        if not self.authenticate(username, current_password):
+            raise ValueError('Bisheriges Passwort ist falsch')
+        with self.transaction():
+            self.db.execute('UPDATE users SET role=role WHERE username=?', (username,))
+            current = self.db.execute('SELECT password_hash FROM users WHERE username=?', (username,)).fetchone()
+            if not before or not current or before['password_hash'] != current['password_hash']:
+                raise ValueError('Konto inzwischen geaendert; erneut anmelden')
+            self.set_password(username, new_password)
+
     def login(self, username, password):
         with self.lock:
             before = self.db.execute('SELECT password_hash FROM users WHERE username=?', (username,)).fetchone()

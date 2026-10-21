@@ -8,11 +8,11 @@ const source=fs.readFileSync(path.join(__dirname,'../src/knx_alarmserver/static/
 function setup(fetch){
   let id=0;const timers=new Map(),nodes=new Map();
   const document={hidden:false,getElementById(key){if(!nodes.has(key))nodes.set(key,{hidden:false,textContent:''});return nodes.get(key);}};
-  const context=vm.createContext({document,fetch,AbortController,Date,JSON,Error,Math,encodeURIComponent,
+  const context=vm.createContext({window:{location:{pathname:'/',replace(){}}},document,fetch,AbortController,Date,JSON,Error,Math,encodeURIComponent,
     setTimeout(fn,ms){timers.set(++id,{fn,ms});return id;},clearTimeout(key){timers.delete(key);}});
   const prefix=source.slice(0,source.indexOf('function failure('));
   const refresh=source.slice(source.indexOf('async function refresh(){'),source.indexOf('let settingsOpen='));
-  vm.runInContext(prefix+"\nlet settingsOpen=false;function applyAccess(){}function render(){}function failure(error){$('error').textContent=error.message;}\n"+refresh,context);
+  vm.runInContext(prefix+"\nlet settingsOpen=false;function applyAccess(){}function setKnxIndicator(){}async function initializePage(){}function render(){}function failure(error){$('error').textContent=error.message;}\n"+refresh,context);
   return {context,timers,nodes,run:code=>vm.runInContext(code,context)};
 }
 const snapshot=()=>({status:{version:'test',user:'admin',knx:{enabled:false,ready:false,connections:[]}},alarms:[]});

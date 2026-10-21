@@ -2,6 +2,18 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.10 – 21.10.2026
+
+- Hauptseite auf Meldungen, Historie und Zähler reduziert; KNX-Informationskasten und bisherige Verwaltungsreiter entfernt.
+- Kopfzeile mit Benutzersymbol und Rang, aufklappbarem Benutzernamen, eigener Kennwortänderung und Abmelden ergänzt.
+- Admin-Zahnrad mit eigenen, serverseitig geschützten Seiten für Telegramme, KNX Verbindungen, ETS-Import und Benutzerverwaltung eingerichtet.
+- KNX-Status als farbiges Symbol mit Details: grün bereit, rot Fehler, gelb deaktiviert/nicht eingerichtet. Bei fehlender Serverantwort Status als unbekannt markieren.
+- Eigene Kennwortänderung für alle Rollen mit Prüfung des bisherigen Kennworts; Rolle erhalten und alle bisherigen Kontositzungen widerrufen.
+- Versionsnummer öffnet Versionshistorie für alle Rollen; Admin-Updatebutton auf dieser Seite mit Statusanzeige und Wiederaufnahme nach Webdienst-Neustart. Separater root-eigener systemd-Helfer installiert ausschließlich den aktuellen main-Stand des festen GitHub-Repositorys; der Webserver erhält keine allgemeinen root-/sudo-Rechte.
+- Installer richtet Update-Pfadüberwachung ein. Updates laufen unabhängig vom Webprozess; doppelte Anforderungen und Browserparameter werden abgewiesen. Bestehende Daten und Konfiguration bleiben erhalten; Installer-Backup und Rückwechsel bei Startfehlern bleiben aktiv.
+- Versionsprüfung beim Öffnen mit numerischem Vergleich und Zwischenspeicherung. Bestätigte neue Version rot hervorheben; fehlgeschlagene Prüfung bleibt still. Historie von GitHub oder lokal, sichere Textdarstellung ohne HTML-Ausführung.
+- Rollen, eigene Kennwortänderung, Seitenzugriffe, Update-Anforderung, Erfolgs-/Fehlerzustände, Symlink-Behandlung, Menüs, KNX-Farben und Versionsanzeige geprüft.
+
 ## 0.10.09 – 21.10.2026
 
 - Direkten Webzugriff auf Port 80 als Vorgabe für neue Installationen eingerichtet: `http://RASPBERRY-IP/`, ohne nginx-Proxy.

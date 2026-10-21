@@ -1,0 +1,19 @@
+[Unit]
+Description=KNX Alarmserver dashboard update
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/bin/python3 -I /usr/local/libexec/knx-alarmserver-update.py
+ExecStopPost=/usr/bin/python3 -I /usr/local/libexec/knx-alarmserver-update.py --finish
+RuntimeDirectory=knx-alarmserver-update
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+TimeoutStartSec=30min
+UMask=0022
+StandardInput=null
+StandardOutput=journal
+StandardError=journal

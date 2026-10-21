@@ -41,9 +41,11 @@ class Accounts(unittest.TestCase):
         for role in ('admin', 'user', 'viewer'):
             self.login(role)
             for path in ('/', '/static/app.js', '/api/dashboard?view=alarms', '/api/dashboard?view=history',
-                         '/api/dashboard?view=telegrams', '/api/status', '/api/alarms', '/api/history', '/api/telegrams'):
+                         '/api/status', '/api/alarms', '/api/history'):
                 self.assertEqual(self.client.get(path).status_code, 200, (role, path))
             self.assertEqual(self.client.get('/api/status').json()['role'], role)
+            for path in ('/api/telegrams','/api/dashboard?view=telegrams'):
+                self.assertEqual(self.client.get(path).status_code,200 if role=='admin' else 403)
             for path in ('/api/users', '/api/knx/config', '/api/ets'):
                 self.assertEqual(self.client.get(path).status_code, 200 if role == 'admin' else 403, (role, path))
             if role != 'admin':

@@ -25,5 +25,5 @@ jobs:
       - run: node --test tests/dashboard_*.cjs
       - run: bash -n scripts/install.sh scripts/update.sh
       - name: Check service unit
-        run: systemd-analyze verify systemd/knx-alarmserver.service 2>&1 | tee /tmp/verify.log; ! grep -v 'Command.*is not executable\|No such file or directory' /tmp/verify.log | grep -q .
+        run: systemd-analyze verify systemd/knx-alarmserver*.service systemd/knx-alarmserver-update.path 2>&1 | tee /tmp/verify.log; ! grep -v 'Command.*is not executable\|No such file or directory' /tmp/verify.log | grep -q .
 

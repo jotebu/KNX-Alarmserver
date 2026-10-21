@@ -1,8 +1,11 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const labels = {unknown:'Unbekannt',active:'Störung aktiv',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · unquittiert',normal:'Normal'};
+const page=window.location.pathname;
+const managementPages=['/knx','/ets','/users'];
+let pageInitialized=false;
 let access = {role:null,configure:false,acknowledge:false};
-let view = 'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
+let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
 const date = value => value ? new Date(value).toLocaleString('de-DE') : '—';
 const text = (tag, value, cls) => {const node=document.createElement(tag);node.textContent=value;if(cls)node.className=cls;return node;};
 async function api(path, options={}) {
@@ -71,7 +74,10 @@ async function refresh(){
     applyAccess();
     data.alarms=snapshot.alarms;
     if(requestedView!=='alarms')data[requestedView]=snapshot[requestedView];
-    $('identity').textContent=`${status.user} · ${{admin:"Admin",user:"User",viewer:"Viewer"}[status.role]||""} · Version ${status.version}`;
+    $('identity').textContent=({admin:'Admin',user:'User',viewer:'Viewer'})[status.role]||'';
+    $('profile-user').textContent=status.user;
+    $('update-version').textContent=status.version;
+    $('version-link').textContent='Version '+status.version;
     $('active').textContent=data.alarms.filter(r=>r.status==='active').length;
     $('acked').textContent=data.alarms.filter(r=>r.status==='active_ack').length;
     $('pending').textContent=data.alarms.filter(r=>r.status==='clear_pending').length;
@@ -79,10 +85,13 @@ async function refresh(){
     $('connection-status').textContent=!status.knx.enabled?'KNX deaktiviert':status.knx.ready?'Verbindungen bereit':'Verbindung gestört / wird aufgebaut';
     $('connection-detail').textContent=status.knx.connections.map(c=>`${c.name}: ${c.state} · letzter Empfang ${date(c.last_received)}`).join(' | ')||'KNX-Empfang in der Konfiguration noch nicht aktiviert.';
     if(status.knx.storage_error)$('connection-detail').textContent+=' | FEHLER beim Speichern; Dienstprotokoll prüfen.';
+    const knxColor=status.knx.storage_error?'red':!status.knx.enabled?'yellow':status.knx.ready?'green':'red';
+    setKnxIndicator(knxColor,$('connection-status').textContent);
+    if(!pageInitialized){pageInitialized=true;await initializePage();}
     $('clock').textContent='Aktualisiert: '+new Date().toLocaleTimeString('de-DE');$('error').hidden=true;refreshFailures=0;render();
-  }catch(error){refreshFailures+=1;failure(error);}finally{busy=false;scheduleRefresh();}
+  }catch(error){refreshFailures+=1;setKnxIndicator('red','Server nicht erreichbar; KNX-Status unbekannt');failure(error);}finally{busy=false;scheduleRefresh();}
 }
-let settingsOpen=false, knxConfig=null, knxRevision=null, editingConnection=null, savingKnx=false;
+let settingsOpen=managementPages.includes(page)||page==='/account/password'||page==='/versions', knxConfig=null, knxRevision=null, editingConnection=null, savingKnx=false;
 function knxFeedback(message){$('knx-feedback').textContent=message;}
 function renderKnx(){
   $('knx-enabled').checked=knxConfig.enabled;
@@ -123,11 +132,10 @@ async function saveKnx(next){
   try{
     const result=await api('/api/knx/config',{method:'PUT',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'configure-knx'},body:JSON.stringify({config:next,revision:knxRevision})});
     knxConfig=result.config;knxRevision=result.revision;renderKnx();$('knx-form').hidden=true;
-    knxFeedback('Gespeichert. Verbindungen werden neu aufgebaut; Status und Telegrammempfang oben prüfen.');await refresh();
+    knxFeedback('Gespeichert. Verbindungen werden neu aufgebaut; Status am KNX-Symbol und Telegrammempfang prüfen.');await refresh();
   }catch(error){knxFeedback(error.message+' Bei fehlender Speicherbestätigung bitte Neu laden und den gespeicherten Stand prüfen.');}
   finally{controls.forEach((c,i)=>c.disabled=disabled[i]);savingKnx=false;switchKnxType();}
 }
-$('knx-settings-tab').onclick=async()=>{if(!access.configure)return;closeUsers();$('ets-panel').hidden=true;$('ets-tab').classList.remove('selected');settingsOpen=true;$('knx-settings').hidden=false;$('data-panel').hidden=true;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.add('selected');await loadKnx();};
 $('knx-add').onclick=()=>openKnxForm();$('knx-cancel').onclick=()=>{$('knx-form').hidden=true;};$('knx-type').onchange=switchKnxType;
 $('knx-reload').onclick=loadKnx;
 $('knx-apply').onclick=()=>{if(knxConfig){const next=structuredClone(knxConfig);next.enabled=$('knx-enabled').checked;saveKnx(next);}};
@@ -141,7 +149,7 @@ $('knx-form').onsubmit=event=>{
   if(editingConnection===null)next.connections.push(c);else next.connections[editingConnection]=c;
   saveKnx(next);
 };
-document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{closeUsers();$('ets-panel').hidden=true;$('ets-tab').classList.remove('selected');settingsOpen=false;$('knx-settings').hidden=true;$('data-panel').hidden=false;$('knx-settings-tab').classList.remove('selected');view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
+document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
 let etsRows=[], etsPage=0, etsPreview=null, etsFile=null, etsBusy=false;
 function resetEtsPreview(){etsPreview=null;etsFile=null;$('ets-apply').disabled=true;}
 function renderEts(){
@@ -192,20 +200,40 @@ async function etsAction(action){
   }catch(error){if(action==='preview')resetEtsPreview();$('ets-feedback').textContent=error.message+' Bei fehlender Speicherbestätigung zuerst den gespeicherten Katalog laden und prüfen.';}
   finally{etsBusy=false;controls.forEach(c=>c.disabled=false);$('ets-apply').disabled=!etsPreview;renderEts();}
 }
-$('ets-tab').onclick=async()=>{if(!access.configure)return;closeUsers();settingsOpen=true;$('knx-settings').hidden=true;$('data-panel').hidden=true;$('ets-panel').hidden=false;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.remove('selected');$('ets-tab').classList.add('selected');await loadEts();};
 $('ets-form').onsubmit=event=>{event.preventDefault();etsAction('preview');};
 $('ets-file').onchange=()=>{resetEtsPreview();$('ets-feedback').textContent='Datei gewählt. Bitte Vorschau prüfen.';};
 $('ets-apply').onclick=()=>etsAction('import');$('ets-reload').onclick=loadEts;
 $('ets-search').oninput=()=>{etsPage=0;renderEts();};
 $('ets-prev').onclick=()=>{etsPage--;renderEts();};$('ets-next').onclick=()=>{etsPage++;renderEts();};
 
-function closeUsers(){ $('users-panel').hidden=true;$('users-tab').classList.remove('selected'); }
 function applyAccess(){
-  for(const id of ['knx-settings-tab','ets-tab','users-tab'])$(id).hidden=!access.configure;
-  if(!access.configure){
-    $('knx-settings').hidden=true;$('ets-panel').hidden=true;closeUsers();
-    if(settingsOpen){settingsOpen=false;$('data-panel').hidden=false;}
-  }
+  $('settings-menu').hidden=!access.configure;
+  $('update-panel').hidden=page!=='/versions'||!access.configure;
+  if(!access.configure && (managementPages.includes(page)||page==='/telegrams'))window.location.replace('/');
+}
+function setKnxIndicator(color,label){
+  const icon=$('knx-status-icon');icon.className='icon-button status-'+color;icon.title=label;icon.setAttribute('aria-label',label);
+}
+async function initializePage(){
+  if(page==='/knx')await loadKnx();
+  else if(page==='/ets')await loadEts();
+  else if(page==='/users')await loadUsers();
+  else if(page==='/versions'){await loadVersions();if(access.configure)await loadUpdate();}
+}
+function layoutPage(){
+  const names={'/telegrams':['Telegramme','Empfangene KNX-Gruppentelegramme und decodierte Werte.'],
+    '/knx':['KNX Verbindungen','Verbindungen zum KNX-Netz verwalten.'],
+    '/ets':['ETS-Import','Gruppenadressen und Datenpunkttypen importieren.'],
+    '/users':['Benutzerverwaltung','Benutzerkonten, Kennwörter und Zugriffsrechte verwalten.'],
+    '/account/password':['Kennwort ändern','Dein persönliches Kennwort aktualisieren.'],
+    '/versions':['Versionshistorie','Änderungen, Softwarestand und verfügbare Updates.']};
+  const separate=page!=='/';
+  $('counters').hidden=separate;$('main-nav').hidden=separate;$('back-dashboard').hidden=!separate;
+  if(names[page]){$('page-title').textContent=names[page][0];$('page-description').textContent=names[page][1];document.title=names[page][0]+' · KNX Alarmserver';}
+  $('data-panel').hidden=settingsOpen;
+  $('knx-settings').hidden=page!=='/knx';$('ets-panel').hidden=page!=='/ets';$('users-panel').hidden=page!=='/users';
+  $('password-panel').hidden=page!=='/account/password';$('versions-panel').hidden=page!=='/versions';
+  $('update-panel').hidden=page!=='/versions'||!access.configure;
 }
 let editingUser=null, usersBusy=false;
 function openUser(account=null){
@@ -244,12 +272,6 @@ async function saveUser(url,method,payload){
   }catch(error){$('users-feedback').textContent=error.message+' Bei fehlender Bestätigung bitte Neu laden und den Stand prüfen.';}
   finally{controls.forEach((c,i)=>c.disabled=disabled[i]);usersBusy=false;}
 }
-$('users-tab').onclick=async()=>{
-  if(!access.configure)return;
-  settingsOpen=true;$('knx-settings').hidden=true;$('ets-panel').hidden=true;$('data-panel').hidden=true;$('users-panel').hidden=false;
-  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('selected'));$('users-tab').classList.add('selected');
-  await loadUsers();
-};
 $('users-add').onclick=()=>openUser();$('users-reload').onclick=loadUsers;
 $('users-cancel').onclick=()=>{$('users-form').hidden=true;$('users-password').value='';$('users-confirm').value='';};
 $('users-form').onsubmit=event=>{
@@ -261,6 +283,72 @@ $('users-form').onsubmit=event=>{
 };
 $('logout').onclick=async()=>{try{await api('/api/logout',{method:'POST',headers:{'X-Alarmserver-Action':'logout'}});window.location.replace('/login');}catch(error){failure(error);}};
 
+$('password-form').onsubmit=async event=>{
+  event.preventDefault();
+  if($('password-new').value!==$('password-confirm').value){$('password-feedback').textContent='Kennwörter stimmen nicht überein.';return;}
+  $('password-save').disabled=true;
+  try{
+    await api('/api/account/password',{method:'POST',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'change-password'},
+      body:JSON.stringify({current_password:$('password-current').value,new_password:$('password-new').value})});
+    $('password-form').reset();window.location.replace('/login');
+  }catch(error){$('password-feedback').textContent=error.message;}
+  finally{$('password-save').disabled=false;}
+};
+function renderVersionCheck(result){
+  const link=$('version-link');link.textContent='Version '+result.current_version;
+  link.classList.toggle('update-available',result.check_ok&&result.update_available);
+  link.title=!result.check_ok?'Versionshistorie öffnen':result.update_available?'Neue Version '+result.latest_version+' verfügbar; Historie öffnen':'Aktuelle Version; Historie öffnen';
+}
+async function checkVersion(){
+  try{renderVersionCheck(await api('/api/version'));}
+  catch(error){$('version-link').title='Versionshistorie öffnen';}
+}
+async function loadVersions(){
+  try{
+    const result=await api('/api/versions');renderVersionCheck(result);
+    $('versions-feedback').textContent=!result.check_ok?'':result.update_available?'Neue Version '+result.latest_version+' verfügbar.':'Installierte Version ist aktuell.';
+    if(result.history_source==='local')$('versions-feedback').textContent+=' Lokale Versionshistorie.';
+    const history=document.createDocumentFragment();let list=null;
+    for(const line of result.changelog.split('\n')){
+      if(line.startsWith('# '))continue;
+      if(line.startsWith('## ')){list=null;history.append(text('h3',line.slice(3)));}
+      else if(line.startsWith('- ')){if(!list){list=document.createElement('ul');history.append(list);}list.append(text('li',line.slice(2)));}
+      else if(line.trim()){list=null;history.append(text('p',line));}
+    }
+    $('versions-history').replaceChildren(history);
+  }catch(error){$('versions-feedback').textContent='Versionshistorie konnte nicht geladen werden. '+error.message;}
+}
+let updatePoll=null;
+async function loadUpdate(){
+  clearTimeout(updatePoll);
+  try{
+    const state=await api('/api/update');
+    const active=['queued','fetching','installing'].includes(state.state);
+    $('update-version').textContent=state.current_version;
+    $('update-start').disabled=!state.available||active;
+    $('update-refresh').hidden=state.state!=='success';
+    $('update-feedback').textContent=state.message||(state.available?'Bereit für ein Update.':'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.');
+    $('update-detail').textContent=state.target_version?'Zielversion: '+state.target_version+(state.updated_at?' · '+date(state.updated_at):''):'';
+    if(active)updatePoll=setTimeout(loadUpdate,3000);
+  }catch(error){$('update-feedback').textContent='Verbindung unterbrochen. Der Status wird nach dem Neustart erneut geprüft.';updatePoll=setTimeout(loadUpdate,5000);}
+}
+$('update-start').onclick=async()=>{
+  if(!confirm('Den aktuellen Stand von GitHub installieren? Weboberfläche und KNX-Empfang werden beim Neustart kurz unterbrochen.'))return;
+  $('update-start').disabled=true;
+  try{
+    const result=await api('/api/update',{method:'POST',headers:{'X-Alarmserver-Action':'update-server'}});
+    $('update-feedback').textContent=result.message;await loadUpdate();
+  }catch(error){$('update-feedback').textContent=error.message+' Bitte den Status prüfen, bevor du erneut startest.';await loadUpdate();}
+};
+$('update-reload').onclick=loadUpdate;
+$('update-refresh').onclick=()=>window.location.reload();
+// Native details menus support mouse, keyboard and touch; only one stays open.
+const menus=[...document.querySelectorAll('.header-menu')];
+for(const menu of menus)menu.addEventListener('toggle',()=>{if(menu.open)for(const other of menus)if(other!==menu)other.open=false;});
+document.addEventListener('click',event=>{for(const menu of menus)if(!menu.contains(event.target))menu.open=false;});
+document.addEventListener('keydown',event=>{if(event.key==='Escape')for(const menu of menus)menu.open=false;});
+layoutPage();
+checkVersion();
 $('search').oninput=render;$('open-only').onchange=render;
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
 refresh();

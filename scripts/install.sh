@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Install the checked-out source, preserving config and persistent data.
 set -Eeuo pipefail
+# Release code and venv must remain readable/executable for the service account.
+# Private settings and data directories use explicit restrictive modes below.
+umask 0022
 [[ $EUID -eq 0 ]] || { echo 'Bitte mit sudo bash scripts/install.sh starten.' >&2; exit 1; }
 enable_lan=false
 listen_port=
@@ -102,6 +105,10 @@ fi
 ln -s "$stage" "$base/current.new"
 mv -Tf "$base/current.new" "$base/current"
 install -m 0644 "$stage/source/systemd/knx-alarmserver.service" /etc/systemd/system/knx-alarmserver.service
+install -d -m 0755 -o root -g root /usr/local/libexec
+install -m 0644 -o root -g root "$stage/source/scripts/dashboard_update.py" /usr/local/libexec/knx-alarmserver-update.py
+install -m 0644 -o root -g root "$stage/source/systemd/knx-alarmserver-update.service" /etc/systemd/system/knx-alarmserver-update.service
+install -m 0644 -o root -g root "$stage/source/systemd/knx-alarmserver-update.path" /etc/systemd/system/knx-alarmserver-update.path
 systemctl daemon-reload
 if systemctl cat knx-alarmserver.service >/dev/null 2>&1; then
   systemctl reset-failed knx-alarmserver || true
@@ -126,6 +133,7 @@ for attempt in range(30):
     time.sleep(1)
 else: raise SystemExit('Webdienst antwortet nicht')
 PY
+systemctl enable --now knx-alarmserver-update.path
 trap - ERR
 if [[ -n $previous ]]; then
   ln -s "$previous" "$base/previous.new"

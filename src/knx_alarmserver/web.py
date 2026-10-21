@@ -20,7 +20,11 @@ from .ets import MAX_BYTES, parse_export
 STATIC = Path(__file__).parent / "static"
 
 
-def create_app(config, store):
+def create_app(config, store, update_manager=None, version_checker=None):
+    from .versions import VersionChecker
+    versions = version_checker if version_checker is not None else VersionChecker()
+    from .updates import DashboardUpdate
+    updater = update_manager if update_manager is not None else DashboardUpdate()
     initial = store.knx_settings(config["knx"])["config"]
     validate_knx(initial)
     monitor = Monitor(initial, store)
@@ -101,7 +105,7 @@ def create_app(config, store):
 
     @app.exception_handler(HTTPException)
     async def auth_page(request, error):
-        if error.status_code == 401 and request.url.path == '/':
+        if error.status_code == 401 and request.url.path in {'/', '/telegrams', '/knx', '/ets', '/users', '/versions', '/account/password'}:
             return FileResponse(STATIC / 'login.html', status_code=401)
         return await http_exception_handler(request, error)
 
@@ -133,6 +137,53 @@ def create_app(config, store):
         response = JSONResponse({'ok': True})
         response.delete_cookie(cookie_name, path='/')
         return response
+
+    @app.post('/api/account/password')
+    async def change_password(request: Request, username=Depends(user)):
+        action(request, 'change-password')
+        payload = await json_body(request)
+        if (set(payload) != {'current_password', 'new_password'}
+                or not isinstance(payload['current_password'], str)
+                or len(payload['current_password']) > 1024):
+            raise HTTPException(status_code=422, detail='Bisheriges und neues Passwort erforderlich')
+        try:
+            await asyncio.to_thread(store.change_own_password, username,
+                                    payload['current_password'], payload['new_password'])
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        response = JSONResponse({'ok': True})
+        response.delete_cookie(cookie_name, path='/')
+        return response
+
+    @app.get('/api/version')
+    async def version_check(username=Depends(user)):
+        return await asyncio.to_thread(versions.check)
+
+    @app.get('/api/versions')
+    async def version_history(username=Depends(user)):
+        return await asyncio.to_thread(versions.history)
+
+    @app.get('/api/update')
+    def update_status(username=Depends(admin)):
+        return {**updater.status(), 'current_version': __version__}
+
+    @app.post('/api/update')
+    async def start_update(request: Request, username=Depends(admin)):
+        action(request, 'update-server')
+        async for chunk in request.stream():
+            if chunk:
+                raise HTTPException(status_code=422, detail='Update akzeptiert keine Parameter')
+        try:
+            result = await asyncio.to_thread(updater.start)
+        except FileExistsError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from None
+        except RuntimeError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from None
+        except OSError:
+            logging.getLogger(__name__).exception('Update konnte nicht angefordert werden')
+            raise HTTPException(status_code=503, detail='Update-Dienst nicht verfuegbar') from None
+        logging.getLogger(__name__).info('Dashboard-Update angefordert durch %s', username)
+        return JSONResponse(result, status_code=202)
 
     @app.get('/api/users')
     def users(username=Depends(admin)):
@@ -202,6 +253,8 @@ def create_app(config, store):
         if view == "history":
             result["history"] = store.history()
         elif view == "telegrams":
+            if request.state.account['role'] != 'admin':
+                raise HTTPException(status_code=403, detail='Nur fuer Admins erlaubt')
             result["telegrams"] = list(monitor.telegrams)
         return result
 
@@ -219,7 +272,7 @@ def create_app(config, store):
         return store.history()
 
     @app.get("/api/telegrams")
-    def telegrams(username=Depends(user)):
+    def telegrams(username=Depends(admin)):
         return list(monitor.telegrams)
 
     @app.get("/api/dpts")
@@ -333,6 +386,18 @@ def create_app(config, store):
             return {"changed": store.acknowledge(alarm_id, username)}
         except KeyError:
             raise HTTPException(status_code=404, detail="Alarm nicht gefunden") from None
+
+    @app.get('/telegrams')
+    @app.get('/knx')
+    @app.get('/ets')
+    @app.get('/users')
+    def admin_page(username=Depends(admin)):
+        return FileResponse(STATIC / 'index.html')
+
+    @app.get('/versions')
+    @app.get('/account/password')
+    def password_page(username=Depends(user)):
+        return FileResponse(STATIC / 'index.html')
 
     @app.get("/")
     def index(username=Depends(user)):
