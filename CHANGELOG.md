@@ -2,6 +2,13 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.4 – 22.10.2026
+
+- KNX-Statusabfrage aus der Meldungsliste auf die bestehende Admin-Seite Telegramme verschieben, einschließlich Verbindungsauswahl und Fortschritt.
+
+- Meldungstabelle: Regel unterhalb von Bereich und Priorität anzeigen. Wert und Gruppenadresse bleiben in der Wertspalte.
+- „Letzter Empfang“ in „Zeitstempel“ umbenennen. Wert/Regel, Zeitstempel und Quittierung kompakt am rechten Tabellenrand ausrichten; Meldung/Bereich erhält den übrigen Platz.
+
 ## 0.12.3 – 22.10.2026
 
 - Meldungen und Ereignishistorie serverseitig mit 200 Einträgen pro Seite laden; vor/zurück und direkte Seitenwahl. Alle gespeicherten Historienereignisse sind erreichbar, statt nur der bisherigen letzten 200.

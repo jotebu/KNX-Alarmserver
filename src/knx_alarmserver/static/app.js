@@ -50,7 +50,8 @@ function render(){
   }
   const titles={alarms:'Meldungen',history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
-  const heads={alarms:['Status','Meldung / Bereich','Wert / Regel','Letzter Empfang','Quittierung'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
+  const heads={alarms:['Status','Meldung / Bereich','Wert / Regel','Zeitstempel','Quittierung'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
+  $('message-table').className=view==='alarms'?'alarm-list-table':'';
   const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
   const query=$('search').value.toLocaleLowerCase('de');
   const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||!$('open-only').checked||r.status!=='normal'||r.quality!=='ok');
@@ -66,7 +67,7 @@ function render(){
       const name=cell(row.name);name.append(text('small',`${row.area} · Priorität ${row.priority}${row.priority_name?' · '+row.priority_name:''}`));
       const value=cell(row.display_value===null?'—':`${row.display_value}${row.unit?' '+row.unit:''}`);
       value.append(text('small',`${row.group_address} · DPT ${row.dpt}`));
-      value.append(text('small',row.operator==='monitor'?'Nur Anzeige':`${row.field?row.field+' ':''}${row.operator} ${JSON.stringify(row.threshold)}${row.hysteresis?' · Hysterese '+row.hysteresis:''}`));
+      name.append(text('small',row.operator==='monitor'?'Nur Anzeige':`${row.field?row.field+' ':''}${row.operator} ${JSON.stringify(row.threshold)}${row.hysteresis?' · Hysterese '+row.hysteresis:''}`));
       cell(date(row.last_seen));
       const ack=cell(row.acknowledged_by?`${row.acknowledged_by} · ${date(row.acknowledged_at)}`:'—');
       if(row.pending && access.acknowledge){ack.textContent='';const button=text('button','Quittieren','ack');button.onclick=async()=>{button.disabled=true;try{await api(`/api/alarms/${encodeURIComponent(row.id)}/acknowledge`,{method:'POST',headers:{'X-Alarmserver-Action':'acknowledge'}});await refresh();}catch(e){failure(e);}finally{button.disabled=false;}};ack.append(button);}
@@ -332,7 +333,7 @@ window.addEventListener('beforeunload',event=>{if(page==='/matrix'&&matrixDirty)
 
 let startingRead=false;
 function renderReadStatus(knx){
-  const allowed=page==='/'&&view==='alarms'&&access.matrix;
+  const allowed=page==='/telegrams'&&view==='telegrams'&&access.configure;
   $('knx-read-controls').hidden=!allowed;$('knx-read-feedback').hidden=!allowed;
   if(!allowed)return;
   const select=$('knx-read-connection'),selected=select.value;

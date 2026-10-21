@@ -1,6 +1,12 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.3, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.4, Inbetriebnahmeversion.
+
+## Meldungstabelle
+
+- KNX-Leseabfrage ausschließlich auf der Admin-Seite Telegramme anzeigen; Meldungsliste enthält keine Abfrage-Steuerung mehr.
+
+- Regel in der Meldungszelle unter Bereich/Priorität, Überschrift Zeitstempel und auf die Meldungsansicht begrenzte Spaltenausrichtung umgesetzt. 19 JavaScript-Prüfungen sowie DOM-Prüfung für drei Rollen und Seitennavigation erfolgreich. Visuelle Abnahme auf dem Raspberry steht aus.
 
 ## Seiten, Datumsfilter und KNX-Leseabfrage
 

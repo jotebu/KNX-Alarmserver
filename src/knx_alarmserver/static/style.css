@@ -18,3 +18,6 @@
 .matrix-table input{min-width:140px;width:100%;font:inherit}.matrix-table select{min-width:110px;font:inherit}.matrix-table th:first-child{min-width:130px}.matrix-table input[aria-label^="name"]{min-width:230px}#matrix-feedback{min-height:24px;color:#ffcf8a}#matrix-panel .toolbar a{color:#65dbc1;font-size:13px}
 
 #list-page-number{max-width:90px}#knx-read-feedback{color:#b7c7db;font-size:13px}
+
+/* Meldung und Bereich erhalten den freien Platz; kompakte Details rechts. */
+.alarm-list-table{min-width:900px}.alarm-list-table th:first-child,.alarm-list-table td:first-child{width:1%;min-width:150px}.alarm-list-table th:nth-child(2),.alarm-list-table td:nth-child(2){width:100%;min-width:260px;overflow-wrap:anywhere}.alarm-list-table th:nth-child(n+3),.alarm-list-table td:nth-child(n+3){width:1%;text-align:right;white-space:nowrap}

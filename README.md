@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.3 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.4 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -180,7 +180,7 @@ Beide Listen laden **200 Einträge pro Seite**, mit Zurück/Weiter und direkter 
 
 ## KNX-Status manuell abfragen
 
-Admins und User können in **Meldungen → Status abfragen** die unbekannten/alten Werte oder alle Gruppenadressen der Alarmmatrix lesen. Bei mehreren Verbindungen die passende Linie wählen; ohne Auswahl wird die erste aktive Verbindung verwendet. Nicht die gesamte ETS-Adressliste wird abgefragt. Die Abfrage läuft unabhängig von der ausgewählten Meldungsseite und ihren Filtern im Hintergrund mit höchstens zwei Leseanfragen pro Sekunde. Fortschritt nennt gesendete Anfragen und gültige Antworten; das Senden einer Anfrage allein ist kein bestätigter Messwert. Gleichzeitige Abfragen werden abgewiesen. Dienstende oder KNX-Konfigurationswechsel beendet eine laufende Abfrage.
+Admins können in **Telegramme → Status abfragen** die unbekannten/alten Werte oder alle Gruppenadressen der Alarmmatrix lesen. Bei mehreren Verbindungen die passende Linie wählen; ohne Auswahl wird die erste aktive Verbindung verwendet. Nicht die gesamte ETS-Adressliste wird abgefragt. Die Abfrage läuft unabhängig von der ausgewählten Meldungsseite und ihren Filtern im Hintergrund mit höchstens zwei Leseanfragen pro Sekunde. Fortschritt nennt gesendete Anfragen und gültige Antworten; das Senden einer Anfrage allein ist kein bestätigter Messwert. Gleichzeitige Abfragen werden abgewiesen. Dienstende oder KNX-Konfigurationswechsel beendet eine laufende Abfrage.
 
 Es werden ausschließlich **GroupValueRead**-Telegramme gesendet, keine Werte geschrieben und keine Alarmquittierungen oder Reset-Befehle ausgeführt. Ein Gerät muss das Lesen seines Kommunikationsobjekts erlauben (Lesen-/Read-Flag); Filtertabellen und sendende Gruppenadresse müssen passen. Ohne gültige Antwort bleibt der bisherige Zustand erhalten. Empfangene Antworten durchlaufen dieselbe Dekodierung und Alarmregel wie normale Telegramme und können damit auch echte Alarme auslösen.
 
@@ -214,7 +214,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.3
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.4
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -224,8 +224,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.12.3
-git push origin v0.12.3
+git tag v0.12.4
+git push origin v0.12.4
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
