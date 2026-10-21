@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.11 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.12 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -183,7 +183,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.11
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.12
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -193,15 +193,15 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.11
-git push origin v0.10.11
+git tag v0.10.12
+git push origin v0.10.12
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
 
 ## Dashboard und eigene Verwaltungsseiten
 
-Die Hauptseite zeigt Zähler, Meldungen und Historie. Der bisherige KNX-Informationskasten und die Verwaltungsreiter entfallen. Oben rechts stehen:
+Die Hauptseite zeigt Zähler, Meldungen und Historie. Die Kopfzeile bleibt auf allen Seiten beim Scrollen sichtbar; die Versionsnummer befindet sich ebenfalls dort. Der bisherige Fußtext entfällt. Auf schmalen Bildschirmen nutzt die Leiste zwei Zeilen, und Menüs öffnen darunter innerhalb des sichtbaren Bereichs. Der bisherige KNX-Informationskasten und die Verwaltungsreiter entfallen. Oben rechts stehen:
 
 - **KNX-Symbol:** grün, wenn alle aktiven Verbindungen bereit sind; rot bei Verbindungs- oder Speicherfehlern; gelb bei deaktiviertem bzw. noch nicht konfiguriertem Empfang. Beim Aufklappen erscheinen Einzelzustände und letzter Empfang. Ohne aktuelle Serverantwort wird der Status rot als unbekannt markiert.
 - **Zahnrad, nur Admin:** Telegramme (`/telegrams`), KNX Verbindungen (`/knx`), ETS-Import (`/ets`), Benutzerverwaltung (`/users`). Jede Funktion hat eine eigene URL mit direkter serverseitiger Rechteprüfung.
@@ -211,7 +211,7 @@ Menüs lassen sich per Maus, Tastatur und Touch bedienen, außerhalb anklicken o
 
 ## Versionsanzeige und Update über das Dashboard
 
-Die Versionsnummer im Fußbereich öffnet `/versions` mit der Versionshistorie. Beim Öffnen wird unabhängig von den Alarmabfragen die Version auf GitHub geprüft. Nur wenn eine numerisch neuere Version bestätigt ist, erscheint die Nummer rot; der Tooltip nennt die neue Version. Eine nicht mögliche Prüfung bleibt ohne Fehlermeldung und ohne rote Markierung. Der Server puffert erfolgreiche Prüfungen fünf Minuten, erfolglose für 30 Sekunden. Die Prüfung sendet keine Gebäudedaten oder Zugangsdaten an GitHub.
+Die Versionsnummer in der feststehenden Kopfzeile öffnet `/versions` mit der Versionshistorie. Beim Öffnen wird unabhängig von den Alarmabfragen die Version auf GitHub geprüft. Nur wenn eine numerisch neuere Version bestätigt ist, erscheint die Nummer rot; der Tooltip nennt die neue Version. Eine nicht mögliche Prüfung bleibt ohne Fehlermeldung und ohne rote Markierung. Der Server puffert erfolgreiche Prüfungen fünf Minuten, erfolglose für 30 Sekunden. Die Prüfung sendet keine Gebäudedaten oder Zugangsdaten an GitHub.
 
 Die Historie ist für alle angemeldeten Rollen lesbar. Sie wird als sicherer Text mit Versionsüberschriften und Listen dargestellt; bei fehlendem GitHub-Zugriff dient die lokal installierte CHANGELOG.md als Rückfall. Update-Schaltflächen und Fortschritt sehen nur Admins auf dieser Seite. Der Update-Button ist ausschließlich bei einer bestätigten neueren Version, verfügbarem Update-Dienst und ohne laufendes Update aktiv. Vor dem Start prüft der Server die Version erneut ohne Verwendung des Zwischenspeichers; ist keine neuere Version bestätigt, wird kein Update angefordert. Auch der Update-Helfer überspringt gleiche oder ältere Versionen. Ein direkter Update-API-Aufruf durch User oder Viewer wird weiterhin abgewiesen.
 

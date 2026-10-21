@@ -1,6 +1,12 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.11, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.12, Inbetriebnahmeversion.
+
+## Feststehende Kopfzeile
+
+- Gemeinsame Kopfzeile fest positioniert; Abstand zum Seiteninhalt und Sprungmarken passend zur Höhe definiert. Dieselbe CSS-Regel gilt für die Anmeldung.
+- Versionslink nur noch in der Kopfzeile; bisheriger Fußtext und Footer entfernt. Bestehende Prüfungen für Versionsanzeige und Zugriff bleiben gültig.
+- Mobile Leiste und Menüs mit eigener Höhen-/Breitenregel ergänzt; echte visuelle Browserabnahme steht weiter aus.
 
 ## Update nur bei neuerer Version
 

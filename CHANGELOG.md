@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.12 – 21.10.2026
+
+- Kopfzeile auf allen Seiten einschließlich Anmeldung fest am oberen Bildschirmrand halten; Seiteninhalt beginnt darunter.
+- Versionsnummer aus dem Fußbereich in die feste Kopfzeile verschoben. Versionshistorie und rote Update-Markierung bleiben erhalten.
+- Bisherigen Fußtext entfernt. Schmale Bildschirme erhalten eine zweizeilige Kopfzeile; aufklappbare Menüs bleiben unterhalb der Leiste im sichtbaren Bereich.
+
 ## 0.10.11 – 21.10.2026
 
 - Update-Button nur bei einer bestätigten neueren Version, verfügbarem Update-Dienst und ohne laufendes Update aktivieren. Bei fehlgeschlagener Versionsprüfung bleibt er ohne zusätzliche Prüfmeldung deaktiviert.
