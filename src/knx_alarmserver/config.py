@@ -45,8 +45,10 @@ def load_alarms(path):
                 if not (0 <= a <= 31 and 0 <= b <= 7 and 0 <= c <= 255):
                     raise ValueError("Gruppenadresse ausserhalb KNX-Bereich")
                 row["group_address"] = f"{a}/{b}/{c}"
-                if not re.fullmatch(r"[1-9][0-9]{0,2}(\.[0-9]{3})?", row["dpt"]):
+                if not re.fullmatch(r"[1-9][0-9]{0,2}(\.[0-9]{3,5})?", row["dpt"]):
                     raise ValueError("DPT als Hauptnummer oder vollstaendig, z.B. 9.001")
+                if '.' in row['dpt'] and int(row['dpt'].split('.')[1]) > 65535:
+                    raise ValueError('DPT-Untertyp ausserhalb 0 bis 65535')
                 row["threshold"] = threshold_from_text(row["threshold"])
                 row["hysteresis"] = float(row["hysteresis"] or "0")
                 if not row["name"] or len(row["name"]) > 200:

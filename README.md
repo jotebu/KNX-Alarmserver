@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.06 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import mit dem Gebäudeexport, Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.07 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import mit dem Gebäudeexport, Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -88,7 +88,7 @@ Der Katalog wird in SQLite gespeichert, übersteht Neustarts und Updates und ist
 
 Unterstützt werden XML-Gruppenadress-Exporte mit dreistufigen, zweistufigen oder numerischen Adressen (intern dreistufig normalisiert). CSV benötigt eine Kopfzeile und eine erkennbare Adressspalte (`Address`, `Gruppenadresse` oder `Adresse`), dazu `Name`, `Group name` oder die Hierarchiespalten `Main`/`Middle`/`Sub`. Semikolon, Komma und Tabulator werden erkannt. Unterstützt sind insbesondere ETS 3/1, 1/1 und 1/3; ETS 3/3 ohne Adressspalte bitte als XML exportieren. CSV kann UTF-8, UTF-16 mit BOM oder Windows-1252 verwenden; XML UTF-8 oder UTF-16 mit BOM. Vollständige `.knxproj`-Archive, OPC-Dateien und kennwortgeschützte Projekte werden noch nicht eingelesen.
 
-`DPST-9-1` wird beispielsweise zu `9.001`. Fehlende oder mehrere unterschiedliche DPT sowie nicht unterstützte Untertypen werden markiert und nicht geraten. Für solche Katalogeinträge bleibt die Rohwertanzeige erhalten; eindeutige DPT in ETS korrigieren und erneut exportieren. Doppelte oder ungültige Gruppenadressen lehnen die gesamte Datei ab. Fehlgeschlagene Datei- oder Vorschauprüfungen verändern den gespeicherten Katalog nicht. Bei gleichzeitigem Import wird eine veraltete Vorschau abgewiesen. Eine Speicherbestätigung nach Timeout zuerst über den gespeicherten Katalog prüfen.
+`DPST-9-1` wird beispielsweise zu `9.001`. Eine Hauptnummer zusammen mit genau einem passenden Untertyp wird auf diesen konkreten Typ normalisiert. Fehlende oder mehrere unterschiedliche Untertypen sowie nicht unterstützte Untertypen werden markiert und nicht geraten. Für solche Katalogeinträge bleibt die Rohwertanzeige erhalten; eindeutige DPT in ETS korrigieren und erneut exportieren. Doppelte oder ungültige Gruppenadressen lehnen die gesamte Datei ab. Fehlgeschlagene Datei- oder Vorschauprüfungen verändern den gespeicherten Katalog nicht. Bei gleichzeitigem Import wird eine veraltete Vorschau abgewiesen. Eine Speicherbestätigung nach Timeout zuerst über den gespeicherten Katalog prüfen.
 
 ### MDT, Linienkopplung und Routing
 
@@ -98,6 +98,10 @@ Unterstützt werden XML-Gruppenadress-Exporte mit dreistufigen, zweistufigen ode
 - Bei Routing nur einen Empfänger je gemeinsamem Multicast-Netz konfigurieren. VLANs, Firewall und Switch müssen UDP/3671 und die konfigurierte Multicast-Gruppe transportieren. Die physikalische Adresse vorab mit ETS abstimmen.
 - Ein geöffnetes Routing-Socket bestätigt keine Verbindung zu einem bestimmten Router. Der letzte Telegrammempfang wird deshalb separat angezeigt.
 - KNX IP Secure / Data Secure ist in dieser Version **noch nicht konfigurierbar**. Verschlüsselte Telegramme nicht durch Abschalten der Gebäudesicherheit passend machen; dafür ist eine spätere Secure-Erweiterung erforderlich.
+
+### DPT-Abdeckung
+
+Die genaue Abdeckung und noch fehlende Familien stehen in [DPT-SUPPORT.md](DPT-SUPPORT.md). `20` allein wird als 1-Byte-Zahl 0–255 angezeigt. `20.102` verwendet die deutschen HVAC-Betriebsarten; bitcodierter HVAC-Status bleibt getrennt. Unbekannte konkrete Untertypen werden nicht auf andere DPT umgedeutet. Vier- und fünfstellige Untertypen werden angenommen, wenn der passende Decoder vorhanden ist. Bereits importierte ETS-Zuordnungen nach dem Update über eine neue Vorschau erneut übernehmen, damit bisher abgewiesene DPT neu geprüft werden.
 
 ### Alarmmatrix und Datentypen
 
@@ -165,7 +169,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.06
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.07
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -175,8 +179,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.06
-git push origin v0.10.06
+git tag v0.10.07
+git push origin v0.10.07
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.

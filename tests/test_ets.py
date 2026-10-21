@@ -66,6 +66,31 @@ class ParserTests(unittest.TestCase):
             self.assertTrue(row['warnings'])
             self.assertEqual(row['dpt_source'], token)
 
+    def test_all_registered_numbers_and_ets_spellings_survive_import(self):
+        from knx_alarmserver.dpt import catalog
+        from knx_alarmserver.ets import record
+        for codec in catalog():
+            number = codec['dpt']
+            ets = 'DPST-'+number.replace('.', '-') if '.' in number else 'DPT-'+number
+            for source in (number, ets):
+                with self.subTest(source=source):
+                    result = record('1/2/3', 'Test', source=source)
+                    self.assertEqual(result['dpt'], number)
+        for value in ('20.65536', 'DPST-20-65536', '20.123456'):
+            self.assertIsNone(record('1/2/3', 'Test', source=value)['dpt'])
+
+    def test_main_number_and_one_matching_subtype_are_not_a_conflict(self):
+        from knx_alarmserver.ets import record
+        row = record('1/2/3', 'Mode', source='DPT-20,DPST-20-102')
+        self.assertEqual(row['dpt'], '20.102')
+        self.assertEqual(row['warnings'], [])
+        row = record('1/2/3', 'Mode', source='DPT-20,DPST-20-1')
+        self.assertIsNone(row['dpt'])
+        self.assertIn('nicht unterstuetzt', row['warnings'][0])
+        row = record('1/2/3', 'Mode', source='DPT-20,DPST-20-102,DPST-20-105')
+        self.assertIsNone(row['dpt'])
+        self.assertIn('Mehrere', row['warnings'][0])
+
     def test_bad_files_fail_without_partial_results(self):
         for raw, name in [(b'PK', 'project.knxproj'), (b'', 'file.xml'),
                           (b'<KNX/>', 'project.xml'), (b'<bad', 'file.xml'),

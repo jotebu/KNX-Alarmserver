@@ -2,6 +2,16 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.07 – 21.10.2026
+
+- DPT-Unterstützung geprüft und in `DPT-SUPPORT.md` dokumentiert: Hauptnummern, Untertypen und fehlende Familien getrennt ausgewiesen.
+- DPT 20 ohne Untertyp als expliziten numerischen 1-Byte-Aufzählungswert 0–255 ergänzt. Keine automatische Deutung als Heizungsbetriebsart und kein Rückfall unbekannter Untertypen auf einen anderen DPT.
+- Eine Hauptnummer zusammen mit genau einem passenden Untertyp im ETS-Export gilt als eindeutige Zuordnung (z. B. DPT-20 plus DPST-20-102). Unterschiedliche Untertypen bleiben mehrdeutig.
+- DPT 20.102 zeigt deutsche Betriebsarten mit ursprünglichem Zahlenwert. Bitcodierter HVAC-Status bleibt separat.
+- Fehler in ETS- und Alarmmatrix-Validierung korrigiert: vier- und fünfstellige Untertypen bis 65535 werden jetzt angenommen, wenn ein passender Decoder vorhanden ist. Betrifft unter anderem 1.1200, 12.1200 und 20.60102.
+- Prüfung aller registrierten DPT in direkter und ETS-Schreibweise sowie Tests für 20, 20.102, abweichenden HVAC-Status, Nutzdatenlänge und Alarm-CSV ergänzt.
+- Bereits importierte Zuordnungen bleiben unverändert; für neu erkannte DPT den ETS-Export erneut prüfen und übernehmen.
+
 ## 0.10.06 – 21.10.2026
 
 - Dashboard um ETS-Import erweitert: XML-Gruppenadress-Export sowie CSV mit Kopfzeile und Adressspalte auswählen, Vorschau prüfen und anschließend übernehmen.

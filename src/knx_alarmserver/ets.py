@@ -34,10 +34,10 @@ def dpt_number(value):
     match = re.fullmatch(r'DPST-(\d+)-(\d+)', value, re.I)
     if match:
         main, sub = map(int, match.groups())
-        if 1 <= main <= 999 and 0 <= sub <= 999:
+        if 1 <= main <= 999 and 0 <= sub <= 65535:
             return f'{main}.{sub:03d}'
-    match = re.fullmatch(r'(?:DPT-)?([1-9][0-9]{0,2})(?:\.([0-9]{1,3}))?', value, re.I)
-    if match:
+    match = re.fullmatch(r'(?:DPT-)?([1-9][0-9]{0,2})(?:\.([0-9]{1,5}))?', value, re.I)
+    if match and (match[2] is None or int(match[2]) <= 65535):
         return str(int(match[1])) + (f'.{int(match[2]):03d}' if match[2] else '')
     raise ValueError('DPT nicht erkannt')
 
@@ -59,11 +59,15 @@ def record(raw_address, name, description='', source=''):
         except ValueError:
             invalid = True
     selected = candidates[0] if len(candidates) == 1 and not invalid else None
+    specific = [number for number in candidates if '.' in number]
+    if (not invalid and len(specific) == 1
+            and all(number in {specific[0], specific[0].split('.')[0]} for number in candidates)):
+        selected = specific[0]
     if not source:
         warnings.append('DPT fehlt; Rohwertanzeige')
     elif invalid:
         warnings.append('DPT-Angabe nicht erkannt; Rohwertanzeige')
-    elif len(candidates) > 1:
+    elif len(candidates) > 1 and selected is None:
         warnings.append('Mehrere DPT zugeordnet; Rohwertanzeige')
     if selected:
         try:
@@ -71,6 +75,8 @@ def record(raw_address, name, description='', source=''):
         except ValueError:
             warnings.append('DPT nicht unterstuetzt; Rohwertanzeige')
             selected = None
+    if selected == '20':
+        warnings.append('Nur DPT-Hauptnummer 20: Zahlenwert 0 bis 255, keine Betriebsartzuordnung')
     return {'address': ga, 'name': name or ga, 'description': description,
             'dpt_source': source, 'dpts': candidates, 'dpt': selected, 'warnings': warnings}
 
