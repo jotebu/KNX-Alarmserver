@@ -1,14 +1,22 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.17, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.12.1, Inbetriebnahmeversion.
+
+## Alarmmatrix im Dashboard
+
+- Gesamter Prüfstand: 95 Python-Tests und 16 Dashboard-Tests erfolgreich.
+
+- Gemeinsame Validierung für Tabellenzeilen und CSV, automatische IDs, sofortige Auswertung, Neustart-Persistenz, Bearbeitung mit Zustandserhalt bzw. gezieltem Reset, unveränderte Historie und Datenbankfehler mit Rücknahme geprüft.
+- API-Prüfungen für Admin/User/Viewer, fremde Herkunft, fehlenden Aktionsheader, parallele Revisionen, CSV-Vorlage und abgelehnten Doppelimport.
+- Dashboard-Tests für neue Zeilen ohne selbst vergebene ID, Speichern mit Revision und CSV-Import nur ohne ungespeicherte Änderungen. DOM-Prüfung aller Seiten und der Tabellenbearbeitung mit simulierten Serverantworten für Admin und User erfolgreich; echte visuelle Browser- und Raspberry-Abnahme steht aus.
 
 ## Automatisches Neuladen nach Updates
 
-- Timer-Test bestätigt genau einen Aufruf zum Neuladen nach 2000 Millisekunden bei beobachtetem Update-Erfolg. Ein gespeicherter Erfolg beim Seitenaufruf und laufende Updates lösen keinen solchen Timer aus.
+- Timer-Test bestätigt genau einen Aufruf zum Neuladen nach 500 Millisekunden bei beobachtetem Update-Erfolg. Ein gespeicherter Erfolg beim Seitenaufruf und laufende Updates lösen keinen solchen Timer aus.
 
 ## Update-Erfolgsmeldung
 
-- Dashboard-Test prüft: gespeicherter früherer Erfolg bleibt ausgeblendet; beobachteter Installationsabschluss wird angezeigt; erneutes Öffnen blendet die Meldung und den Neuladen-Button wieder aus. Alle vierzehn Dashboard-Tests erfolgreich.
+- Dashboard-Test prüft: gespeicherter früherer Erfolg bleibt ausgeblendet; beobachteter Installationsabschluss wird angezeigt; erneutes Öffnen blendet die Meldung und den Neuladen-Button wieder aus. Alle sechzehn Dashboard-Tests erfolgreich.
 - Update-Polling mit altem und anschließend neuem Serverstand geprüft: Versionshinweis wechselt ohne Seitenneuladen auf „Installierte Version ist aktuell.“; Versionslink und Update-Kasten werden gleichzeitig angepasst.
 
 ## Manuelle Versionsprüfung und Update-Kasten

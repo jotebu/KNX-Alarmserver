@@ -5,7 +5,7 @@ import getpass
 import logging
 from pathlib import Path
 
-from .config import load_alarms, load_config
+from .config import load_config, load_configured_alarms
 from .store import Store
 
 
@@ -24,7 +24,7 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     config = load_config(args.config)
-    alarms = load_alarms(config["server"]["alarms"])
+    alarms = load_configured_alarms(config)
     from .dpt import catalog, transcoder
     for alarm in alarms:
         transcoder(alarm.dpt)

@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.exception_handlers import http_exception_handler
 
@@ -79,7 +79,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
     def identity(request, username):
         role = request.state.account['role']
         return {'user': username, 'role': role,
-                'permissions': {'configure': role == 'admin', 'acknowledge': role in {'admin', 'user'}}}
+                'permissions': {'configure': role == 'admin', 'acknowledge': role in {'admin', 'user'}, 'matrix': role in {'admin', 'user'}}}
 
     def action(request, expected):
         if (request.headers.get('X-Alarmserver-Action') != expected
@@ -105,7 +105,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
 
     @app.exception_handler(HTTPException)
     async def auth_page(request, error):
-        if error.status_code == 401 and request.url.path in {'/', '/telegrams', '/knx', '/ets', '/users', '/versions', '/account/password'}:
+        if error.status_code == 401 and request.url.path in {'/', '/telegrams', '/knx', '/ets', '/users', '/versions', '/account/password', '/matrix'}:
             return FileResponse(STATIC / 'login.html', status_code=401)
         return await http_exception_handler(request, error)
 
@@ -270,6 +270,65 @@ def create_app(config, store, update_manager=None, version_checker=None):
     @app.get("/api/alarms")
     def alarms(username=Depends(user)):
         return store.snapshot()
+
+    def matrix_editor(request: Request, username=Depends(user)):
+        if request.state.account['role'] not in {'admin', 'user'}:
+            raise HTTPException(status_code=403, detail='Alarmmatrix nur fuer Admins und User bearbeitbar')
+        return username
+
+    @app.get('/matrix')
+    def matrix_page(username=Depends(matrix_editor)):
+        return FileResponse(STATIC / 'index.html')
+
+    @app.get('/api/matrix')
+    def matrix_data(username=Depends(matrix_editor)):
+        return store.matrix()
+
+    @app.get('/api/matrix/example.csv')
+    def matrix_example(username=Depends(matrix_editor)):
+        from .matrix import example_csv
+        return Response('\ufeff' + example_csv(), media_type='text/csv; charset=utf-8',
+                        headers={'Content-Disposition': 'attachment; filename="alarmmatrix-beispiel.csv"'})
+
+    @app.get('/api/matrix/export.csv')
+    def matrix_export(username=Depends(matrix_editor)):
+        from .matrix import csv_text
+        return Response('\ufeff' + csv_text(store.matrix()['rows']), media_type='text/csv; charset=utf-8',
+                        headers={'Content-Disposition': 'attachment; filename="alarmmatrix.csv"'})
+
+    async def matrix_save(request, username, importing=False):
+        from .matrix import MatrixConflict, MAX_BYTES, parse_csv
+        action(request, 'manage-matrix')
+        payload = await json_body(request, max_bytes=MAX_BYTES * 6 + 8192 if importing else MAX_BYTES)
+        expected = {'csv', 'revision'} if importing else {'rows', 'revision'}
+        if set(payload) != expected or not isinstance(payload['revision'], str):
+            raise HTTPException(status_code=422, detail='Matrix und Revision erforderlich')
+        try:
+            if importing:
+                if not isinstance(payload['csv'], str):
+                    raise ValueError('CSV-Text erforderlich')
+                raw = payload['csv'].encode('utf-8')
+                if len(raw) > MAX_BYTES:
+                    raise HTTPException(status_code=413, detail='Maximal 2 MiB pro Alarmmatrix-CSV')
+                rows = parse_csv(raw)
+            else:
+                rows = payload['rows']
+            return await asyncio.to_thread(store.save_matrix, rows, payload['revision'], username, importing)
+        except MatrixConflict as error:
+            raise HTTPException(status_code=409, detail=str(error)) from None
+        except (ValueError, TypeError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        except Exception:
+            logging.getLogger(__name__).exception('Alarmmatrix konnte nicht gespeichert werden')
+            raise HTTPException(status_code=500, detail='Speichern fehlgeschlagen. Gespeicherten Stand neu laden und pruefen.') from None
+
+    @app.put('/api/matrix')
+    async def matrix_replace(request: Request, username=Depends(matrix_editor)):
+        return await matrix_save(request, username)
+
+    @app.post('/api/matrix/import')
+    async def matrix_import(request: Request, username=Depends(matrix_editor)):
+        return await matrix_save(request, username, importing=True)
 
     @app.get("/api/history")
     def history(username=Depends(user)):

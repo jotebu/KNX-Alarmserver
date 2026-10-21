@@ -8,7 +8,7 @@
 <div class="header-tools">
 <a id="version-link" href="/versions" title="Versionshistorie öffnen">Version …</a>
 <details id="knx-status-menu" class="header-menu"><summary id="knx-status-icon" class="icon-button status-yellow" title="KNX-Status wird geprüft" aria-label="KNX-Status wird geprüft"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M5 17v-4h14v4M12 13v4"/><rect x="8" y="2" width="8" height="6" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="9" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/></svg></summary><div class="dropdown status-dropdown"><b>KNX-Verbindung</b><p id="connection-status">Wird geprüft …</p><p id="connection-detail"></p></div></details>
-<details id="settings-menu" class="header-menu" hidden><summary class="icon-button" title="Einstellungen" aria-label="Einstellungen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 3 2 2-.1 2 3.5-1 2v3l1 2-2 3.5-2-.1-3 2-1 2h-4l-1-2-3-2-2 .1-2-3.5 1-2v-3l-1-2L4 4.9l2 .1z" transform="translate(0 0) scale(.95)"/><circle cx="11.4" cy="11.4" r="3"/></svg></summary><div class="dropdown"><p class="menu-caption">Verwaltung</p><a id="telegrams-link" href="/telegrams">Telegramme</a><a id="knx-settings-tab" href="/knx">KNX Verbindungen</a><a id="ets-tab" href="/ets">ETS-Import</a><a id="users-tab" href="/users">Benutzerverwaltung</a></div></details>
+<details id="settings-menu" class="header-menu" hidden><summary class="icon-button" title="Einstellungen" aria-label="Einstellungen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 3 2 2-.1 2 3.5-1 2v3l1 2-2 3.5-2-.1-3 2-1 2h-4l-1-2-3-2-2 .1-2-3.5 1-2v-3l-1-2L4 4.9l2 .1z" transform="translate(0 0) scale(.95)"/><circle cx="11.4" cy="11.4" r="3"/></svg></summary><div class="dropdown"><p class="menu-caption">Verwaltung</p><a id="matrix-link" href="/matrix">Alarmmatrix</a><a id="telegrams-link" href="/telegrams">Telegramme</a><a id="knx-settings-tab" href="/knx">KNX Verbindungen</a><a id="ets-tab" href="/ets">ETS-Import</a><a id="users-tab" href="/users">Benutzerverwaltung</a></div></details>
 <details id="profile-menu" class="header-menu"><summary class="profile-summary" aria-label="Benutzermenü"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span id="identity">…</span></summary><div class="dropdown"><p id="profile-user" class="menu-user">…</p><a href="/account/password">Kennwort ändern</a><button id="logout" type="button">Abmelden</button></div></details>
 </div></header>
 <main>
@@ -54,7 +54,7 @@
 </section>
 <section id="users-panel" class="panel" hidden aria-labelledby="users-title">
 <div class="toolbar"><h2 id="users-title">Benutzerverwaltung</h2><button id="users-add" type="button">Benutzer hinzufügen</button><button id="users-reload" type="button">Neu laden</button></div>
-<p>Admin: alle Funktionen · User: ansehen und quittieren · Viewer: nur ansehen. Der letzte Admin bleibt erhalten.</p>
+<p>Admin: alle Funktionen · User: ansehen, quittieren und Alarmmatrix verwalten · Viewer: nur ansehen. Der letzte Admin bleibt erhalten.</p>
 <p id="users-feedback" role="status" aria-live="polite"></p>
 <div class="table-scroll"><table><thead><tr><th>Benutzer</th><th>Rolle</th><th>Aktionen</th></tr></thead><tbody id="users-rows"></tbody></table></div>
 <form id="users-form" hidden><h3 id="users-form-title">Benutzer hinzufügen</h3><div class="knx-fields">
@@ -64,6 +64,17 @@
 <label>Passwort wiederholen<input id="users-confirm" type="password" minlength="12" maxlength="1024" autocomplete="new-password"></label></div>
 <p>Mindestens 12 Zeichen. Beim Bearbeiten beide Passwortfelder leer lassen, um das Kennwort beizubehalten. Änderungen melden den betroffenen Benutzer ab.</p>
 <div class="toolbar"><button id="users-save" type="submit">Speichern</button><button id="users-cancel" type="button">Abbrechen</button></div></form>
+</section>
+<section id="matrix-panel" class="panel" hidden aria-labelledby="matrix-title">
+<h2 id="matrix-title">Alarmmatrix</h2>
+<p>Jede Zeile definiert einen Alarm. Interne IDs werden automatisch vergeben. Änderungen gelten nach dem Speichern sofort, ohne KNX-Neustart. Bei Änderung von Adresse, DPT oder Regel beginnt die Auswertung mit unbekanntem Zustand; die Historie bleibt erhalten.</p>
+<div class="toolbar"><button id="matrix-add" type="button">Alarm hinzufügen</button><button id="matrix-save" type="button">Matrix speichern</button><button id="matrix-reload" type="button">Gespeicherten Stand laden</button><a href="/api/matrix/example.csv" download>Beispiel-CSV herunterladen</a><a href="/api/matrix/export.csv" download>Gespeicherte Matrix als CSV</a></div>
+<p>CSV: UTF-8, Semikolon als Trennzeichen, gleiche Spalten wie in der Tabelle, ohne ID. Import ergänzt neue Alarme; doppelte Gruppenadressen und ungültige Zeilen verhindern die gesamte Übernahme. Beispieladressen vor dem Import anpassen.</p>
+<form id="matrix-import-form"><div class="toolbar"><label>Alarmmatrix-CSV (max. 2 MiB)<input id="matrix-file" type="file" accept=".csv,text/csv" required></label><button id="matrix-import" type="submit">CSV ergänzen</button></div></form>
+<p id="matrix-feedback" role="status" aria-live="polite"></p><p id="matrix-count"></p>
+<div class="toolbar"><label>Suche<input id="matrix-search" type="search" placeholder="Name, ID, Bereich, Gruppenadresse"></label><button id="matrix-prev" type="button">Zurück</button><span id="matrix-page"></span><button id="matrix-next" type="button">Weiter</button></div>
+<div class="table-scroll"><table class="matrix-table"><thead><tr><th>Interne ID</th><th>Name</th><th>Gruppenadresse</th><th>DPT</th><th>Operator</th><th>Grenzwert / Wert</th><th>Hysterese</th><th>DPT-Feld</th><th>Bereich</th><th>Priorität</th><th>Aktion</th></tr></thead><tbody id="matrix-rows"></tbody></table></div>
+<p>Operatoren: eq = gleich, ne = ungleich, gt/ge = größer / größer gleich, lt/le = kleiner / kleiner gleich, between/outside = innerhalb / außerhalb, contains = Text enthält, in = Werteliste, monitor = nur anzeigen. Werte als JSON (z. B. true, 50, [20,80] oder &quot;Störung&quot;), Hysterese als Zahl mit Dezimalpunkt. DPT-Feld optional für strukturierte Werte (z. B. status.fault).</p>
 </section>
 <section id="password-panel" class="panel narrow-panel" hidden aria-labelledby="password-title"><h2 id="password-title">Kennwort ändern</h2>
 <form id="password-form"><div class="knx-fields single-column">

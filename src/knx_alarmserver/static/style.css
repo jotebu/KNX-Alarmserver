@@ -14,3 +14,5 @@
 :root{--header-height:82px}html{scroll-padding-top:calc(var(--header-height) + 20px)}body{padding-top:var(--header-height)}header{position:fixed;top:0;right:0;left:0;height:var(--header-height);z-index:1000}#version-link{display:inline-flex;align-items:center;min-height:40px}header .header-tools{flex-shrink:0}@media(max-width:440px){:root{--header-height:112px}header{flex-wrap:wrap;align-content:center;gap:8px}.brand{font-size:24px}.header-tools{flex-basis:100%;justify-content:flex-end}#version-link{font-size:11px}.header-menu .dropdown{position:fixed;top:calc(var(--header-height) + 8px);right:12px;left:12px;min-width:0;max-width:none;max-height:calc(100dvh - var(--header-height) - 24px);overflow-y:auto}}
 
 .version-status{justify-content:space-between;margin:12px 0}.version-status p{margin:0;margin-right:auto}#update-feedback:empty{display:none}
+
+.matrix-table input{min-width:140px;width:100%;font:inherit}.matrix-table select{min-width:110px;font:inherit}.matrix-table th:first-child{min-width:130px}.matrix-table input[aria-label^="name"]{min-width:230px}#matrix-feedback{min-height:24px;color:#ffcf8a}#matrix-panel .toolbar a{color:#65dbc1;font-size:13px}

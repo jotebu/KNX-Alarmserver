@@ -55,12 +55,12 @@ function render(){
       const ack=cell(row.acknowledged_by?`${row.acknowledged_by} · ${date(row.acknowledged_at)}`:'—');
       if(row.pending && access.acknowledge){ack.textContent='';const button=text('button','Quittieren','ack');button.onclick=async()=>{button.disabled=true;try{await api(`/api/alarms/${encodeURIComponent(row.id)}/acknowledge`,{method:'POST',headers:{'X-Alarmserver-Action':'acknowledge'}});await refresh();}catch(e){failure(e);}finally{button.disabled=false;}};ack.append(button);}
     }else if(view==='history'){
-      cell(date(row.timestamp));cell(row.alarm_name);cell({active:'Störung gekommen',clear:'Störung gegangen',acknowledge:'Quittiert'}[row.kind]||row.kind);cell(row.username||row.source||'—');
+      cell(date(row.timestamp));cell(row.alarm_name);cell({active:'Störung gekommen',clear:'Störung gegangen',acknowledge:'Quittiert',matrix_added:'Alarm angelegt',matrix_updated:'Alarmkonfiguration geändert',matrix_removed:'Alarm entfernt'}[row.kind]||row.kind);cell(row.username||row.source||'—');
     }else{cell(date(row.timestamp));cell(row.connection);const target=cell(`${row.source} → ${row.destination}`);if(row.name)target.append(text('small',row.name));if(row.ets_warning)target.append(text('small',row.ets_warning));cell(row.service+(row.dpt?' · '+row.dpt:''));cell(row.error||(row.display!==undefined?row.display+(row.unit?' '+row.unit:''):(row.raw===undefined?'—':JSON.stringify(row.raw))));}
     body.append(tr);
   }
   $('table-body').replaceChildren(body);$('empty').hidden=rows.length>0;
-  $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. alarms.csv einrichten und Dienst neu starten.':'Keine passenden Einträge.';
+  $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. Admins und User können Alarme im Bereich Alarmmatrix einrichten.':'Keine passenden Einträge.';
   $('hint').textContent={alarms:'Nach einem Neustart bleiben gespeicherte Zustände als alte Werte gekennzeichnet, bis ein neues Telegramm eintrifft. „Normal“ bedeutet zuletzt empfangener Normalwert; es ist keine zyklische Erreichbarkeitsprüfung.',history:'Die letzten 200 Ereignisse. Quittierungen ändern ausschließlich den lokalen Alarmstatus.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
 }
 async function refresh(){
@@ -70,7 +70,7 @@ async function refresh(){
     const requestedView=settingsOpen?'alarms':view;
     const snapshot=await api('/api/dashboard?view='+encodeURIComponent(requestedView));
     const status=snapshot.status;
-    access={role:status.role,...status.permissions};
+    access={role:status.role,matrix:['admin','user'].includes(status.role),...status.permissions};
     applyAccess();
     data.alarms=snapshot.alarms;
     if(requestedView!=='alarms')data[requestedView]=snapshot[requestedView];
@@ -91,7 +91,7 @@ async function refresh(){
     $('clock').textContent='Aktualisiert: '+new Date().toLocaleTimeString('de-DE');$('error').hidden=true;refreshFailures=0;render();
   }catch(error){refreshFailures+=1;setKnxIndicator('red','Server nicht erreichbar; KNX-Status unbekannt');failure(error);}finally{busy=false;scheduleRefresh();}
 }
-let settingsOpen=managementPages.includes(page)||page==='/account/password'||page==='/versions', knxConfig=null, knxRevision=null, editingConnection=null, savingKnx=false;
+let settingsOpen=managementPages.includes(page)||page==='/account/password'||page==='/versions'||page==='/matrix', knxConfig=null, knxRevision=null, editingConnection=null, savingKnx=false;
 function knxFeedback(message){$('knx-feedback').textContent=message;}
 function renderKnx(){
   $('knx-enabled').checked=knxConfig.enabled;
@@ -206,8 +206,77 @@ $('ets-apply').onclick=()=>etsAction('import');$('ets-reload').onclick=loadEts;
 $('ets-search').oninput=()=>{etsPage=0;renderEts();};
 $('ets-prev').onclick=()=>{etsPage--;renderEts();};$('ets-next').onclick=()=>{etsPage++;renderEts();};
 
+let matrixRows=[], matrixRevision=null, matrixBusy=false, matrixDirty=false, matrixPage=0;
+const matrixFields=['name','group_address','dpt','operator','threshold','hysteresis','field','area','priority'];
+function matrixChanged(){matrixDirty=true;$('matrix-feedback').textContent='Ungespeicherte Änderungen.';}
+function renderMatrix(){
+  const fragment=document.createDocumentFragment();
+  const query=$('matrix-search').value.trim().toLowerCase();
+  const matching=matrixRows.filter(row=>[row.id,row.name,row.area,row.group_address,row.dpt].join(' ').toLowerCase().includes(query));
+  matrixPage=Math.max(0,Math.min(matrixPage,Math.ceil(matching.length/100)-1));
+  $('matrix-prev').disabled=matrixPage===0;$('matrix-next').disabled=(matrixPage+1)*100>=matching.length;
+  $('matrix-page').textContent='Seite '+(matrixPage+1)+' / '+Math.max(1,Math.ceil(matching.length/100));
+  for(const row of matching.slice(matrixPage*100,(matrixPage+1)*100)){
+    const tr=document.createElement('tr');tr.append(text('td',row.id||'Wird vergeben'));
+    for(const field of matrixFields){
+      const td=document.createElement('td');
+      const choices=field==='operator'?['eq','ne','gt','ge','lt','le','between','outside','contains','in','monitor']:field==='priority'?['info','warning','critical']:null;
+      const input=document.createElement(choices?'select':'input');
+      if(choices)for(const choice of choices){const option=text('option',choice);option.value=choice;input.append(option);}
+      else{input.type='text';input.maxLength=field==='name'?200:2048;}
+      input.value=row[field];input.setAttribute('aria-label',field+' · '+(row.id||'neuer Alarm'));
+      input.oninput=()=>{row[field]=input.value;matrixChanged();};td.append(input);tr.append(td);
+    }
+    const td=document.createElement('td'),remove=text('button','Entfernen');remove.type='button';
+    remove.onclick=()=>{if(row.id&&!confirm('Alarm „'+row.name+'“ aus der Matrix entfernen? Die Historie bleibt erhalten.'))return;matrixRows=matrixRows.filter(item=>item!==row);matrixChanged();renderMatrix();};td.append(remove);tr.append(td);fragment.append(tr);
+  }
+  $('matrix-rows').replaceChildren(fragment);$('matrix-count').textContent=matrixRows.length+' Alarme';
+}
+function matrixReceived(result){matrixRows=result.rows;matrixRevision=result.revision;matrixDirty=false;renderMatrix();}
+async function loadMatrix(){
+  if(matrixBusy)return;
+  if(matrixDirty&&!confirm('Ungespeicherte Änderungen verwerfen?'))return;
+  await matrixOperation(async()=>{matrixReceived(await api('/api/matrix'));$('matrix-feedback').textContent='Gespeicherte Matrix geladen.';});
+}
+async function matrixOperation(work){
+  if(matrixBusy)return;matrixBusy=true;
+  const controls=[...$('matrix-panel').querySelectorAll('button,input,select')];controls.forEach(node=>node.disabled=true);
+  try{await work();}catch(error){$('matrix-feedback').textContent=error.message+' Bei fehlender Speicherbestätigung den gespeicherten Stand laden und prüfen.';}
+  finally{matrixBusy=false;controls.forEach(node=>node.disabled=false);renderMatrix();}
+}
+$('matrix-add').onclick=()=>{
+  if(matrixBusy)return;
+  $('matrix-search').value='';matrixPage=Math.floor(matrixRows.length/100);
+  matrixRows.push({id:'',name:'',group_address:'',dpt:'1.005',operator:'eq',threshold:'true',hysteresis:'0',field:'',area:'',priority:'warning'});
+  matrixChanged();renderMatrix();
+};
+$('matrix-search').oninput=()=>{matrixPage=0;renderMatrix();};
+$('matrix-prev').onclick=()=>{matrixPage--;renderMatrix();};
+$('matrix-next').onclick=()=>{matrixPage++;renderMatrix();};
+$('matrix-reload').onclick=loadMatrix;
+$('matrix-save').onclick=()=>matrixOperation(async()=>{
+  if(matrixRevision===null)throw Error('Zuerst gespeicherte Matrix laden.');
+  const result=await api('/api/matrix',{method:'PUT',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'manage-matrix'},body:JSON.stringify({rows:matrixRows,revision:matrixRevision})});
+  matrixReceived(result);$('matrix-feedback').textContent='Alarmmatrix gespeichert und sofort aktiviert.';
+});
+$('matrix-import-form').onsubmit=event=>{
+  event.preventDefault();
+  if(matrixDirty){$('matrix-feedback').textContent='Manuelle Änderungen vor dem CSV-Import speichern oder verwerfen.';return;}
+  matrixOperation(async()=>{
+    if(matrixRevision===null)throw Error('Zuerst gespeicherte Matrix laden.');
+    const file=$('matrix-file').files[0];if(!file)throw Error('CSV-Datei auswählen.');
+    if(file.size>2*1024*1024)throw Error('CSV-Datei darf maximal 2 MiB groß sein.');
+    const result=await api('/api/matrix/import',{method:'POST',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'manage-matrix'},body:JSON.stringify({csv:await file.text(),revision:matrixRevision})});
+    matrixReceived(result);$('matrix-file').value='';$('matrix-feedback').textContent='CSV vollständig übernommen; neue Alarme sofort aktiviert.';
+  });
+};
+window.addEventListener('beforeunload',event=>{if(page==='/matrix'&&matrixDirty){event.preventDefault();event.returnValue='';}});
+
 function applyAccess(){
-  $('settings-menu').hidden=!access.configure;
+  $('settings-menu').hidden=!access.configure&&!access.matrix;
+  $('matrix-link').hidden=!access.matrix;
+  for(const id of ['telegrams-link','knx-settings-tab','ets-tab','users-tab'])$(id).hidden=!access.configure;
+  if(page==='/matrix'&&!access.matrix)window.location.replace('/');
   $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
   if(!access.configure && (managementPages.includes(page)||page==='/telegrams'))window.location.replace('/');
 }
@@ -215,13 +284,15 @@ function setKnxIndicator(color,label){
   const icon=$('knx-status-icon');icon.className='icon-button status-'+color;icon.title=label;icon.setAttribute('aria-label',label);
 }
 async function initializePage(){
-  if(page==='/knx')await loadKnx();
+  if(page==='/matrix'&&access.matrix)await loadMatrix();
+  else if(page==='/knx')await loadKnx();
   else if(page==='/ets')await loadEts();
   else if(page==='/users')await loadUsers();
   else if(page==='/versions'){await loadVersions();if(access.configure)await loadUpdate();}
 }
 function layoutPage(){
-  const names={'/telegrams':['Telegramme','Empfangene KNX-Gruppentelegramme und decodierte Werte.'],
+  const names={'/matrix':['Alarmmatrix','Alarmregeln manuell bearbeiten oder als CSV ergänzen.'],
+    '/telegrams':['Telegramme','Empfangene KNX-Gruppentelegramme und decodierte Werte.'],
     '/knx':['KNX Verbindungen','Verbindungen zum KNX-Netz verwalten.'],
     '/ets':['ETS-Import','Gruppenadressen und Datenpunkttypen importieren.'],
     '/users':['Benutzerverwaltung','Benutzerkonten, Kennwörter und Zugriffsrechte verwalten.'],
@@ -232,6 +303,7 @@ function layoutPage(){
   if(names[page]){$('page-title').textContent=names[page][0];$('page-description').textContent=names[page][1];document.title=names[page][0]+' · KNX Alarmserver';}
   $('data-panel').hidden=settingsOpen;
   $('knx-settings').hidden=page!=='/knx';$('ets-panel').hidden=page!=='/ets';$('users-panel').hidden=page!=='/users';
+  $('matrix-panel').hidden=page!=='/matrix';
   $('password-panel').hidden=page!=='/account/password';$('versions-panel').hidden=page!=='/versions';
   $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
 }
@@ -362,7 +434,7 @@ async function loadUpdate(){
     $('update-feedback').textContent=(state.state==='success'&&!showSuccess?'':state.message)||((newerVersionKnown&&!state.available)?'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.':'');
     $('update-detail').textContent=state.target_version?'Zielversion: '+state.target_version+(state.updated_at?' · '+date(state.updated_at):''):'';
     if(showSuccess&&updateReloadTimer===null){
-      updateReloadTimer=setTimeout(()=>window.location.reload(),2000);
+      updateReloadTimer=setTimeout(()=>window.location.reload(),500);
     }
     if(active)updatePoll=setTimeout(loadUpdate,3000);
   }catch(error){$('update-start').disabled=true;$('update-feedback').textContent='Verbindung unterbrochen. Der Status wird nach dem Neustart erneut geprüft.';updatePoll=setTimeout(loadUpdate,5000);}

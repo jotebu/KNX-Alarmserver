@@ -90,7 +90,7 @@ test('update polling replaces outdated version notice after the new server start
  assert.equal(get('update-start').disabled,true);
 });
 
-test('observed update success reloads once after two seconds; stored success never reloads',async()=>{
+test('observed update success reloads once after half a second; stored success never reloads',async()=>{
  const nodes=new Map(),timers=[];let reloads=0,state;
  const ctx=vm.createContext({newerVersionKnown:false,renderVersionCheck(){},$:id=>{if(!nodes.has(id))nodes.set(id,{});return nodes.get(id);},api:async()=>state,
   setTimeout(fn,delay){timers.push({fn,delay});return timers.length;},clearTimeout(){},date:()=>'',window:{location:{reload(){reloads++;}}}});
@@ -98,9 +98,9 @@ test('observed update success reloads once after two seconds; stored success nev
  const load=async next=>{state={available:true,check_ok:true,update_available:false,...next};await vm.runInContext('loadUpdate()',ctx);};
  await load({state:'success'});assert.equal(timers.length,0);
  await load({state:'installing'});
- assert.equal(timers.filter(t=>t.delay===2000).length,0);
+ assert.equal(timers.filter(t=>t.delay===500).length,0);
  await load({state:'success'});await load({state:'success'});
- const reloadTimers=timers.filter(t=>t.delay===2000);
+ const reloadTimers=timers.filter(t=>t.delay===500);
  assert.equal(reloadTimers.length,1);assert.equal(reloads,0);
  reloadTimers[0].fn();assert.equal(reloads,1);
 });

@@ -26,44 +26,48 @@ class Alarm:
 
 def load_alarms(path):
     with Path(path).open(encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle, delimiter=";")
-        fields = set(Alarm.__dataclass_fields__)
-        if not reader.fieldnames or set(reader.fieldnames) != fields:
-            raise ValueError("CSV-Kopf erwartet: id;name;group_address;dpt;operator;threshold;hysteresis;field;area;priority")
-        result, ids, addresses = [], set(), set()
-        for line, row in enumerate(reader, 2):
-            try:
-                if None in row or any(v is None for v in row.values()):
-                    raise ValueError("Spaltenanzahl stimmt nicht")
-                row = {k: v.strip() for k, v in row.items()}
-                if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", row["id"]):
-                    raise ValueError("ungueltige ID")
-                parts = row["group_address"].split("/")
-                if len(parts) != 3 or any(not p.isdecimal() for p in parts):
-                    raise ValueError("Gruppenadresse muss dreistufig sein")
-                a, b, c = map(int, parts)
-                if not (0 <= a <= 31 and 0 <= b <= 7 and 0 <= c <= 255):
-                    raise ValueError("Gruppenadresse ausserhalb KNX-Bereich")
-                row["group_address"] = f"{a}/{b}/{c}"
-                if not re.fullmatch(r"[1-9][0-9]{0,2}(\.[0-9]{3,5})?", row["dpt"]):
-                    raise ValueError("DPT als Hauptnummer oder vollstaendig, z.B. 9.001")
-                if '.' in row['dpt'] and int(row['dpt'].split('.')[1]) > 65535:
-                    raise ValueError('DPT-Untertyp ausserhalb 0 bis 65535')
-                row["threshold"] = threshold_from_text(row["threshold"])
-                row["hysteresis"] = float(row["hysteresis"] or "0")
-                if not row["name"] or len(row["name"]) > 200:
-                    raise ValueError("Name fehlt oder ist zu lang")
-                if row["priority"] not in {"info", "warning", "critical"}:
-                    raise ValueError("priority: info, warning oder critical")
-                if row["id"] in ids or row["group_address"] in addresses:
-                    raise ValueError("doppelte ID oder Gruppenadresse")
-                ids.add(row["id"])
-                addresses.add(row["group_address"])
-                alarm = Alarm(**row)
-                validate_rule(alarm)
-                result.append(alarm)
-            except (TypeError, ValueError) as error:
-                raise ValueError(f"CSV Zeile {line}: {error}") from error
+        return parse_alarms(handle)
+
+
+def parse_alarms(handle):
+    reader = csv.DictReader(handle, delimiter=";")
+    fields = set(Alarm.__dataclass_fields__)
+    if not reader.fieldnames or set(reader.fieldnames) != fields:
+        raise ValueError("CSV-Kopf erwartet: id;name;group_address;dpt;operator;threshold;hysteresis;field;area;priority")
+    result, ids, addresses = [], set(), set()
+    for line, row in enumerate(reader, 2):
+        try:
+            if None in row or any(v is None for v in row.values()):
+                raise ValueError("Spaltenanzahl stimmt nicht")
+            row = {k: v.strip() for k, v in row.items()}
+            if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", row["id"]):
+                raise ValueError("ungueltige ID")
+            parts = row["group_address"].split("/")
+            if len(parts) != 3 or any(not p.isdecimal() for p in parts):
+                raise ValueError("Gruppenadresse muss dreistufig sein")
+            a, b, c = map(int, parts)
+            if not (0 <= a <= 31 and 0 <= b <= 7 and 0 <= c <= 255):
+                raise ValueError("Gruppenadresse ausserhalb KNX-Bereich")
+            row["group_address"] = f"{a}/{b}/{c}"
+            if not re.fullmatch(r"[1-9][0-9]{0,2}(\.[0-9]{3,5})?", row["dpt"]):
+                raise ValueError("DPT als Hauptnummer oder vollstaendig, z.B. 9.001")
+            if '.' in row['dpt'] and int(row['dpt'].split('.')[1]) > 65535:
+                raise ValueError('DPT-Untertyp ausserhalb 0 bis 65535')
+            row["threshold"] = threshold_from_text(row["threshold"])
+            row["hysteresis"] = float(row["hysteresis"] or "0")
+            if not row["name"] or len(row["name"]) > 200:
+                raise ValueError("Name fehlt oder ist zu lang")
+            if row["priority"] not in {"info", "warning", "critical"}:
+                raise ValueError("priority: info, warning oder critical")
+            if row["id"] in ids or row["group_address"] in addresses:
+                raise ValueError("doppelte ID oder Gruppenadresse")
+            ids.add(row["id"])
+            addresses.add(row["group_address"])
+            alarm = Alarm(**row)
+            validate_rule(alarm)
+            result.append(alarm)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f"CSV Zeile {line}: {error}") from error
     return result
 
 
@@ -144,3 +148,18 @@ def validate_knx(knx):
     if knx["enabled"] and not any(c.get("enabled", True) for c in connections):
         raise ValueError("KNX aktiviert, aber keine aktive Verbindung konfiguriert")
     return knx
+
+
+def load_configured_alarms(config):
+    """Dashboard matrix takes precedence; read without changing the database."""
+    import json
+    import sqlite3
+    from contextlib import closing
+    database = Path(config['server']['database']).resolve()
+    if database.is_file():
+        with closing(sqlite3.connect(database.as_uri() + '?mode=ro', uri=True)) as db:
+            if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='settings'").fetchone():
+                row = db.execute("SELECT value FROM settings WHERE name='alarm_matrix'").fetchone()
+                if row:
+                    return [Alarm(**alarm) for alarm in json.loads(row[0])['alarms']]
+    return load_alarms(config['server']['alarms'])

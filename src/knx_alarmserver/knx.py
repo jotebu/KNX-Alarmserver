@@ -25,6 +25,11 @@ class Monitor:
                 "storage_error": self.failed, "connections": states}
 
     def received(self, telegram, connection_name):
+        # Keep decoder selection and ingestion consistent with live matrix edits.
+        with self.store.lock:
+            return self._received(telegram, connection_name)
+
+    def _received(self, telegram, connection_name):
         from xknx.telegram import GroupAddress, TelegramDirection
         from xknx.telegram.apci import GroupValueResponse, GroupValueWrite
         from xknx.exceptions import ConversionError, CouldNotParseTelegram

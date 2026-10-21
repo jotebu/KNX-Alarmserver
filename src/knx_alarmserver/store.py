@@ -30,6 +30,13 @@ class Store:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA synchronous=FULL")
         try:
+            if self.db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='settings'").fetchone():
+                saved = self.db.execute("SELECT value FROM settings WHERE name='alarm_matrix'").fetchone()
+                if saved:
+                    from .config import Alarm
+                    alarms = [Alarm(**row) for row in json.loads(saved['value'])['alarms']]
+                    self.alarms = {a.id: a for a in alarms}
+                    self.by_address = {a.group_address: a for a in alarms}
             self._initialize(alarms)
             row = self.db.execute("SELECT value FROM settings WHERE name='ets'").fetchone()
             self._ets = json.loads(row['value']) if row else {}
@@ -69,7 +76,7 @@ class Store:
                 signature = json.dumps([alarm.group_address, alarm.dpt, alarm.operator, alarm.threshold,
                                         alarm.hysteresis, alarm.field], sort_keys=True, ensure_ascii=False)
                 row = self.db.execute("SELECT signature FROM states WHERE id=?", (alarm.id,)).fetchone()
-                if row and row["signature"] != signature:
+                if row and json.loads(row["signature"]) != json.loads(signature):
                     raise ValueError(f"Alarm {alarm.id}: Adresse/DPT/Regel geaendert. Neue ID verwenden.")
                 self.db.execute("INSERT OR IGNORE INTO states(id,signature) VALUES (?,?)", (alarm.id, signature))
 
@@ -77,6 +84,65 @@ class Store:
     def transaction(self):
         with self.lock, self.db:
             yield
+
+    def matrix(self):
+        from .matrix import editable
+        with self.lock:
+            rows = [editable(alarm) for alarm in self.alarms.values()]
+            revision = hashlib.sha256(json.dumps(rows, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+            return {'rows': rows, 'revision': revision}
+
+    def save_matrix(self, rows, revision, username, append=False):
+        from .matrix import MatrixConflict, validate_rows
+        if not isinstance(rows, list):
+            raise ValueError('Alarmliste erforderlich')
+        with self.lock:
+            if revision != self.matrix()['revision']:
+                raise MatrixConflict('Alarmmatrix inzwischen geaendert. Neu laden und Aenderungen erneut eintragen.')
+            old = self.alarms
+            saved = self.db.execute("SELECT value FROM settings WHERE name='alarm_matrix'").fetchone()
+            next_id = json.loads(saved['value'])['next_id'] if saved else 1
+            proposed = self.matrix()['rows'] if append else []
+            seen = set()
+            for row in rows:
+                if not isinstance(row, dict):
+                    raise ValueError('Alarm muss ein Objekt sein')
+                row = dict(row)
+                identifier = row.get('id')
+                if identifier == '':
+                    while True:
+                        identifier = f'alarm-{next_id:06d}'
+                        next_id += 1
+                        if not self.db.execute('SELECT 1 FROM states WHERE id=?', (identifier,)).fetchone():
+                            break
+                    row['id'] = identifier
+                elif append or not isinstance(identifier, str) or identifier not in old:
+                    raise ValueError('ID wird vom Server vergeben; bestehende IDs nur zum Bearbeiten verwenden')
+                if identifier in seen:
+                    raise ValueError('Doppelte Alarm-ID')
+                seen.add(identifier)
+                proposed.append(row)
+            alarms = validate_rows(proposed)
+            replacement = {alarm.id: alarm for alarm in alarms}
+            with self.transaction():
+                for identifier, alarm in old.items():
+                    if identifier not in replacement:
+                        self._event(alarm, 'matrix_removed', now(), username=username)
+                for alarm in alarms:
+                    signature = json.dumps([alarm.group_address, alarm.dpt, alarm.operator, alarm.threshold,
+                                            alarm.hysteresis, alarm.field], sort_keys=True, ensure_ascii=False)
+                    state = self.db.execute('SELECT signature FROM states WHERE id=?', (alarm.id,)).fetchone()
+                    if state and json.loads(state['signature']) != json.loads(signature):
+                        self.db.execute('DELETE FROM states WHERE id=?', (alarm.id,))
+                    self.db.execute('INSERT OR IGNORE INTO states(id,signature) VALUES (?,?)', (alarm.id, signature))
+                    if old.get(alarm.id) != alarm:
+                        self._event(alarm, 'matrix_updated' if alarm.id in old else 'matrix_added', now(), username=username)
+                payload = {'alarms': [asdict(a) for a in alarms], 'next_id': next_id}
+                self.db.execute("INSERT OR REPLACE INTO settings(name,value) VALUES ('alarm_matrix',?)",
+                                (json.dumps(payload, ensure_ascii=False, allow_nan=False),))
+            self.alarms = replacement
+            self.by_address = {alarm.group_address: alarm for alarm in alarms}
+            return self.matrix()
 
     def close(self):
         with self.lock:
@@ -118,10 +184,10 @@ class Store:
                                 (str(message)[:300], now(), alarm.id))
 
     def acknowledge(self, alarm_id, username):
-        alarm = self.alarms.get(alarm_id)
-        if alarm is None:
-            raise KeyError(alarm_id)
         with self.transaction():
+            alarm = self.alarms.get(alarm_id)
+            if alarm is None:
+                raise KeyError(alarm_id)
             row = self.db.execute("SELECT * FROM states WHERE id=?", (alarm_id,)).fetchone()
             if not row["pending"]:
                 return False

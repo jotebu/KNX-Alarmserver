@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.17 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.1 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -63,6 +63,8 @@ Die Optionen sind idempotent. Bei fehlgeschlagenem Dienststart stellt der Instal
 
 ## Konfiguration
 
+Die Alarmmatrix wird normalerweise im Dashboard verwaltet. Die folgenden Dateibefehle dienen der Webserver-Konfiguration und der bisherigen Alarm-Startdatei vor dem ersten Dashboard-Speichern.
+
 ```bash
 sudo nano /etc/knx-alarmserver/config.toml
 sudo nano /etc/knx-alarmserver/alarms.csv
@@ -83,7 +85,7 @@ Einträge lassen sich bearbeiten, einzeln deaktivieren oder nach Bestätigung l�
 
 Verbindungsänderungen werden ohne Webserver-Neustart übernommen. Dafür werden die bisherigen KNX-Verbindungen geschlossen und neu aufgebaut; während dieser kurzen Unterbrechung können Telegramme fehlen. Speichern bestätigt die Konfiguration, nicht die Erreichbarkeit des Routers. Verbindungsfehler erscheinen im Status und Protokoll.
 
-Die anfänglichen KNX-Einstellungen stammen aus `config.toml`. Ab dem ersten Speichern im Dashboard hat der in SQLite gespeicherte KNX-Abschnitt Vorrang, auch nach Neustarts und Updates. Webserver-Einstellungen und Alarmmatrix bleiben weiterhin dateibasiert. Ein SQLite-Backup enthält somit auch die Dashboard-Verbindungen. Nur Admins können KNX-Verbindungen und ETS-Import verwalten.
+Die anfänglichen KNX-Einstellungen stammen aus `config.toml`. Ab dem ersten Speichern im Dashboard hat der in SQLite gespeicherte KNX-Abschnitt Vorrang, auch nach Neustarts und Updates. Webserver-Einstellungen bleiben dateibasiert. Die Alarmmatrix wird nach dem ersten Speichern ebenfalls aus SQLite geladen. Ein SQLite-Backup enthält somit auch die Dashboard-Verbindungen. Nur Admins können KNX-Verbindungen und ETS-Import verwalten.
 
 Neuinstallationen enthalten keine vorgegebenen Router-Verbindungen. Bei Updates bleibt die bestehende Konfiguration erhalten. Ein vorhandener Beispielrouter mit `192.0.2.30` muss im Dashboard bearbeitet oder gelöscht werden; diese Dokumentationsadresse ist kein realer Router.
 
@@ -119,20 +121,25 @@ Die genaue Abdeckung und noch fehlende Familien stehen in [DPT-SUPPORT.md](DPT-S
 
 ### Alarmmatrix und Datentypen
 
-Semikolongetrennte UTF-8-CSV mit Kopfzeile:
+Admins und User öffnen über das Zahnrad **Alarmmatrix** (`/matrix`). Zeilen hinzufügen, alle Felder direkt in der Tabelle bearbeiten und **Matrix speichern** wählen. Interne IDs werden ausschließlich vom Server automatisch vergeben; vorhandene IDs bleiben bei Bearbeitungen erhalten. Entfernen wird beim Speichern wirksam. Suche und Seiten mit jeweils 100 Zeilen erleichtern große Matrizen; gespeichert wird immer die gesamte Matrix. Die Oberfläche warnt vor ungespeicherten Änderungen.
+
+**Beispiel-CSV herunterladen** liefert eine direkt importierbare Vorlage. **Gespeicherte Matrix als CSV** exportiert den aktuellen gespeicherten Stand. **CSV ergänzen** importiert zusätzliche Alarme mit neuen IDs. Vorhandene Gruppenadressen werden nicht überschrieben; doppelte Adressen oder ungültige Zeilen lehnen den gesamten Import ab. Erst manuelle Änderungen speichern oder verwerfen. Maximal 5000 Alarme und 2 MiB je Import. Eine parallel gespeicherte Änderung wird erkannt und muss vor dem erneuten Speichern geladen werden.
+
+CSV für Dashboard-Import und Export: semikolongetrenntes UTF-8 mit Kopfzeile **ohne ID**. Text mit Semikolon oder Anführungszeichen korrekt als CSV quotieren:
+
 
 ```csv
-id;name;group_address;dpt;operator;threshold;hysteresis;field;area;priority
-pump;Pumpenstörung;1/2/3;1.005;eq;true;0;;Technik;critical
-hot;Übertemperatur;1/2/4;9.001;gt;50;2;;Technik;critical
-message;Statustext;1/2/5;16.001;contains;Störung;0;;Technik;warning
+name;group_address;dpt;operator;threshold;hysteresis;field;area;priority
+Pumpenstörung;1/2/3;1.005;eq;true;0;;Technik;critical
+Übertemperatur;1/2/4;9.001;gt;50;2;;Technik;critical
+Statustext;1/2/5;16.001;contains;Störung;0;;Technik;warning
 ```
 
-Diese Gruppenadressen sind ausschließlich Beispiele und dürfen nicht ungeprüft übernommen werden. Weitere Beispiele: [config/alarms.example.csv](config/alarms.example.csv). `config/alarms.csv` enthält bewusst nur den Kopf. Die bestehende Gebäude-Alarmmatrix wird später anhand ihrer echten Spalten in dieses Format überführt; Symcon-Objekt-IDs sind für den direkten KNX-Empfang nicht erforderlich.
+Diese Gruppenadressen sind ausschließlich Beispiele und dürfen nicht ungeprüft übernommen werden. Weitere Beispiele ohne ID: [config/alarmmatrix.example.csv](config/alarmmatrix.example.csv). Bestehende Installationen lesen vor dem ersten Dashboard-Speichern weiterhin die bisherige `alarms.csv` mit ID-Spalte; vorhandene IDs, Zustände und Historie bleiben erhalten. Danach hat die in SQLite gespeicherte Matrix Vorrang, auch beim CLI-Befehl `check`, nach Neustarts und Updates. Ein SQLite-Backup enthält somit auch die Matrix. Die alte Datei wird nicht überschrieben; Änderungen daran haben nach dem Dashboard-Speichern keine Wirkung mehr. Symcon-Objekt-IDs sind für den direkten KNX-Empfang nicht erforderlich.
 
 | Feld | Bedeutung |
 | --- | --- |
-| `id` | Dauerhaft eindeutige ID mit Buchstaben, Zahlen, `_` oder `-` |
+| Interne ID | Vom Server fortlaufend vergeben, z. B. `alarm-000001`; schreibgeschützt und nicht in der Dashboard-CSV. Bestehende Alt-IDs bleiben erhalten. |
 | `name` | Anzeigename |
 | `group_address` | KNX-Gruppenadresse, dreistufig |
 | `dpt` | Exakter DPT, z. B. `9.001`, `16.001`, `20.102`; Hauptnummern sind möglich, wenn xknx dafür einen Basistyp bereitstellt |
@@ -155,7 +162,7 @@ Verfügbare DPT auflisten:
 sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver dpt-list
 ```
 
-Es ist in dieser Version ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Werden Gruppenadresse, DPT oder Regel eines bereits gespeicherten Alarms geändert, eine neue ID verwenden; vorhandene Zustände werden nicht stillschweigend umgedeutet.
+Es ist in dieser Version ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Bei Änderungen von Gruppenadresse, DPT oder Regel im Dashboard wird nur der betroffene aktuelle Zustand zurückgesetzt, bis ein neues Telegramm eintrifft. Name, Bereich und Priorität können ohne Zustandsverlust geändert werden. Änderungen und Entfernen werden mit Benutzer und Zeit in der Historie protokolliert; bestehende Ereignisse bleiben erhalten.
 
 ## Zustände und Quittierung
 
@@ -183,7 +190,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.17
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.1
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -193,8 +200,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.17
-git push origin v0.10.17
+git tag v0.12.1
+git push origin v0.12.1
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -204,7 +211,7 @@ Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentli
 Die Hauptseite zeigt Zähler, Meldungen und Historie. Die Kopfzeile bleibt auf allen Seiten beim Scrollen sichtbar; die Versionsnummer befindet sich ebenfalls dort. Der bisherige Fußtext entfällt. Auf schmalen Bildschirmen nutzt die Leiste zwei Zeilen, und Menüs öffnen darunter innerhalb des sichtbaren Bereichs. Der bisherige KNX-Informationskasten und die Verwaltungsreiter entfallen. Oben rechts stehen:
 
 - **KNX-Symbol:** grün, wenn alle aktiven Verbindungen bereit sind; rot bei Verbindungs- oder Speicherfehlern; gelb bei deaktiviertem bzw. noch nicht konfiguriertem Empfang. Beim Aufklappen erscheinen Einzelzustände und letzter Empfang. Ohne aktuelle Serverantwort wird der Status rot als unbekannt markiert.
-- **Zahnrad, nur Admin:** Telegramme (`/telegrams`), KNX Verbindungen (`/knx`), ETS-Import (`/ets`), Benutzerverwaltung (`/users`). Jede Funktion hat eine eigene URL mit direkter serverseitiger Rechteprüfung.
+- **Zahnrad:** Admins und User können die Alarmmatrix (`/matrix`) verwalten. Die folgenden weiteren Funktionen sind ausschließlich für Admins sichtbar: Telegramme (`/telegrams`), KNX Verbindungen (`/knx`), ETS-Import (`/ets`), Benutzerverwaltung (`/users`). Jede Funktion hat eine eigene URL mit direkter serverseitiger Rechteprüfung.
 - **Benutzersymbol mit Rang:** Aufklappen zeigt den Benutzernamen, Kennwort ändern (`/account/password`) und Abmelden. Alle Rollen können ausschließlich ihr eigenes Kennwort mit Prüfung des bisherigen Kennworts ändern. Danach erneut anmelden; sämtliche bisherigen Sitzungen dieses Kontos werden beendet.
 
 Menüs lassen sich per Maus, Tastatur und Touch bedienen, außerhalb anklicken oder mit Escape schließen. Ein Link führt von jeder Unterseite zum Dashboard zurück.
@@ -232,15 +239,15 @@ Die Update-Funktion ist nur mit dem über den Installer eingerichteten systemd-D
 
 ## Anmeldung und Benutzerverwaltung
 
-| Rolle | Meldungen / Historie sehen | Quittieren | KNX / ETS / Benutzer verwalten |
-|---|---|---|---|
-| Admin | Ja | Ja | Ja |
-| User | Ja | Ja | Nein |
-| Viewer | Ja | Nein | Nein |
+| Rolle | Meldungen / Historie sehen | Quittieren | Alarmmatrix verwalten | KNX / ETS / Benutzer verwalten |
+|---|---|---|---|---|
+| Admin | Ja | Ja | Ja | Ja |
+| User | Ja | Ja | Ja | Nein |
+| Viewer | Ja | Nein | Nein | Nein |
 
 Nach dem Update im Browser die Serveradresse öffnen und mit dem bisherigen Konto anmelden. Bestehende Konten erhalten bei der Migration die Rolle **Admin**, ihre Kennwörter bleiben gültig. Neue Konten legt ein Admin im Zahnradmenü unter **Benutzerverwaltung** an; die vorausgewählte Rolle ist Viewer. Dort können Admins auch Rollen ändern, Kennwörter setzen und Konten löschen. Der Benutzername bleibt beim Bearbeiten unverändert. Der letzte Admin kann nicht gelöscht oder herabgestuft werden.
 
-Das Zahnradmenü und die Verwaltungsseiten sind nur für Admins zugänglich; Viewer sehen auch keine Quittierschaltflächen. Telegramme sind eine Admin-Verwaltungsseite. Der Server verweigert die entsprechenden API-Aufrufe unabhängig vom Dashboard mit HTTP 403. Quittierungen protokollieren weiterhin den angemeldeten Benutzer und Zeitpunkt. Bisherige Quittierungsnamen bleiben auch nach Löschen eines Kontos erhalten.
+Admins und User sehen das Zahnradmenü; User erhalten darin ausschließlich die Alarmmatrix. Viewer sehen weder Verwaltung noch Quittierschaltflächen. Telegramme sind eine Admin-Verwaltungsseite. Der Server verweigert die entsprechenden API-Aufrufe unabhängig vom Dashboard mit HTTP 403. Quittierungen protokollieren weiterhin den angemeldeten Benutzer und Zeitpunkt. Bisherige Quittierungsnamen bleiben auch nach Löschen eines Kontos erhalten.
 
 Eine Browser-Sitzung gilt 12 Stunden und überlebt einen Dienstneustart. Ein zufälliges Sitzungstoken liegt im HttpOnly-Cookie mit SameSite=Strict; in SQLite wird nur sein SHA256-Hash gespeichert. Bei direktem HTTPS setzt der Server zusätzlich Secure. Das Cookie ist nicht an eine IP-Adresse gebunden. Bei den regelmäßigen Dashboard-Abfragen wird die Sitzung geprüft, nicht erneut PBKDF2 berechnet. Passwörter bleiben individuell gesalzen mit PBKDF2-SHA256 und 600.000 Durchläufen gespeichert. Weder Passwörter noch Tokens erscheinen in API-Benutzerlisten. Es gibt keine Standardkennwörter.
 
@@ -286,7 +293,7 @@ GitHub CI prüft Python 3.11 und 3.13, die echten Decoder von xknx, Alarmregeln 
 
 1. Routermodell, KNX-Secure-Nutzung, Filtertabellen und tatsächlichen Telegrammempfang prüfen.
 2. Echte Alarmmatrix importieren und mit Testalarmen abnehmen.
-3. Alarmmatrix-Verwaltung in der Weboberfläche.
+3. Alarmmatrix anhand realer Telegramme und quittierpflichtiger Testalarme abnehmen.
 4. Push/E-Mail, Zeitprogramme, Eskalation und zyklische Erreichbarkeitsüberwachung.
 5. Debian-Paket/APT-Verteilung, vollständige Dependency-Lockdatei und weitere Hardwaretests.
 

@@ -23,7 +23,7 @@ function all(node){return [node,...node.children.flatMap(all)];}
 test('role only beside profile icon; admin gear and acknowledgement controls respect roles',async()=>{
  for(const role of ['viewer','user','admin']){
   const {nodes}=await setup(role);
-  assert.equal(nodes.get('settings-menu').hidden,role!=='admin');
+  assert.equal(nodes.get('settings-menu').hidden,role==='viewer');
   assert.equal(nodes.get('identity').textContent,{admin:'Admin',user:'User',viewer:'Viewer'}[role]);
   assert.equal(nodes.get('profile-user').textContent,'person@example.org');
   assert.equal(all(nodes.get('table-body')).filter(n=>n.tagName==='button').length,role==='viewer'?0:1);

@@ -2,6 +2,15 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.1 – 21.10.2026
+
+- Dashboard-Updates abgeschlossen; automatisches Neuladen nach erfolgreichem Update auf 0,5 Sekunden verkürzt.
+- Neuer Bereich „Alarmmatrix“ für Admins und User: Alarme in einer Tabelle anlegen, bearbeiten und entfernen; sofortige Übernahme ohne Dienst- oder KNX-Neustart.
+- Interne fortlaufende IDs für neue Alarme automatisch serverseitig vergeben. Bestehende IDs und Historien bleiben erhalten; Änderungen von Adresse, DPT oder Auswertungsregel setzen nur den betroffenen aktuellen Zustand zurück.
+- Alarmmatrix dauerhaft in SQLite speichern. Nach dem ersten Speichern hat sie gegenüber der bisherigen Start-CSV Vorrang, auch bei Neustarts, Updates und CLI-Prüfung.
+- Semikolongetrennte UTF-8-CSV ohne ID-Spalte importieren; Beispiel-CSV und Export des gespeicherten Stands herunterladen. Import ergänzt Alarme, ohne bestehende Gruppenadressen zu überschreiben.
+- Gemeinsame Validierung von Tabelle und CSV, atomare Speicherung, Schutz vor parallelem Überschreiben, Begrenzung auf 5000 Alarme und 2 MiB je Anfrage. Viewer erhalten keine Matrix-Verwaltung; Admin-Funktionen bleiben geschützt.
+
 ## 0.10.17 – 21.10.2026
 
 - Zusätzlichen Bestätigungsdialog für „Update starten“ entfernt. Der freigegebene Update-Button startet die Aktualisierung direkt und wird sofort gegen Mehrfachklicks gesperrt.
