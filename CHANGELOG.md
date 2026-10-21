@@ -2,6 +2,15 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.06 – 21.10.2026
+
+- Dashboard um ETS-Import erweitert: XML-Gruppenadress-Export sowie CSV mit Kopfzeile und Adressspalte auswählen, Vorschau prüfen und anschließend übernehmen.
+- Gruppenadresskatalog mit Namen, Beschreibungen und DPT dauerhaft in SQLite speichern; ergänzen/aktualisieren oder nach Bestätigung ersetzen. Vorschau und Katalog mit Suche und Seitenansicht.
+- Importierte Zuordnungen für neu empfangene Telegramme sofort verwenden, ohne KNX-Neuverbindung oder Dienstneustart. Alarmregeln werden nicht automatisch erzeugt und behalten ihre konfigurierten DPT.
+- Zweistufige und numerische XML-Adressen in dreistufige Adressen normalisieren. Fehlende, mehrdeutige, unbekannte und nicht unterstützte DPT markieren; Rohdaten bleiben sichtbar.
+- Größenlimit, XML-DTD-/Entitätensperre, atomare Übernahme, veraltete Vorschauen und geänderte Dateien prüfen. Login-Testmodus bleibt verfügbar; der zeitweise Web-Timeout ist weiterhin ungeklärt.
+- Parser, API, Persistenz, Backup und Telegrammdekodierung getestet. Vollständige .knxproj-Dateien werden noch nicht unterstützt.
+
 ## 0.10.05 – 21.10.2026
 
 - Einfache „Hallo Welt“-Seite unter `/test/hallo` nur im Testmodus ergänzt, ohne JavaScript und Datenbankzugriff.

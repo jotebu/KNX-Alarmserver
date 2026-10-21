@@ -1,10 +1,10 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.05 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.06 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import mit dem Gebäudeexport, Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
-- Deutsche, responsive Weboberfläche mit Meldungen, Historie, Telegrammmonitor und KNX-Verbindungsverwaltung.
+- Deutsche, responsive Weboberfläche mit Meldungen, Historie, Telegrammmonitor, KNX-Verbindungsverwaltung und ETS-Gruppenadress-Import.
 - KNX/IP-Tunneling per UDP oder Multicast-Routing über xknx; mehrere Tunnel konfigurierbar.
 - Typisierte DPT-Auswertung über den vollständigen verfügbaren xknx-DPT-Katalog: Binärwerte, Ganzzahlen, Fließkommazahlen, Prozentwerte, Aufzählungen, Text, Datum, Zeit und strukturierte Werte. Nicht jeder von KNX definierte oder herstellerspezifische DPT ist in xknx implementiert. Unbekannte DPT werden abgewiesen; es gibt keinen stillen Rückfall auf einen anderen Untertyp.
 - Flexible Alarmregeln: Gleichheit, Ungleichheit, obere/untere Grenzwerte, Wertebereiche, Listen und Textsuche. Numerische Hysterese verhindert Flattern an der Schaltschwelle.
@@ -74,6 +74,21 @@ Die anfänglichen KNX-Einstellungen stammen aus `config.toml`. Ab dem ersten Spe
 Neuinstallationen enthalten keine vorgegebenen Router-Verbindungen. Bei Updates bleibt die bestehende Konfiguration erhalten. Ein vorhandener Beispielrouter mit `192.0.2.30` muss im Dashboard bearbeitet oder gelöscht werden; diese Dokumentationsadresse ist kein realer Router.
 
 Die manuelle Alternative steht in [config/config.example.toml](config/config.example.toml). Private Gebäudeadressen, echte Alarmmatrizen, Passwörter und KNX-Schlüssel gehören nicht ins öffentliche Repository. KNX IP Secure und Data Secure bleiben noch nicht unterstützt.
+
+### ETS-Gruppenadressen im Dashboard importieren
+
+In ETS im Gruppenadressen-Fenster den gewünschten Baum auswählen, rechts anklicken und **Gruppenadressen exportieren** wählen. Für Namen, Beschreibungen und DPT vorzugsweise das aktuelle **XML-Format** verwenden; das alte ETS4-kompatible XML enthält keine DPT-Angaben. Siehe [KNX-Exportdokumentation](https://support.knx.org/hc/en-us/articles/360022237580-Group-Address-Export).
+
+1. Im Dashboard **ETS-Import** öffnen und `.xml` oder `.csv` auswählen (maximal 4 MiB / 10000 Adressen je Datei).
+2. **Vorschau prüfen** klicken. Noch nichts wird gespeichert. Namen, DPT, Änderungen und Hinweise kontrollieren; über Suche und Seitenwechsel auch größere Exporte prüfen.
+3. Standardmäßig **Ergänzen / vorhandene Adressen aktualisieren** verwenden. Dabei bleiben Adressen außerhalb der Datei erhalten. **Gesamten ETS-Katalog ersetzen** entfernt nach Bestätigung die nicht enthaltenen Katalogeinträge; Alarmregeln werden in beiden Modi erhalten.
+4. **Vorschau übernehmen** klicken. Die Zuordnungen gelten sofort für danach empfangene Telegramme. Bereits im Telegrammring vorhandene Einträge werden nicht nachträglich umgedeutet.
+
+Der Katalog wird in SQLite gespeichert, übersteht Neustarts und Updates und ist im vorhandenen SQLite-Backup enthalten. **Gespeicherten Katalog laden** zeigt den aktuellen Gesamtstand. Der Import verändert weder den KNX-Router noch die ETS-Datei und legt keine Alarmregeln an. Diese benötigen weiterhin eine eigene Alarmmatrix. Für bestehende Alarme hat der DPT der Alarmregel Vorrang vor dem ETS-Katalog.
+
+Unterstützt werden XML-Gruppenadress-Exporte mit dreistufigen, zweistufigen oder numerischen Adressen (intern dreistufig normalisiert). CSV benötigt eine Kopfzeile und eine erkennbare Adressspalte (`Address`, `Gruppenadresse` oder `Adresse`), dazu `Name`, `Group name` oder die Hierarchiespalten `Main`/`Middle`/`Sub`. Semikolon, Komma und Tabulator werden erkannt. Unterstützt sind insbesondere ETS 3/1, 1/1 und 1/3; ETS 3/3 ohne Adressspalte bitte als XML exportieren. CSV kann UTF-8, UTF-16 mit BOM oder Windows-1252 verwenden; XML UTF-8 oder UTF-16 mit BOM. Vollständige `.knxproj`-Archive, OPC-Dateien und kennwortgeschützte Projekte werden noch nicht eingelesen.
+
+`DPST-9-1` wird beispielsweise zu `9.001`. Fehlende oder mehrere unterschiedliche DPT sowie nicht unterstützte Untertypen werden markiert und nicht geraten. Für solche Katalogeinträge bleibt die Rohwertanzeige erhalten; eindeutige DPT in ETS korrigieren und erneut exportieren. Doppelte oder ungültige Gruppenadressen lehnen die gesamte Datei ab. Fehlgeschlagene Datei- oder Vorschauprüfungen verändern den gespeicherten Katalog nicht. Bei gleichzeitigem Import wird eine veraltete Vorschau abgewiesen. Eine Speicherbestätigung nach Timeout zuerst über den gespeicherten Katalog prüfen.
 
 ### MDT, Linienkopplung und Routing
 
@@ -150,7 +165,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.05
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.06
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -160,8 +175,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.05
-git push origin v0.10.05
+git tag v0.10.06
+git push origin v0.10.06
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.

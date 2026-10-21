@@ -52,7 +52,7 @@ function render(){
       if(row.pending){ack.textContent='';const button=text('button','Quittieren','ack');button.onclick=async()=>{button.disabled=true;try{await api(`/api/alarms/${encodeURIComponent(row.id)}/acknowledge`,{method:'POST',headers:{'X-Alarmserver-Action':'acknowledge'}});await refresh();}catch(e){failure(e);}finally{button.disabled=false;}};ack.append(button);}
     }else if(view==='history'){
       cell(date(row.timestamp));cell(row.alarm_name);cell({active:'Störung gekommen',clear:'Störung gegangen',acknowledge:'Quittiert'}[row.kind]||row.kind);cell(row.username||row.source||'—');
-    }else{cell(date(row.timestamp));cell(row.connection);cell(`${row.source} → ${row.destination}`);cell(row.service+(row.dpt?' · '+row.dpt:''));cell(row.error||row.display||(row.raw===undefined?'—':JSON.stringify(row.raw)));}
+    }else{cell(date(row.timestamp));cell(row.connection);const target=cell(`${row.source} → ${row.destination}`);if(row.name)target.append(text('small',row.name));if(row.ets_warning)target.append(text('small',row.ets_warning));cell(row.service+(row.dpt?' · '+row.dpt:''));cell(row.error||(row.display!==undefined?row.display+(row.unit?' '+row.unit:''):(row.raw===undefined?'—':JSON.stringify(row.raw))));}
     body.append(tr);
   }
   $('table-body').replaceChildren(body);$('empty').hidden=rows.length>0;
@@ -124,7 +124,7 @@ async function saveKnx(next){
   }catch(error){knxFeedback(error.message+' Bei fehlender Speicherbestätigung bitte Neu laden und den gespeicherten Stand prüfen.');}
   finally{controls.forEach((c,i)=>c.disabled=disabled[i]);savingKnx=false;switchKnxType();}
 }
-$('knx-settings-tab').onclick=async()=>{settingsOpen=true;$('knx-settings').hidden=false;$('data-panel').hidden=true;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.add('selected');await loadKnx();};
+$('knx-settings-tab').onclick=async()=>{$('ets-panel').hidden=true;$('ets-tab').classList.remove('selected');settingsOpen=true;$('knx-settings').hidden=false;$('data-panel').hidden=true;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.add('selected');await loadKnx();};
 $('knx-add').onclick=()=>openKnxForm();$('knx-cancel').onclick=()=>{$('knx-form').hidden=true;};$('knx-type').onchange=switchKnxType;
 $('knx-reload').onclick=loadKnx;
 $('knx-apply').onclick=()=>{if(knxConfig){const next=structuredClone(knxConfig);next.enabled=$('knx-enabled').checked;saveKnx(next);}};
@@ -138,7 +138,63 @@ $('knx-form').onsubmit=event=>{
   if(editingConnection===null)next.connections.push(c);else next.connections[editingConnection]=c;
   saveKnx(next);
 };
-document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{settingsOpen=false;$('knx-settings').hidden=true;$('data-panel').hidden=false;$('knx-settings-tab').classList.remove('selected');view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
+document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{$('ets-panel').hidden=true;$('ets-tab').classList.remove('selected');settingsOpen=false;$('knx-settings').hidden=true;$('data-panel').hidden=false;$('knx-settings-tab').classList.remove('selected');view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
+let etsRows=[], etsPage=0, etsPreview=null, etsFile=null, etsBusy=false;
+function resetEtsPreview(){etsPreview=null;etsFile=null;$('ets-apply').disabled=true;}
+function renderEts(){
+  const query=$('ets-search').value.toLocaleLowerCase('de');
+  const rows=etsRows.filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query));
+  const pages=Math.max(1,Math.ceil(rows.length/100));etsPage=Math.min(etsPage,pages-1);
+  const body=document.createDocumentFragment();
+  for(const row of rows.slice(etsPage*100,(etsPage+1)*100)){
+    const tr=document.createElement('tr');tr.append(text('td',row.address));
+    const name=text('td',row.name);if(row.description)name.append(text('small',row.description));tr.append(name);
+    tr.append(text('td',row.dpts.join(', ')||row.dpt_source||'—'));
+    const detail=text('td',row.warnings.join('; ')||'OK');
+    if(row.change)detail.append(text('small',({new:'Neu',updated:'Wird aktualisiert',unchanged:'Unverändert'})[row.change]));
+    tr.append(detail);body.append(tr);
+  }
+  $('ets-rows').replaceChildren(body);$('ets-page').textContent=`Seite ${etsPage+1} / ${pages} · ${rows.length} Adressen`;
+  $('ets-prev').disabled=etsPage===0;$('ets-next').disabled=etsPage===pages-1;
+}
+async function loadEts(){
+  if(etsBusy)return;
+  resetEtsPreview();
+  try{const result=await api('/api/ets');etsRows=result.entries;etsPage=0;renderEts();$('ets-summary').textContent=`${result.count} Gruppenadressen gespeichert.`;$('ets-feedback').textContent='Gespeicherter Katalog geladen.';}
+  catch(error){$('ets-feedback').textContent=error.message;}
+}
+async function etsAction(action){
+  if(etsBusy)return;
+  const file=action==='preview'?$('ets-file').files[0]:etsFile;
+  if(!file){$('ets-feedback').textContent='Bitte zuerst eine XML- oder CSV-Datei wählen und Vorschau prüfen.';return;}
+  if(file.size>4*1024*1024){$('ets-feedback').textContent='Die Datei darf höchstens 4 MiB groß sein.';return;}
+  const mode=$('ets-mode').value;
+  if(action==='import' && mode==='replace' && !confirm('Den gesamten gespeicherten ETS-Katalog durch diese Datei ersetzen? Alarmregeln bleiben erhalten.'))return;
+  etsBusy=true;
+  const controls=[...$('ets-panel').querySelectorAll('button,input,select')];controls.forEach(c=>c.disabled=true);
+  try{
+    let url='/api/ets/'+action+'?filename='+encodeURIComponent(file.name);
+    if(action==='import')url+='&mode='+mode+'&revision='+etsPreview.revision+'&digest='+etsPreview.digest;
+    const result=await api(url,{method:'POST',headers:{'Content-Type':'application/octet-stream','X-Alarmserver-Action':'import-ets'},body:await file.arrayBuffer()});
+    if(action==='preview'){
+      etsFile=file;etsPreview=result;etsRows=result.entries;etsPage=0;
+      $('ets-summary').textContent=`Vorschau: ${result.count} Adressen, davon ${result.warnings} mit Hinweisen. Bisher gespeichert: ${result.existing_count}.`;
+      $('ets-feedback').textContent='Noch nichts gespeichert. Prüfe die Vorschau und wähle anschließend „Vorschau übernehmen“.';
+    }else{
+      resetEtsPreview();
+      $('ets-summary').textContent=`Gespeichert: ${result.added} neu, ${result.updated} aktualisiert, ${result.removed} entfernt; insgesamt ${result.count} Adressen.`;
+      etsRows=etsRows.map(({change,...row})=>row);
+      $('ets-feedback').textContent='Import übernommen. Namen und DPT gelten für neu empfangene Telegramme. Der gespeicherte Gesamtkatalog kann oben geladen werden.';
+    }
+  }catch(error){if(action==='preview')resetEtsPreview();$('ets-feedback').textContent=error.message+' Bei fehlender Speicherbestätigung zuerst den gespeicherten Katalog laden und prüfen.';}
+  finally{etsBusy=false;controls.forEach(c=>c.disabled=false);$('ets-apply').disabled=!etsPreview;renderEts();}
+}
+$('ets-tab').onclick=async()=>{settingsOpen=true;$('knx-settings').hidden=true;$('data-panel').hidden=true;$('ets-panel').hidden=false;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.remove('selected');$('ets-tab').classList.add('selected');await loadEts();};
+$('ets-form').onsubmit=event=>{event.preventDefault();etsAction('preview');};
+$('ets-file').onchange=()=>{resetEtsPreview();$('ets-feedback').textContent='Datei gewählt. Bitte Vorschau prüfen.';};
+$('ets-apply').onclick=()=>etsAction('import');$('ets-reload').onclick=loadEts;
+$('ets-search').oninput=()=>{etsPage=0;renderEts();};
+$('ets-prev').onclick=()=>{etsPage--;renderEts();};$('ets-next').onclick=()=>{etsPage++;renderEts();};
 $('search').oninput=render;$('open-only').onchange=render;
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
 refresh();

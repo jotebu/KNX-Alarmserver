@@ -1,6 +1,17 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.05, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.06, Inbetriebnahmeversion.
+
+## ETS-Import und Telegrammanzeige
+
+- 56 Python-Tests erfolgreich, keine übersprungen; vier JavaScript-Regressionstests und Shell-/JavaScript-Syntax erfolgreich.
+- XML mit Namensraum, UTF-8/UTF-16, zwei- und dreistufigen sowie numerischen Adressen geprüft. CSV mit Hierarchiezeilen, Semikolon, Komma, Tabulator, Windows-1252 und ETS-Varianten 3/1, 1/1, 1/3 geprüft.
+- Fehlende, mehrdeutige, ungültige und nicht unterstützte DPT behalten Rohwertanzeige; doppelte und ungültige Adressen, DTD/Entitäten und Übergrößen werden abgewiesen.
+- Vorschau ohne Speicherung, Rechte-/Herkunftsprüfung, geänderte Datei und veraltete Revision, Ergänzen/Ersetzen, Persistenz, Backup und Fehler ohne Katalogänderung getestet.
+- Echte xknx-Dekodierung für importierte Adressen ohne Alarmregel sowie Vorrang vorhandener Alarm-DPT geprüft.
+- DOM-Simulation: Dateivorschau vor Übernahme, Suchfilter, Seitenwechsel bei 205 Adressen, sichere Textdarstellung, Importanfrage, Katalog laden, Navigation und Telegrammnamen mit Einheiten erfolgreich. Keine visuelle Browserabnahme dieser Erweiterung.
+- Nutzer hat MDT-Verbindung mit Status CONNECTED und eingehenden Gruppentelegrammen am Raspberry bestätigt. Der ETS-Import mit dem echten Gebäudeexport und die Alarmmatrix-Abnahme stehen noch aus.
+- Zeitweise Web-Timeouts weiterhin ungeklärt; sie traten auch beim unabhängigen Python-Testserver auf. Keine Behebung durch diese Funktion behauptet.
 
 ## Testmodus ohne Login
 
@@ -30,7 +41,7 @@ Stand: 21.10.2026. Projektversion 0.10.05, Inbetriebnahmeversion.
 - Update und erneute Prüfung auf dem betroffenen Raspberry und Windows-Browser, insbesondere Öffnen des Dashboards, Abwarten und Wiederaufnahme nach Fehlern.
 - Ursache der zeitweisen TCP-Verbindungsabbrüche im konkreten Netzwerk, falls sie nach dem Update weiterhin auftreten.
 - Visuelle Abnahme im echten Browser und auf mobilen Geräten.
-- Echter KNX-Empfang, MDT-Wiederverbindung und Alarmmatrix-Abnahme.
+- ETS-Import mit echtem Export, MDT-Wiederverbindung und Alarmmatrix-Abnahme.
 - NAS-Backup anpassen; alter Timer bleibt bis dahin deaktiviert.
 
 Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).

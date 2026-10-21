@@ -15,6 +15,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from . import __version__
 from .knx import Monitor
 from .config import validate_knx
+from .ets import MAX_BYTES, parse_export
 
 STATIC = Path(__file__).parent / "static"
 
@@ -121,6 +122,59 @@ def create_app(config, store):
     @app.get("/api/knx/config")
     def knx_config(username=Depends(user)):
         return store.knx_settings(config["knx"])
+
+    @app.get('/api/ets')
+    def ets_catalog(username=Depends(user)):
+        return store.ets_catalog()
+
+    async def read_ets(request):
+        if (request.headers.get('X-Alarmserver-Action') != 'import-ets'
+                or request.headers.get('Sec-Fetch-Site') == 'cross-site'):
+            raise HTTPException(status_code=403, detail='Aktionsheader fehlt oder fremde Herkunft')
+        raw = bytearray()
+        async for chunk in request.stream():
+            raw.extend(chunk)
+            if len(raw) > MAX_BYTES:
+                raise HTTPException(status_code=413, detail='Maximal 4 MiB pro ETS-Datei')
+        return bytes(raw)
+
+    @app.post('/api/ets/preview')
+    async def ets_preview(request: Request, filename: str, username=Depends(user)):
+        raw = await read_ets(request)
+        try:
+            result = await asyncio.to_thread(parse_export, raw, filename)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        current = await asyncio.to_thread(store.ets_catalog)
+        existing = {e['address']: e for e in current['entries']}
+        for entry in result['entries']:
+            old = existing.get(entry['address'])
+            entry['change'] = 'new' if old is None else 'unchanged' if old == entry else 'updated'
+        result['revision'] = current['revision']
+        result['existing_count'] = current['count']
+        return result
+
+    @app.post('/api/ets/import')
+    async def ets_import(request: Request, filename: str, revision: str, digest: str,
+                         mode: str = 'merge', username=Depends(user)):
+        raw = await read_ets(request)
+        if mode not in {'merge', 'replace'}:
+            raise HTTPException(status_code=422, detail='Importmodus ungueltig')
+        try:
+            parsed = await asyncio.to_thread(parse_export, raw, filename)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        if parsed['digest'] != digest:
+            raise HTTPException(status_code=409, detail='Datei geaendert; Vorschau erneut laden')
+        try:
+            result = await asyncio.to_thread(store.import_ets, parsed['entries'], revision, mode)
+        except ValueError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from None
+        except Exception:
+            logging.getLogger(__name__).exception('ETS-Import konnte nicht gespeichert werden')
+            raise HTTPException(status_code=500, detail='Speichern fehlgeschlagen; bisherigen ETS-Katalog beibehalten') from None
+        logging.getLogger(__name__).info('ETS-Import durch %s: %s', username, result)
+        return result
 
     @app.put("/api/knx/config")
     async def save_knx_config(request: Request, username=Depends(user)):

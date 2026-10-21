@@ -9,7 +9,7 @@
 <div id="error" role="alert" hidden></div>
 <section class="cards" aria-label="Übersicht"><article><span>Aktiv · offen</span><strong id="active">—</strong></article><article><span>Aktiv · quittiert</span><strong id="acked">—</strong></article><article><span>Gegangen · offen</span><strong id="pending">—</strong></article><article><span>Unbekannt / alter Wert</span><strong id="unknown">—</strong></article></section>
 <section class="connection"><div><b>KNX-Verbindung</b><span id="connection-status">Wird geprüft …</span></div><p id="connection-detail"></p></section>
-<nav aria-label="Ansichten"><button data-view="alarms" class="selected">Meldungen</button><button data-view="history">Historie</button><button data-view="telegrams">Telegramme</button><button id="knx-settings-tab">KNX-Verbindungen</button></nav>
+<nav aria-label="Ansichten"><button data-view="alarms" class="selected">Meldungen</button><button data-view="history">Historie</button><button data-view="telegrams">Telegramme</button><button id="knx-settings-tab">KNX-Verbindungen</button><button id="ets-tab">ETS-Import</button></nav>
 <section id="data-panel" class="panel"><div class="toolbar"><h2 id="view-title">Meldungen</h2><label>Suche <input id="search" type="search" placeholder="Name, Bereich, Gruppenadresse"></label><label id="filter-wrap"><input id="open-only" type="checkbox" checked> Nur offene / unbekannte</label></div><div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div><p id="empty" hidden></p><p id="hint" class="muted"></p></section>
 <section id="knx-settings" class="panel" hidden aria-labelledby="knx-title">
 <div class="toolbar"><h2 id="knx-title">KNX-Verbindungen</h2><button id="knx-add" type="button">Verbindung hinzufügen</button></div>
@@ -34,6 +34,16 @@
 <div class="toolbar"><button type="submit">Speichern und übernehmen</button><button id="knx-cancel" type="button">Abbrechen</button></div>
 </form>
 <p>Änderungen werden sofort übernommen und bleiben nach Neustarts erhalten. Ein gespeicherter Eintrag bestätigt noch keinen Telegrammempfang.</p>
+</section>
+<section id="ets-panel" class="panel" hidden aria-labelledby="ets-title">
+<div class="toolbar"><h2 id="ets-title">ETS-Gruppenadressen</h2><button id="ets-reload" type="button">Gespeicherten Katalog laden</button></div>
+<p>In ETS die Gruppenadressen als <b>XML</b> exportieren (mit Datenpunkttypen, nicht im alten ETS4-Format). Alternativ CSV mit Kopfzeile und Adressspalte. Vollständige .knxproj-Projekte werden noch nicht unterstützt.</p>
+<form id="ets-form"><div class="toolbar"><label>ETS-Datei (max. 4 MiB)<input id="ets-file" type="file" accept=".xml,.csv" required></label><button type="submit" id="ets-preview">Vorschau prüfen</button></div></form>
+<p>Der Import ordnet Namen und Datentypen für künftig empfangene Telegramme zu. Alarmregeln werden dadurch nicht angelegt oder geändert. Fehlende, mehrdeutige oder nicht unterstützte DPT bleiben als Rohwert sichtbar.</p>
+<div class="toolbar"><label>Übernahme<select id="ets-mode"><option value="merge">Ergänzen / vorhandene Adressen aktualisieren</option><option value="replace">Gesamten ETS-Katalog durch diese Datei ersetzen</option></select></label><button id="ets-apply" type="button" disabled>Vorschau übernehmen</button></div>
+<p id="ets-feedback" role="status" aria-live="polite"></p><p id="ets-summary"></p>
+<div class="toolbar"><label>Suche<input id="ets-search" type="search" placeholder="Name, Gruppenadresse, DPT"></label><button id="ets-prev" type="button">Zurück</button><span id="ets-page"></span><button id="ets-next" type="button">Weiter</button></div>
+<div class="table-scroll"><table><thead><tr><th>Gruppenadresse</th><th>Name / Beschreibung</th><th>DPT</th><th>Prüfung / Änderung</th></tr></thead><tbody id="ets-rows"></tbody></table></div>
 </section>
 <footer>Lokale Quittierung mit angemeldetem Benutzer · Keine Schaltbefehle an den KNX-Bus</footer>
 </main></body></html>

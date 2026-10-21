@@ -30,6 +30,8 @@ class Store:
         self.db.execute("PRAGMA synchronous=FULL")
         try:
             self._initialize(alarms)
+            row = self.db.execute("SELECT value FROM settings WHERE name='ets'").fetchone()
+            self._ets = json.loads(row['value']) if row else {}
         except Exception:
             self.db.close()
             raise
@@ -186,3 +188,34 @@ class Store:
         with self.transaction():
             self.db.execute("INSERT OR REPLACE INTO settings(name,value) VALUES ('knx',?)",
                             (json.dumps(config, ensure_ascii=False),))
+
+    def _ets_revision(self):
+        return hashlib.sha256(json.dumps(self._ets, sort_keys=True).encode()).hexdigest()
+
+    def ets_catalog(self):
+        with self.lock:
+            return {'entries': list(self._ets.values()), 'revision': self._ets_revision(),
+                    'count': len(self._ets)}
+
+    def ets_point(self, address):
+        with self.lock:
+            return self._ets.get(address)
+
+    def import_ets(self, entries, revision, mode):
+        if mode not in {'merge', 'replace'}:
+            raise ValueError('Importmodus ungueltig')
+        with self.lock:
+            with self.transaction():
+                if revision != self._ets_revision():
+                    raise ValueError('ETS-Daten inzwischen geaendert; Vorschau erneut laden')
+                incoming = {e['address']: e for e in entries}
+                added = len(incoming.keys() - self._ets.keys())
+                updated = sum(self._ets[a] != e for a, e in incoming.items() if a in self._ets)
+                removed = len(self._ets.keys() - incoming.keys()) if mode == 'replace' else 0
+                proposed = {**(self._ets if mode == 'merge' else {}), **incoming}
+                # Persist before publishing to live reception; rollback leaves cache intact.
+                self.db.execute("INSERT OR REPLACE INTO settings(name,value) VALUES ('ets',?)",
+                                (json.dumps(proposed, ensure_ascii=False),))
+            self._ets = proposed
+            return {'added': added, 'updated': updated, 'removed': removed,
+                    'count': len(proposed), 'revision': self._ets_revision()}

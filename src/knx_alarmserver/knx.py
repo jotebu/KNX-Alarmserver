@@ -39,15 +39,24 @@ class Monitor:
                 "source": str(telegram.source_address), "destination": address,
                 "service": type(payload).__name__, "value": None, "dpt": None, "error": None}
         alarm = self.store.by_address.get(address)
+        point = self.store.ets_point(address)
+        if point:
+            item.update(name=point['name'], description=point['description'],
+                        ets_warning='; '.join(point['warnings']))
+        if alarm:
+            item['name'] = alarm.name
+        dpt = alarm.dpt if alarm else point.get('dpt') if point else None
         if isinstance(payload, (GroupValueWrite, GroupValueResponse)):
             item["raw"] = list(payload.value.value) if isinstance(payload.value.value, tuple) else payload.value.value
         self.telegrams.appendleft(item)
-        if alarm and isinstance(payload, (GroupValueWrite, GroupValueResponse)):
+        item["dpt"] = dpt
+        if dpt and isinstance(payload, (GroupValueWrite, GroupValueResponse)):
             try:
                 from .dpt import decode
-                value, display, unit = decode(alarm.dpt, payload.value)
-                item.update(value=value, dpt=alarm.dpt, display=display, unit=unit)
-                self.store.ingest(address, value, str(telegram.source_address), display, unit)
+                value, display, unit = decode(dpt, payload.value)
+                item.update(value=value, dpt=dpt, display=display, unit=unit)
+                if alarm:
+                    self.store.ingest(address, value, str(telegram.source_address), display, unit)
             except (ValueError, TypeError, KeyError, ConversionError, CouldNotParseTelegram) as error:
                 item["error"] = str(error)[:300]
                 try:

@@ -25,7 +25,7 @@ class WebTests(unittest.TestCase):
         self.store.close()
 
     def test_all_building_data_requires_authentication(self):
-        for path in ("/", "/api/dashboard", "/api/status", "/api/alarms", "/api/history", "/api/telegrams", "/api/dpts", "/api/ready", "/static/app.js"):
+        for path in ("/", "/api/dashboard", "/api/status", "/api/alarms", "/api/history", "/api/telegrams", "/api/dpts", "/api/ets", "/api/ready", "/static/app.js"):
             self.assertEqual(self.client.get(path).status_code, 401, path)
         self.assertEqual(self.client.get("/health/live").status_code, 200)
 
@@ -115,7 +115,7 @@ class LoginDisabledTests(unittest.TestCase):
                  TestClient(app) as client:
                 for path in ('/', '/static/app.js', '/static/style.css', '/api/dashboard',
                              '/api/status', '/api/alarms', '/api/history', '/api/telegrams',
-                             '/api/dpts', '/api/knx/config', '/test/hallo'):
+                             '/api/dpts', '/api/knx/config', '/api/ets', '/test/hallo'):
                     response = client.get(path, headers={'Authorization': 'Basic invalid'})
                     self.assertEqual(response.status_code, 200, path)
                     self.assertNotIn('www-authenticate', response.headers)

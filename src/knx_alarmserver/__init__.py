@@ -1,4 +1,4 @@
 """KNX Alarmserver."""
 
-__version__ = "0.10.05"
+__version__ = "0.10.06"
 
