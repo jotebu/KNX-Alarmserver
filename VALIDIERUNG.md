@@ -1,6 +1,13 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.12, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.13, Inbetriebnahmeversion.
+
+## Manuelle Versionsprüfung und Update-Kasten
+
+- Abruf über GitHub-API mit No-Cache-Headern und eindeutiger Query sowie Rückfall auf Raw-Datei durch simulierte Antworten geprüft.
+- HTTP-Abfragen mit refresh=true umgehen sowohl Versions- als auch Historienpuffer; neue Version und neue Historie ohne Ablauf der Pufferfrist getestet.
+- Sofortige Rückmeldung, gesperrter Prüfbutton, Abschluss mit Prüfzeitpunkt und Update-Kasten nur bei neuerem Stand getestet. Prüfbutton steht unabhängig vom Update-Kasten zur Verfügung.
+- Ursache eines eventuellen zusätzlichen Netzwerk-/GitHub-Zugriffsfehlers auf dem Raspberry ist hier nicht nachgewiesen; dieser muss bei Bedarf anhand des Dienstprotokolls geprüft werden.
 
 ## Feststehende Kopfzeile
 
@@ -15,7 +22,7 @@ Stand: 21.10.2026. Projektversion 0.10.12, Inbetriebnahmeversion.
 
 ## Dashboard-Menüs, eigene Seiten und Update
 
-- 85 Python-Tests und zehn JavaScript-Tests erfolgreich: Rollenmatrix einschließlich Admin-Telegrammseite, eigene Kennwortänderung für alle Rollen mit Sitzungssperre und Rollenerhalt, CSRF-/Parameterprüfung und verweigerte direkte Fremdzugriffe.
+- 87 Python-Tests und elf JavaScript-Tests erfolgreich: Rollenmatrix einschließlich Admin-Telegrammseite, eigene Kennwortänderung für alle Rollen mit Sitzungssperre und Rollenerhalt, CSRF-/Parameterprüfung und verweigerte direkte Fremdzugriffe.
 - Update-Anforderungsdatei und Statusanzeige mit lokal isolierten Testpfaden geprüft. Fehlender Helfer, aktive oder doppelte Anforderung und Symlinks behandelt.
 - Root-Worker und Installer verwenden für veröffentlichte Programmdateien eine lesbare Maske; private Daten-/Konfigurationsverzeichnisse bleiben explizit geschützt.
 - Root-Worker mit simuliertem Git-/Installationsprozess geprüft: feste Quelle und main-Zweig, keine Auswertung der Anforderungsbytes, atomarer lesbarer Status, Erfolg erst nach erfolgreicher Installation und Fehler nach Abbruch. Keine echte Paketinstallation im Prüfcontainer durchgeführt.

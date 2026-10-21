@@ -2,6 +2,14 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.13 – 21.10.2026
+
+- Versionsprüfung beim Öffnen und über „Status prüfen“ ohne lokalen Zwischenspeicher ausführen. GitHub-API als ersten Abrufweg und Raw-Datei als Rückfall nutzen; HTTP-Caches per Header und eindeutiger URL umgehen. Fehler im Dienstprotokoll erfassbar machen.
+- Kasten „Alarmserver aktualisieren“ nur für Admins bei bestätigter neuerer Version anzeigen. Rollen-/Dashboard-Aktualisierungen blenden ihn bei aktuellem Stand nicht erneut ein.
+- „Status prüfen“ neben die allgemeine Versionsinfo verschoben und für alle Rollen zugänglich gemacht. Fortschritt sofort anzeigen, Button während der Prüfung sperren und anschließend Ergebnis mit Prüfzeitpunkt melden.
+- Automatische Prüfungen bleiben bei Fehlern still; ein ausdrücklich angeforderter manueller Abruf erhält eine Rückmeldung. Versions-/Update-Leseanfragen bekommen 20 Sekunden für die begrenzten externen Abrufwege.
+- Update-Fortschritt und Ergebnis außerhalb des nur bei veraltetem Stand sichtbaren Kastens anzeigen. Tests für Cache-Umgehung, Abrufrückfall und manuelle Rückmeldung ergänzt.
+
 ## 0.10.12 – 21.10.2026
 
 - Kopfzeile auf allen Seiten einschließlich Anmeldung fest am oberen Bildschirmrand halten; Seiteninhalt beginnt darunter.

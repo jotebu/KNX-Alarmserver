@@ -156,12 +156,12 @@ def create_app(config, store, update_manager=None, version_checker=None):
         return response
 
     @app.get('/api/version')
-    async def version_check(username=Depends(user)):
-        return await asyncio.to_thread(versions.check)
+    async def version_check(refresh: bool = False, username=Depends(user)):
+        return await asyncio.to_thread(versions.check, force=refresh)
 
     @app.get('/api/versions')
-    async def version_history(username=Depends(user)):
-        return await asyncio.to_thread(versions.history)
+    async def version_history(refresh: bool = False, username=Depends(user)):
+        return await asyncio.to_thread(versions.history, force=refresh)
 
     @app.get('/api/update')
     async def update_status(username=Depends(admin)):

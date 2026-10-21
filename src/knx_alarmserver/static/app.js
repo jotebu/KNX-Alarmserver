@@ -3,14 +3,14 @@ const $ = id => document.getElementById(id);
 const labels = {unknown:'Unbekannt',active:'Störung aktiv',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · unquittiert',normal:'Normal'};
 const page=window.location.pathname;
 const managementPages=['/knx','/ets','/users'];
-let pageInitialized=false;
+let pageInitialized=false, newerVersionKnown=false, checkingVersionStatus=false;
 let access = {role:null,configure:false,acknowledge:false};
 let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
 const date = value => value ? new Date(value).toLocaleString('de-DE') : '—';
 const text = (tag, value, cls) => {const node=document.createElement(tag);node.textContent=value;if(cls)node.className=cls;return node;};
 async function api(path, options={}) {
   const controller=new AbortController();
-  const timeoutMs=options.method && options.method!=='GET'?30000:10000;
+  const timeoutMs=options.method && options.method!=='GET'?30000:path.startsWith('/api/version')||path==='/api/update'?20000:10000;
   const deadline=setTimeout(()=>controller.abort(),timeoutMs);
   try{
     const response=await fetch(path,{...options,cache:'no-store',credentials:'same-origin',signal:controller.signal});
@@ -208,7 +208,7 @@ $('ets-prev').onclick=()=>{etsPage--;renderEts();};$('ets-next').onclick=()=>{et
 
 function applyAccess(){
   $('settings-menu').hidden=!access.configure;
-  $('update-panel').hidden=page!=='/versions'||!access.configure;
+  $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
   if(!access.configure && (managementPages.includes(page)||page==='/telegrams'))window.location.replace('/');
 }
 function setKnxIndicator(color,label){
@@ -233,7 +233,7 @@ function layoutPage(){
   $('data-panel').hidden=settingsOpen;
   $('knx-settings').hidden=page!=='/knx';$('ets-panel').hidden=page!=='/ets';$('users-panel').hidden=page!=='/users';
   $('password-panel').hidden=page!=='/account/password';$('versions-panel').hidden=page!=='/versions';
-  $('update-panel').hidden=page!=='/versions'||!access.configure;
+  $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
 }
 let editingUser=null, usersBusy=false;
 function openUser(account=null){
@@ -295,18 +295,21 @@ $('password-form').onsubmit=async event=>{
   finally{$('password-save').disabled=false;}
 };
 function renderVersionCheck(result){
+  newerVersionKnown=Boolean(result.check_ok&&result.update_available);
+  $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
   const link=$('version-link');link.textContent='Version '+result.current_version;
   link.classList.toggle('update-available',result.check_ok&&result.update_available);
   link.title=!result.check_ok?'Versionshistorie öffnen':result.update_available?'Neue Version '+result.latest_version+' verfügbar; Historie öffnen':'Aktuelle Version; Historie öffnen';
 }
 async function checkVersion(){
-  try{renderVersionCheck(await api('/api/version'));}
+  try{renderVersionCheck(await api('/api/version?refresh=true'));}
   catch(error){$('version-link').title='Versionshistorie öffnen';}
 }
-async function loadVersions(){
+async function loadVersions(force=false){
   try{
-    const result=await api('/api/versions');renderVersionCheck(result);
-    $('versions-feedback').textContent=!result.check_ok?'':result.update_available?'Neue Version '+result.latest_version+' verfügbar.':'Installierte Version ist aktuell.';
+    const result=await api('/api/versions?refresh=true');renderVersionCheck(result);
+    $('versions-feedback').textContent=!result.check_ok?(force?'Versionsstatus konnte nicht aktualisiert werden. Bitte später erneut prüfen.':''):result.update_available?'Neue Version '+result.latest_version+' verfügbar.':'Installierte Version ist aktuell.';
+    if(force&&result.check_ok)$('versions-feedback').textContent+=' Geprüft: '+date(result.checked_at)+'.';
     if(result.history_source==='local')$('versions-feedback').textContent+=' Lokale Versionshistorie.';
     const history=document.createDocumentFragment();let list=null;
     for(const line of result.changelog.split('\n')){
@@ -316,7 +319,28 @@ async function loadVersions(){
       else if(line.trim()){list=null;history.append(text('p',line));}
     }
     $('versions-history').replaceChildren(history);
-  }catch(error){$('versions-feedback').textContent='Versionshistorie konnte nicht geladen werden. '+error.message;}
+    return result.check_ok;
+  }catch(error){
+    newerVersionKnown=false;$('update-panel').hidden=true;$('update-start').disabled=true;
+    $('version-link').classList.remove('update-available');
+    $('versions-feedback').textContent=force?'Versionsstatus konnte nicht aktualisiert werden. Bitte später erneut prüfen.':'Versionshistorie konnte nicht geladen werden.';
+    return false;
+  }
+}
+async function checkVersionStatus(){
+  if(checkingVersionStatus)return;
+  checkingVersionStatus=true;
+  const button=$('update-reload');button.disabled=true;button.textContent='Wird geprüft …';
+  $('versions-panel').setAttribute('aria-busy','true');
+  $('versions-feedback').textContent='Versionsstatus wird geprüft …';
+  $('update-start').disabled=true;
+  try{
+    const checked=await loadVersions(true);
+    if(access.configure&&checked)await loadUpdate();
+  }finally{
+    checkingVersionStatus=false;button.disabled=false;button.textContent='Status prüfen';
+    $('versions-panel').setAttribute('aria-busy','false');
+  }
 }
 let updatePoll=null;
 async function loadUpdate(){
@@ -324,10 +348,11 @@ async function loadUpdate(){
   try{
     const state=await api('/api/update');
     const active=['queued','fetching','installing'].includes(state.state);
+    renderVersionCheck(state);
     $('update-version').textContent=state.current_version;
     $('update-start').disabled=!state.available||active||!state.check_ok||!state.update_available;
     $('update-refresh').hidden=state.state!=='success';
-    $('update-feedback').textContent=state.message||(!state.available?'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.':state.check_ok?(state.update_available?'Neue Version '+state.latest_version+' verfügbar.':'Installierte Version ist aktuell.'):'');
+    $('update-feedback').textContent=state.message||((newerVersionKnown&&!state.available)?'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.':'');
     $('update-detail').textContent=state.target_version?'Zielversion: '+state.target_version+(state.updated_at?' · '+date(state.updated_at):''):'';
     if(active)updatePoll=setTimeout(loadUpdate,3000);
   }catch(error){$('update-start').disabled=true;$('update-feedback').textContent='Verbindung unterbrochen. Der Status wird nach dem Neustart erneut geprüft.';updatePoll=setTimeout(loadUpdate,5000);}
@@ -341,7 +366,7 @@ $('update-start').onclick=async()=>{
     $('update-feedback').textContent=result.message;await loadUpdate();
   }catch(error){$('update-feedback').textContent=error.message+' Bitte den Status prüfen, bevor du erneut startest.';await loadUpdate();}
 };
-$('update-reload').onclick=loadUpdate;
+$('update-reload').onclick=checkVersionStatus;
 $('update-refresh').onclick=()=>window.location.reload();
 // Native details menus support mouse, keyboard and touch; only one stays open.
 const menus=[...document.querySelectorAll('.header-menu')];
@@ -349,7 +374,7 @@ for(const menu of menus)menu.addEventListener('toggle',()=>{if(menu.open)for(con
 document.addEventListener('click',event=>{for(const menu of menus)if(!menu.contains(event.target))menu.open=false;});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')for(const menu of menus)menu.open=false;});
 layoutPage();
-checkVersion();
+if(page!=='/versions')checkVersion();
 $('search').oninput=render;$('open-only').onchange=render;
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
 refresh();

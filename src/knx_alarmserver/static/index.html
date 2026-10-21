@@ -71,10 +71,9 @@
 <label>Neues Kennwort<input id="password-new" type="password" autocomplete="new-password" required minlength="12" maxlength="1024"></label>
 <label>Neues Kennwort wiederholen<input id="password-confirm" type="password" autocomplete="new-password" required minlength="12" maxlength="1024"></label></div>
 <p>Mindestens 12 Zeichen. Nach dem Speichern bitte mit dem neuen Kennwort anmelden.</p><p id="password-feedback" role="status" aria-live="polite"></p><button id="password-save" type="submit">Kennwort speichern</button></form></section>
-<section id="versions-panel" class="panel" hidden aria-labelledby="versions-title"><h2 id="versions-title">Versionshistorie</h2><p id="versions-feedback" role="status"></p><div id="update-panel" hidden><h3 id="update-title">Alarmserver aktualisieren</h3>
+<section id="versions-panel" class="panel" hidden aria-labelledby="versions-title"><h2 id="versions-title">Versionshistorie</h2><div class="toolbar version-status"><p id="versions-feedback" role="status" aria-live="polite"></p><button id="update-reload" type="button">Status prüfen</button><button id="update-refresh" type="button" hidden>Oberfläche neu laden</button></div><p id="update-feedback" role="status" aria-live="polite"></p><div id="update-panel" hidden><h3 id="update-title">Alarmserver aktualisieren</h3>
 <p>Installierte Version: <strong id="update-version">—</strong></p><p>Installiert den aktuellen Stand aus dem GitHub-Repository. Einstellungen und Daten bleiben erhalten. Während des Dienstneustarts sind Weboberfläche und KNX-Empfang kurz unterbrochen.</p>
-<div class="toolbar"><button id="update-start" type="button" disabled>Update installieren</button><button id="update-reload" type="button">Status prüfen</button><button id="update-refresh" type="button" hidden>Oberfläche neu laden</button></div>
-<p id="update-feedback" role="status" aria-live="polite">Update-Dienst wird geprüft …</p><p id="update-detail" class="muted"></p></div><div id="versions-history" class="version-history"></div></section>
+<div class="toolbar"><button id="update-start" type="button" disabled>Update installieren</button></div><p id="update-detail" class="muted"></p></div><div id="versions-history" class="version-history"></div></section>
 
 </main></body></html>
 

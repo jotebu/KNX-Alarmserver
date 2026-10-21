@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.12 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.13 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -183,7 +183,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.12
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.13
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -193,8 +193,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.12
-git push origin v0.10.12
+git tag v0.10.13
+git push origin v0.10.13
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -211,9 +211,9 @@ Menüs lassen sich per Maus, Tastatur und Touch bedienen, außerhalb anklicken o
 
 ## Versionsanzeige und Update über das Dashboard
 
-Die Versionsnummer in der feststehenden Kopfzeile öffnet `/versions` mit der Versionshistorie. Beim Öffnen wird unabhängig von den Alarmabfragen die Version auf GitHub geprüft. Nur wenn eine numerisch neuere Version bestätigt ist, erscheint die Nummer rot; der Tooltip nennt die neue Version. Eine nicht mögliche Prüfung bleibt ohne Fehlermeldung und ohne rote Markierung. Der Server puffert erfolgreiche Prüfungen fünf Minuten, erfolglose für 30 Sekunden. Die Prüfung sendet keine Gebäudedaten oder Zugangsdaten an GitHub.
+Die Versionsnummer in der feststehenden Kopfzeile öffnet `/versions` mit der Versionshistorie. Beim Öffnen wird unabhängig von den Alarmabfragen die Version auf GitHub geprüft. Nur wenn eine numerisch neuere Version bestätigt ist, erscheint die Nummer rot; der Tooltip nennt die neue Version. Eine nicht mögliche Prüfung bleibt ohne Fehlermeldung und ohne rote Markierung. Der Server puffert erfolgreiche Prüfungen fünf Minuten, erfolglose für 30 Sekunden. Beim Öffnen einer Seite und bei **Status prüfen** werden diese Puffer ausdrücklich umgangen. Der Abruf verwendet die GitHub-API mit Cache-Unterdrückung und bei deren Ausfall einen zweiten Abrufweg über raw.githubusercontent.com. Fehlerursachen stehen im Dienstprotokoll, automatische Prüfungen bleiben in der Oberfläche still. Die Prüfung sendet keine Gebäudedaten oder Zugangsdaten an GitHub.
 
-Die Historie ist für alle angemeldeten Rollen lesbar. Sie wird als sicherer Text mit Versionsüberschriften und Listen dargestellt; bei fehlendem GitHub-Zugriff dient die lokal installierte CHANGELOG.md als Rückfall. Update-Schaltflächen und Fortschritt sehen nur Admins auf dieser Seite. Der Update-Button ist ausschließlich bei einer bestätigten neueren Version, verfügbarem Update-Dienst und ohne laufendes Update aktiv. Vor dem Start prüft der Server die Version erneut ohne Verwendung des Zwischenspeichers; ist keine neuere Version bestätigt, wird kein Update angefordert. Auch der Update-Helfer überspringt gleiche oder ältere Versionen. Ein direkter Update-API-Aufruf durch User oder Viewer wird weiterhin abgewiesen.
+Die Historie ist für alle angemeldeten Rollen lesbar. Sie wird als sicherer Text mit Versionsüberschriften und Listen dargestellt; bei fehlendem GitHub-Zugriff dient die lokal installierte CHANGELOG.md als Rückfall. Der Kasten **Alarmserver aktualisieren** erscheint nur für Admins mit einer bestätigten neueren Version. **Status prüfen** steht neben der Versionsinfo außerhalb des Kastens und ist für alle angemeldeten Rollen erreichbar. Ein Klick zeigt sofort den laufenden Abruf, sperrt den Button bis zum Abschluss und meldet danach das Ergebnis samt Prüfzeitpunkt. Bei einer fehlgeschlagenen manuellen Prüfung erscheint eine Rückmeldung; die automatische Prüfung bleibt still. Update-Fortschritt und Ergebnis werden außerhalb des Kastens angezeigt, damit sie auch nach erfolgreicher Installation sichtbar bleiben. Der Update-Button ist ausschließlich bei einer bestätigten neueren Version, verfügbarem Update-Dienst und ohne laufendes Update aktiv. Vor dem Start prüft der Server die Version erneut ohne Verwendung des Zwischenspeichers; ist keine neuere Version bestätigt, wird kein Update angefordert. Auch der Update-Helfer überspringt gleiche oder ältere Versionen. Ein direkter Update-API-Aufruf durch User oder Viewer wird weiterhin abgewiesen.
 
 Einmalig diese Version per PuTTY mit `git pull --ff-only` und `sudo bash scripts/install.sh` installieren. Dadurch werden neben dem Webdienst auch ein root-eigener Update-Helfer und `knx-alarmserver-update.path` eingerichtet. Danach als Admin über **Versionsnummer → Versionshistorie → Update installieren** starten.
 
@@ -263,7 +263,7 @@ Ohne `--role` bleibt bei vorhandenen Konten die Rolle erhalten. Das erste neue C
 
 ## Verhalten bei Verbindungsproblemen
 
-Das Dashboard holt Status, Meldungen und die gewählte Ansicht mit einer gemeinsamen Anfrage ab. Die Sitzung wird dafür einmal pro Aktualisierung geprüft; nur beim expliziten Basic-API-Zugriff wird das Passwort erneut berechnet. Leseanfragen einschließlich Antwortinhalt werden nach 10 Sekunden abgebrochen; Speicheraktionen nach 30 Sekunden. Eine ausbleibende Speicherbestätigung bedeutet nicht zwingend, dass nichts gespeichert wurde: zuerst **Neu laden** und den Stand prüfen, bevor erneut gespeichert wird.
+Das Dashboard holt Status, Meldungen und die gewählte Ansicht mit einer gemeinsamen Anfrage ab. Die Sitzung wird dafür einmal pro Aktualisierung geprüft; nur beim expliziten Basic-API-Zugriff wird das Passwort erneut berechnet. Leseanfragen einschließlich Antwortinhalt werden nach 10 Sekunden abgebrochen; Versions-/Update-Statusabfragen mit zwei möglichen externen Abrufwegen erhalten 20 Sekunden; Speicheraktionen nach 30 Sekunden. Eine ausbleibende Speicherbestätigung bedeutet nicht zwingend, dass nichts gespeichert wurde: zuerst **Neu laden** und den Stand prüfen, bevor erneut gespeichert wird.
 
 Im Normalbetrieb erfolgt die nächste Aktualisierung fünf Sekunden nach Abschluss der vorherigen. Nach Fehlern steigt die Wartezeit auf 10, 20 und maximal 30 Sekunden; nach erfolgreichem Abruf wieder auf fünf Sekunden. Verdeckte Browser-Tabs pausieren die automatische Abfrage und aktualisieren beim Zurückkehren. Schreibaktionen werden nicht automatisch wiederholt. Angezeigte Daten bleiben bei Fehlern sichtbar und werden als möglicherweise veraltet gekennzeichnet.
 

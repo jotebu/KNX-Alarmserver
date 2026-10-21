@@ -2,6 +2,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import re
+import logging
 import sys
 import threading
 import time
@@ -11,6 +12,8 @@ import urllib.request
 from . import __version__
 
 BASE = 'https://raw.githubusercontent.com/jotebu/KNX-Alarmserver/main/'
+API_BASE = 'https://api.github.com/repos/jotebu/KNX-Alarmserver/contents/'
+LOG = logging.getLogger(__name__)
 
 
 def version_number(value):
@@ -22,12 +25,28 @@ def version_number(value):
 def fetch_text(filename):
     if filename not in {'pyproject.toml', 'CHANGELOG.md'}:
         raise ValueError('Unsupported version resource')
-    request = urllib.request.Request(BASE + filename, headers={'User-Agent':'KNX-Alarmserver-VersionCheck'})
-    with urllib.request.urlopen(request, timeout=3) as response:
-        raw = response.read(262145)
-    if len(raw) > 262144:
-        raise ValueError('Version resource too large')
-    return raw.decode('utf-8')
+    # A unique query plus no-cache headers avoids a stale mutable-main CDN response.
+    nonce = str(time.time_ns())
+    urls = [API_BASE + filename + '?ref=main&_=' + nonce, BASE + filename + '?_=' + nonce]
+    last_error = None
+    for url in urls:
+        request = urllib.request.Request(url, headers={
+            'User-Agent':'KNX-Alarmserver-VersionCheck',
+            'Accept':'application/vnd.github.raw+json',
+            'Cache-Control':'no-cache', 'Pragma':'no-cache'})
+        try:
+            with urllib.request.urlopen(request, timeout=4) as response:
+                raw = response.read(262145)
+            if len(raw) > 262144:
+                raise ValueError('Version resource too large')
+            text = raw.decode('utf-8')
+            if filename == 'pyproject.toml':
+                version_number(tomllib.loads(text)['project']['version'])
+            return text
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            last_error = error
+    raise OSError(f'GitHub-Version konnte ueber beide Abrufwege nicht geladen werden: {last_error}') from last_error
+
 
 
 class VersionChecker:
@@ -50,7 +69,8 @@ class VersionChecker:
                 result = {'current_version':__version__, 'latest_version':latest,
                           'update_available':update, 'check_ok':True, 'checked_at':checked}
                 ttl = 300
-            except (OSError, ValueError, KeyError, TypeError):
+            except (OSError, ValueError, KeyError, TypeError) as error:
+                LOG.warning('Versionsabruf fehlgeschlagen: %s', error)
                 result = {'current_version':__version__, 'latest_version':None,
                           'update_available':False, 'check_ok':False, 'checked_at':checked}
                 ttl = 30
@@ -68,10 +88,10 @@ class VersionChecker:
                 continue
         return 'Keine lokale Versionshistorie vorhanden.'
 
-    def history(self):
-        result = self.check()
+    def history(self, force=False):
+        result = self.check(force=force)
         with self.lock:
-            if self.history_cached is None or time.monotonic() >= self.history_expires:
+            if force or self.history_cached is None or time.monotonic() >= self.history_expires:
                 try:
                     self.history_cached = {'changelog':fetch_text('CHANGELOG.md'), 'history_source':'github'}
                     self.history_expires = time.monotonic()+300
