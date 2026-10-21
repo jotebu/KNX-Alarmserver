@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.14 – 21.10.2026
+
+- „Kennwort ändern“ und „Abmelden“ im Benutzermenü einheitlich darstellen; abweichende ältere Button-Formatierung entfernt.
+- Versionsnummer in der Kopfzeile auch beim Überfahren ohne Unterstreichung anzeigen. Der Link zur Versionshistorie bleibt klickbar.
+
 ## 0.10.13 – 21.10.2026
 
 - Versionsprüfung beim Öffnen und über „Status prüfen“ ohne lokalen Zwischenspeicher ausführen. GitHub-API als ersten Abrufweg und Raw-Datei als Rückfall nutzen; HTTP-Caches per Header und eindeutiger URL umgehen. Fehler im Dienstprotokoll erfassbar machen.

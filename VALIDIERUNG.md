@@ -1,6 +1,6 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.13, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.14, Inbetriebnahmeversion.
 
 ## Manuelle Versionsprüfung und Update-Kasten
 
