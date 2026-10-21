@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.11 – 21.10.2026
+
+- Update-Button nur bei einer bestätigten neueren Version, verfügbarem Update-Dienst und ohne laufendes Update aktivieren. Bei fehlgeschlagener Versionsprüfung bleibt er ohne zusätzliche Prüfmeldung deaktiviert.
+- Update-API prüft unmittelbar vor der Anforderung erneut ohne Cache. Gleiche, ältere oder nicht bestätigte Versionen lösen keine Installation aus; auch der root-eigene Helfer prüft vor der Installation nochmals den Versionsvergleich.
+- Tests für Buttonzustände, erzwungene Versionsprüfung, verweigerte Anforderung und Überspringen gleicher/älterer Versionen ergänzt.
+
 ## 0.10.10 – 21.10.2026
 
 - Hauptseite auf Meldungen, Historie und Zähler reduziert; KNX-Informationskasten und bisherige Verwaltungsreiter entfernt.

@@ -3,6 +3,7 @@
 import fcntl
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -40,7 +41,7 @@ def write_status(state, message, **extra):
 def read_version(path):
     with Path(path).open('rb') as handle:
         value = tomllib.load(handle)['project']['version']
-    if not isinstance(value, str):
+    if not isinstance(value, str) or not re.fullmatch(r'[0-9]{1,8}\.[0-9]{1,8}\.[0-9]{1,8}', value):
         raise ValueError('Invalid version')
     return value
 
@@ -73,6 +74,9 @@ def run():
                             '--branch', 'main', REPOSITORY, str(source)],
                            check=True, env=ENV, timeout=180)
             target = read_version(source / 'pyproject.toml')
+            if tuple(map(int,target.split('.'))) <= tuple(map(int,previous.split('.'))):
+                write_status('current', 'Keine neuere Version verfuegbar.', previous_version=previous, target_version=target)
+                return
             commit = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], env=ENV, text=True).strip()
             write_status('installing', 'Installation laeuft. Der Webdienst wird kurz neu gestartet.',
                          previous_version=previous, target_version=target, commit=commit)

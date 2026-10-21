@@ -164,8 +164,9 @@ def create_app(config, store, update_manager=None, version_checker=None):
         return await asyncio.to_thread(versions.history)
 
     @app.get('/api/update')
-    def update_status(username=Depends(admin)):
-        return {**updater.status(), 'current_version': __version__}
+    async def update_status(username=Depends(admin)):
+        available_version = await asyncio.to_thread(versions.check)
+        return {**updater.status(), **available_version}
 
     @app.post('/api/update')
     async def start_update(request: Request, username=Depends(admin)):
@@ -173,6 +174,9 @@ def create_app(config, store, update_manager=None, version_checker=None):
         async for chunk in request.stream():
             if chunk:
                 raise HTTPException(status_code=422, detail='Update akzeptiert keine Parameter')
+        available_version = await asyncio.to_thread(versions.check, force=True)
+        if not available_version['check_ok'] or not available_version['update_available']:
+            raise HTTPException(status_code=409, detail='Kein bestaetigtes neueres Update verfuegbar')
         try:
             result = await asyncio.to_thread(updater.start)
         except FileExistsError as error:

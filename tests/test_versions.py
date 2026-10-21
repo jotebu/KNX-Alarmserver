@@ -24,6 +24,14 @@ class Versions(unittest.TestCase):
             self.assertEqual(result['update_available'],expected)
             self.assertEqual(fetch.call_count,1)
 
+    def test_forced_check_replaces_cached_result(self):
+        checker=VersionChecker()
+        with patch('knx_alarmserver.versions.__version__','0.10.10'),patch('knx_alarmserver.versions.fetch_text',side_effect=['[project]\nversion="0.10.11"','[project]\nversion="0.10.10"']) as fetch:
+            self.assertTrue(checker.check()['update_available'])
+            self.assertTrue(checker.check()['update_available'])
+            self.assertFalse(checker.check(force=True)['update_available'])
+            self.assertEqual(fetch.call_count,2)
+
     def test_failure_and_local_history(self):
         with tempfile.TemporaryDirectory() as directory:
             path=Path(directory)/'CHANGELOG.md';path.write_text('# Changelog\n## 0.10.10\n- local')

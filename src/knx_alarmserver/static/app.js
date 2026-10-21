@@ -325,14 +325,15 @@ async function loadUpdate(){
     const state=await api('/api/update');
     const active=['queued','fetching','installing'].includes(state.state);
     $('update-version').textContent=state.current_version;
-    $('update-start').disabled=!state.available||active;
+    $('update-start').disabled=!state.available||active||!state.check_ok||!state.update_available;
     $('update-refresh').hidden=state.state!=='success';
-    $('update-feedback').textContent=state.message||(state.available?'Bereit für ein Update.':'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.');
+    $('update-feedback').textContent=state.message||(!state.available?'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.':state.check_ok?(state.update_available?'Neue Version '+state.latest_version+' verfügbar.':'Installierte Version ist aktuell.'):'');
     $('update-detail').textContent=state.target_version?'Zielversion: '+state.target_version+(state.updated_at?' · '+date(state.updated_at):''):'';
     if(active)updatePoll=setTimeout(loadUpdate,3000);
-  }catch(error){$('update-feedback').textContent='Verbindung unterbrochen. Der Status wird nach dem Neustart erneut geprüft.';updatePoll=setTimeout(loadUpdate,5000);}
+  }catch(error){$('update-start').disabled=true;$('update-feedback').textContent='Verbindung unterbrochen. Der Status wird nach dem Neustart erneut geprüft.';updatePoll=setTimeout(loadUpdate,5000);}
 }
 $('update-start').onclick=async()=>{
+  if($('update-start').disabled)return;
   if(!confirm('Den aktuellen Stand von GitHub installieren? Weboberfläche und KNX-Empfang werden beim Neustart kurz unterbrochen.'))return;
   $('update-start').disabled=true;
   try{

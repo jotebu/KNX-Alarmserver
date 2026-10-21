@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from fastapi.testclient import TestClient
 from knx_alarmserver.store import Store
@@ -26,7 +26,9 @@ class DashboardUpdates(unittest.TestCase):
         self.store=Store(':memory:',[])
         for role in ('admin','user','viewer'):
             self.store.set_password(role,PASSWORD,role)
-        self.client=TestClient(create_app({'knx':{'enabled':False}},self.store,self.updater))
+        self.versions=Mock()
+        self.versions.check.return_value={'check_ok':True,'update_available':True,'current_version':'0.10.11','latest_version':'0.10.12'}
+        self.client=TestClient(create_app({'knx':{'enabled':False}},self.store,self.updater,self.versions))
         self.client.__enter__()
 
     def tearDown(self):
@@ -44,6 +46,13 @@ class DashboardUpdates(unittest.TestCase):
         self.assertEqual(self.updater.request_path.read_bytes(),b'')
         self.assertEqual(self.client.post('/api/update',auth=('admin',PASSWORD),headers={'X-Alarmserver-Action':'update-server'}).status_code,409)
         self.assertEqual(self.client.get('/api/update',auth=('admin',PASSWORD)).json()['state'],'queued')
+
+    def test_no_update_or_unconfirmed_version_cannot_queue(self):
+        for check_ok, newer in ((True,False),(False,False),(False,True)):
+            self.versions.check.return_value={'check_ok':check_ok,'update_available':newer,'current_version':'0.10.11','latest_version':None}
+            self.assertEqual(self.client.post('/api/update',auth=('admin',PASSWORD),headers={'X-Alarmserver-Action':'update-server'}).status_code,409)
+            self.assertFalse(self.updater.request_path.exists())
+        self.versions.check.assert_any_call(force=True)
 
     def test_missing_helper_active_status_and_symlink(self):
         self.helper.unlink()
@@ -119,6 +128,18 @@ class WorkerTests(unittest.TestCase):
         self.assertFalse(self.request.exists())
         worker.finish()
         self.assertEqual(json.loads(worker.STATUS.read_text())['state'],'success')
+
+    def test_worker_never_reinstalls_equal_or_older_version(self):
+        for target in ('0.10.10','0.10.09'):
+            self.request.touch()
+            def clone_only(args,**options):
+                self.assertEqual(args[0],'git')
+                source=Path(args[-1]);source.mkdir()
+                (source/'pyproject.toml').write_text('[project]\nversion="'+target+'"\n')
+            with patch.object(worker.subprocess,'run',side_effect=clone_only) as command:
+                worker.run()
+            self.assertEqual(command.call_count,1)
+            self.assertEqual(json.loads(worker.STATUS.read_text())['state'],'current')
 
     def test_failed_or_interrupted_job_is_not_successful(self):
         self.request.touch()

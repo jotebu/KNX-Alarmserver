@@ -1,10 +1,15 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.10, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.11, Inbetriebnahmeversion.
+
+## Update nur bei neuerer Version
+
+- Button bleibt bei gleicher/älterer Version, fehlgeschlagener Prüfung, fehlendem Helfer oder laufendem Update deaktiviert.
+- Server prüft vor einer Anforderung ohne Cache; unbestätigte Updates erzeugen keine Anforderungsdatei. Root-Helfer überspringt gleiche oder ältere Versionen vor dem Installeraufruf.
 
 ## Dashboard-Menüs, eigene Seiten und Update
 
-- 82 Python-Tests und neun JavaScript-Tests erfolgreich: Rollenmatrix einschließlich Admin-Telegrammseite, eigene Kennwortänderung für alle Rollen mit Sitzungssperre und Rollenerhalt, CSRF-/Parameterprüfung und verweigerte direkte Fremdzugriffe.
+- 85 Python-Tests und zehn JavaScript-Tests erfolgreich: Rollenmatrix einschließlich Admin-Telegrammseite, eigene Kennwortänderung für alle Rollen mit Sitzungssperre und Rollenerhalt, CSRF-/Parameterprüfung und verweigerte direkte Fremdzugriffe.
 - Update-Anforderungsdatei und Statusanzeige mit lokal isolierten Testpfaden geprüft. Fehlender Helfer, aktive oder doppelte Anforderung und Symlinks behandelt.
 - Root-Worker und Installer verwenden für veröffentlichte Programmdateien eine lesbare Maske; private Daten-/Konfigurationsverzeichnisse bleiben explizit geschützt.
 - Root-Worker mit simuliertem Git-/Installationsprozess geprüft: feste Quelle und main-Zweig, keine Auswertung der Anforderungsbytes, atomarer lesbarer Status, Erfolg erst nach erfolgreicher Installation und Fehler nach Abbruch. Keine echte Paketinstallation im Prüfcontainer durchgeführt.

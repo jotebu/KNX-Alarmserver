@@ -39,9 +39,9 @@ class VersionChecker:
         self.history_cached = None
         self.history_expires = 0
 
-    def check(self):
+    def check(self, force=False):
         with self.lock:
-            if self.cached is not None and time.monotonic() < self.expires:
+            if not force and self.cached is not None and time.monotonic() < self.expires:
                 return dict(self.cached)
             checked = datetime.now(timezone.utc).isoformat()
             try:
