@@ -254,6 +254,25 @@ class Store:
         with self.lock:
             return [dict(r) for r in self.db.execute("SELECT * FROM events ORDER BY seq DESC LIMIT ?", (min(max(limit, 1), 1000),))]
 
+    def history_page(self, page=1, start=None, end=None, query=''):
+        from .listing import PAGE_SIZE, page_info
+        clauses, args = [], []
+        if start:
+            clauses.append('timestamp >= ?'); args.append(start)
+        if end:
+            clauses.append('timestamp < ?'); args.append(end)
+        if query:
+            clauses.append("(alarm_name LIKE ? ESCAPE '\\' OR username LIKE ? ESCAPE '\\' OR kind LIKE ? ESCAPE '\\' OR source LIKE ? ESCAPE '\\')")
+            needle = '%' + query.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+            args.extend([needle] * 4)
+        where = ' WHERE ' + ' AND '.join(clauses) if clauses else ''
+        with self.lock:
+            total = self.db.execute('SELECT count(*) FROM events' + where, args).fetchone()[0]
+            info = page_info(total, page)
+            rows = self.db.execute('SELECT * FROM events' + where + ' ORDER BY seq DESC LIMIT ? OFFSET ?',
+                                   [*args, PAGE_SIZE, (info['page'] - 1) * PAGE_SIZE]).fetchall()
+        return {'rows': [dict(row) for row in rows], **info}
+
     def prune(self):
         cutoff = (datetime.now(timezone.utc) - timedelta(days=self.retention_days)).isoformat()
         with self.transaction():

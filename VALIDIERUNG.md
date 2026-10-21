@@ -1,6 +1,13 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.12.2, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.3, Inbetriebnahmeversion.
+
+## Seiten, Datumsfilter und KNX-Leseabfrage
+
+- 501 Historienereignisse über drei Seiten vollständig und ohne Überschneidungen, Grenzen 201–400, Tagesfilter, leere Suche und Seitenbegrenzung geprüft. 466 Meldungen mit 200/200/66 Einträgen und Filter auf den letzten Empfang geprüft.
+- Gesamte Zähler trotz Seitenfilter, lokale Tagesgrenzen einschließlich Endtag, Zurücksetzen auf Seite 1 und direkte Seitenwahl geprüft. DOM-Prüfung mit 200 Tabellenzeilen, Seitennavigation, Datumsfilter und drei Rollen erfolgreich.
+- Leseabfrage mit echten GroupValueRead-Telegrammobjekten und simulierter Übertragung geprüft: keine Schreibtelegramme, kein erfundener Zustand, nur gültige Antworten zählen, Sperre paralleler Abfragen, Verbindungsauswahl und Abbruch beim Stoppen. API-Rechte für Admin/User/Viewer und Aktionsheader geprüft.
+- KNX-Abfrage auf dem realen Raspberry/Bus und visuelle Browserabnahme stehen aus; Antworten hängen von ETS-Flags und der Gerätetopologie ab.
 
 ## Zahlenprioritäten
 
@@ -8,7 +15,7 @@ Stand: 21.10.2026. Projektversion 0.12.2, Inbetriebnahmeversion.
 
 ## Alarmmatrix im Dashboard
 
-- Gesamter Prüfstand: 102 Python-Tests und 17 Dashboard-Tests erfolgreich.
+- Gesamter Prüfstand: 109 Python-Tests und 19 Dashboard-Tests erfolgreich.
 
 - Gemeinsame Validierung für Tabellenzeilen und CSV, automatische IDs, sofortige Auswertung, Neustart-Persistenz, Bearbeitung mit Zustandserhalt bzw. gezieltem Reset, unveränderte Historie und Datenbankfehler mit Rücknahme geprüft.
 - API-Prüfungen für Admin/User/Viewer, fremde Herkunft, fehlenden Aktionsheader, parallele Revisionen, CSV-Vorlage und abgelehnten Doppelimport.

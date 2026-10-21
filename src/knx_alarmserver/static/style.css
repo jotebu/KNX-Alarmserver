@@ -16,3 +16,5 @@
 .version-status{justify-content:space-between;margin:12px 0}.version-status p{margin:0;margin-right:auto}#update-feedback:empty{display:none}
 
 .matrix-table input{min-width:140px;width:100%;font:inherit}.matrix-table select{min-width:110px;font:inherit}.matrix-table th:first-child{min-width:130px}.matrix-table input[aria-label^="name"]{min-width:230px}#matrix-feedback{min-height:24px;color:#ffcf8a}#matrix-panel .toolbar a{color:#65dbc1;font-size:13px}
+
+#list-page-number{max-width:90px}#knx-read-feedback{color:#b7c7db;font-size:13px}

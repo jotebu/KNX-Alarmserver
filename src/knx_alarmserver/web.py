@@ -6,8 +6,9 @@ import json
 import logging
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
+from datetime import datetime
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, Query
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.exception_handlers import http_exception_handler
@@ -248,13 +249,32 @@ def create_app(config, store, update_manager=None, version_checker=None):
         return {"version": __version__, **identity(request, username), "knx": monitor.status(), "started_at": store.started_at}
 
     @app.get("/api/dashboard")
-    def dashboard(request: Request, view: str = "alarms", username=Depends(user)):
+    def dashboard(request: Request, view: str = "alarms", paged: bool = False,
+                  page: int = Query(1, ge=1), from_time: datetime | None = None,
+                  until_time: datetime | None = None, search: str = Query('', max_length=200),
+                  open_only: bool = False, username=Depends(user)):
         if view not in {"alarms", "history", "telegrams"}:
             raise HTTPException(status_code=400, detail="Unbekannte Dashboard-Ansicht")
         result = {"status": {"version": __version__, **identity(request, username),
                              "knx": monitor.status(), "started_at": store.started_at},
                   "alarms": store.snapshot()}
-        if view == "history":
+        if paged and view in {'alarms', 'history'}:
+            from .listing import bounds, alarms_page
+            try:
+                start, end = bounds(from_time, until_time)
+            except ValueError as error:
+                raise HTTPException(status_code=422, detail=str(error)) from None
+            rows = result['alarms']
+            result['counts'] = {'active': sum(row['status'] == 'active' for row in rows),
+                                'acked': sum(row['status'] == 'active_ack' for row in rows),
+                                'pending': sum(row['status'] == 'clear_pending' for row in rows),
+                                'unknown': sum(row['quality'] != 'ok' for row in rows)}
+            listing = store.history_page(page, start, end, search) if view == 'history' else alarms_page(rows, page, start, end, search, open_only)
+            result['alarms'] = listing['rows'] if view == 'alarms' else []
+            if view == 'history':
+                result['history'] = listing['rows']
+            result['pagination'] = {key: value for key, value in listing.items() if key != 'rows'}
+        elif view == "history":
             result["history"] = store.history()
         elif view == "telegrams":
             if request.state.account['role'] != 'admin':
@@ -299,6 +319,23 @@ def create_app(config, store, update_manager=None, version_checker=None):
             raise HTTPException(status_code=422, detail=str(error)) from None
         logging.getLogger(__name__).info('Prioritaeten durch %s aktualisiert', username)
         return result
+
+    @app.post('/api/knx/read')
+    async def read_knx_values(request: Request, username=Depends(matrix_editor)):
+        action(request, 'read-knx')
+        payload = await json_body(request)
+        if set(payload) != {'mode', 'connection'} or not isinstance(payload['mode'], str) or payload['mode'] not in {'unknown', 'all'} or not isinstance(payload['connection'], str):
+            raise HTTPException(status_code=422, detail='Modus und Verbindung erforderlich')
+        try:
+            result = monitor.request_read(payload['mode'], payload['connection'])
+        except FileExistsError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from None
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        except RuntimeError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from None
+        logging.getLogger(__name__).info('KNX-Statusabfrage durch %s angefordert', username)
+        return JSONResponse(result, status_code=202)
 
     @app.get('/matrix')
     def matrix_page(username=Depends(matrix_editor)):

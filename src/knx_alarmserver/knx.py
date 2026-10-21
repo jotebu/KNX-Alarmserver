@@ -16,13 +16,19 @@ class Monitor:
         self.telegrams = deque(maxlen=250)
         self.tasks = []
         self.failed = False
+        self.clients = {}
+        self.read_task = None
+        self.read_state = {'state': 'idle', 'total': 0, 'sent': 0}
+        self.read_responses = set()
+        self.read_targets = set()
 
     def status(self):
         enabled = self.config.get("enabled", False)
         states = list(self.connections.values())
         return {"enabled": enabled, "ready": enabled and bool(states) and
                 all(s["state"] == "CONNECTED" for s in states) and not self.failed,
-                "storage_error": self.failed, "connections": states}
+                "storage_error": self.failed, "connections": states,
+                "read": {**self.read_state, "answered": len(self.read_responses)}}
 
     def received(self, telegram, connection_name):
         # Keep decoder selection and ingestion consistent with live matrix edits.
@@ -62,6 +68,8 @@ class Monitor:
                 item.update(value=value, dpt=dpt, display=display, unit=unit)
                 if alarm:
                     self.store.ingest(address, value, str(telegram.source_address), display, unit)
+                    if isinstance(payload, GroupValueResponse) and address in self.read_targets and connection_name == self.read_state.get('connection'):
+                        self.read_responses.add(address)
             except (ValueError, TypeError, KeyError, ConversionError, CouldNotParseTelegram) as error:
                 item["error"] = str(error)[:300]
                 try:
@@ -72,6 +80,47 @@ class Monitor:
             except Exception:
                 self.failed = True
                 LOG.exception("Alarmzustand konnte nicht gespeichert werden")
+
+    def request_read(self, mode='unknown', connection=''):
+        if self.read_task and not self.read_task.done():
+            raise FileExistsError('Eine KNX-Statusabfrage laeuft bereits')
+        ready = [name for name in self.clients if self.connections.get(name, {}).get('state') == 'CONNECTED']
+        if not self.config.get('enabled') or not ready:
+            raise RuntimeError('Keine aktive KNX-Verbindung fuer eine Statusabfrage')
+        if connection and connection not in ready:
+            raise ValueError('Gewaehlte KNX-Verbindung ist nicht bereit')
+        connection = connection or ready[0]
+        rows = self.store.snapshot()
+        addresses = sorted({row['group_address'] for row in rows if mode == 'all' or row['quality'] != 'ok'},
+                           key=lambda address: tuple(map(int, address.split('/'))))
+        self.read_responses.clear()
+        self.read_targets = set(addresses)
+        self.read_state = {'state': 'running' if addresses else 'complete', 'total': len(addresses),
+                           'sent': 0, 'connection': connection, 'started_at': now()}
+        if addresses:
+            self.read_task = asyncio.create_task(self._read_addresses(connection, self.clients[connection], addresses))
+        return {**self.read_state, 'answered': 0}
+
+    async def _read_addresses(self, connection, client, addresses):
+        from xknx.telegram import Telegram, GroupAddress
+        from xknx.telegram.apci import GroupValueRead
+        try:
+            for address in addresses:
+                if self.clients.get(connection) is not client or self.connections.get(connection, {}).get('state') != 'CONNECTED':
+                    raise RuntimeError('KNX-Verbindung unterbrochen')
+                # Await actual outgoing handling; never enqueue a burst or write a value.
+                await asyncio.wait_for(client.telegram_queue.process_telegram_outgoing(
+                    Telegram(destination_address=GroupAddress(address), payload=GroupValueRead())), timeout=10)
+                self.read_state['sent'] += 1
+                await asyncio.sleep(0.5)
+            await asyncio.sleep(2)  # Allow the final device responses to arrive.
+            self.read_state.update(state='complete', finished_at=now())
+        except asyncio.CancelledError:
+            self.read_state.update(state='cancelled', message='Statusabfrage abgebrochen.')
+            raise
+        except Exception:
+            LOG.exception('KNX-Statusabfrage fehlgeschlagen')
+            self.read_state.update(state='failed', message='Statusabfrage unterbrochen; Verbindung und Dienstprotokoll pruefen.')
 
     async def _run_connection(self, item):
         from xknx import XKNX
@@ -92,6 +141,7 @@ class Monitor:
                 async with asyncio.timeout(30):
                     await xknx.start()
                 self.connections[name]["error"] = None
+                self.clients[name] = xknx
                 await asyncio.Event().wait()  # xknx handles reconnect after an established tunnel
             except asyncio.CancelledError:
                 raise
@@ -99,6 +149,7 @@ class Monitor:
                 self.connections[name].update(state="ERROR", error=type(error).__name__)
                 LOG.exception("KNX-Verbindung %s fehlgeschlagen; neuer Versuch in 10s", name)
             finally:
+                self.clients.pop(name, None)
                 try:
                     async with asyncio.timeout(10):
                         await xknx.stop()
@@ -119,6 +170,10 @@ class Monitor:
             self.tasks.append(asyncio.create_task(self._run_connection(item)))
 
     async def stop(self):
+        if self.read_task and not self.read_task.done():
+            self.read_task.cancel()
+            await asyncio.gather(self.read_task, return_exceptions=True)
+            self.read_state.update(state='cancelled', message='Statusabfrage abgebrochen.')
         for task in self.tasks:
             task.cancel()
         await asyncio.gather(*self.tasks, return_exceptions=True)

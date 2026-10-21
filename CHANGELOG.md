@@ -2,6 +2,13 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.3 – 22.10.2026
+
+- Meldungen und Ereignishistorie serverseitig mit 200 Einträgen pro Seite laden; vor/zurück und direkte Seitenwahl. Alle gespeicherten Historienereignisse sind erreichbar, statt nur der bisherigen letzten 200.
+- Datumsfilter von/bis einschließlich des gesamten Endtags sowie Suche über alle Treffer vor der Seiteneinteilung. Historie nach Ereigniszeitpunkt, Meldungen nach letztem Empfang filtern. Die Dashboard-Zähler bleiben unabhängig von Seiten und Filtern vollständig.
+- KNX-Statusabfrage für Admins und User: unbekannte/alte oder alle Alarmadressen über eine wählbare aktive Verbindung lesen. Nur GroupValueRead, maximal zwei Anfragen pro Sekunde, Fortschritt und gültige Antworten anzeigen. Keine erfundenen Normalwerte bei ausbleibender Antwort.
+- Parallele Leseabfragen sperren und bei Verbindungswechsel/Dienstende abbrechen. Bestehende Aufbewahrungsdauer und Telegrammmonitor-Ringpuffer bleiben wirksam.
+
 ## 0.12.2 – 21.10.2026
 
 - Prioritäten als stabile ganze Zahlen speichern: zunächst 1 Brand, 2 Warnung, 3 Service, 4 Info; kleine Zahl bedeutet hohe Priorität.

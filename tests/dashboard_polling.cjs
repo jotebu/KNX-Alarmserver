@@ -12,7 +12,7 @@ function setup(fetch){
     setTimeout(fn,ms){timers.set(++id,{fn,ms});return id;},clearTimeout(key){timers.delete(key);}});
   const prefix=source.slice(0,source.indexOf('function failure('));
   const refresh=source.slice(source.indexOf('async function refresh(){'),source.indexOf('let settingsOpen='));
-  vm.runInContext(prefix+"\nlet settingsOpen=false;function applyAccess(){}function setKnxIndicator(){}async function initializePage(){}function render(){}function failure(error){$('error').textContent=error.message;}\n"+refresh,context);
+  vm.runInContext(prefix+"\nlet settingsOpen=false;function applyAccess(){}function setKnxIndicator(){}function renderReadStatus(){}async function initializePage(){}function render(){}function failure(error){$('error').textContent=error.message;}\n"+refresh,context);
   return {context,timers,nodes,run:code=>vm.runInContext(code,context)};
 }
 const snapshot=()=>({status:{version:'test',user:'admin',knx:{enabled:false,ready:false,connections:[]}},alarms:[]});
@@ -40,5 +40,5 @@ test('hidden page pauses polling and repeated failures have a bounded backoff',a
 });
 test('one dashboard request per refresh includes only selected view',async()=>{
   const urls=[];const s=setup(async url=>{urls.push(url);return {ok:true,json:async()=>({...snapshot(),history:[]})};});
-  s.run("view='history'");await s.run('refresh()');assert.deepEqual(urls,['/api/dashboard?view=history']);assert.equal(s.timers.size,1);
+  s.run("view='history'");await s.run('refresh()');assert.deepEqual(urls,['/api/dashboard?view=history&paged=true&page=1&search=&open_only=true']);assert.equal(s.timers.size,1);
 });

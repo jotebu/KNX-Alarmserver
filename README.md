@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.2 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.3 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -172,6 +172,22 @@ sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver dp
 
 Es ist in dieser Version ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Bei Änderungen von Gruppenadresse, DPT oder Regel im Dashboard wird nur der betroffene aktuelle Zustand zurückgesetzt, bis ein neues Telegramm eintrifft. Name, Bereich und Priorität können ohne Zustandsverlust geändert werden. Änderungen und Entfernen werden mit Benutzer und Zeit in der Historie protokolliert; bestehende Ereignisse bleiben erhalten.
 
+## Meldungen und Historie durchsuchen
+
+Beide Listen laden **200 Einträge pro Seite**, mit Zurück/Weiter und direkter Seitenwahl. Die Historie umfasst alle noch gespeicherten Ereignisse; die bisherige Begrenzung der Dashboard-Anzeige auf die letzten 200 entfällt. Suche und Datumsfilter wirken auf alle Treffer vor der Seiteneinteilung. Die oberen Zähler zeigen weiterhin die gesamte Alarmmatrix.
+
+**Von/Bis** bezieht sich auf lokale Kalendertage im Browser; der Bis-Tag ist vollständig enthalten. In der Historie wird der Ereigniszeitpunkt gefiltert, in Meldungen der letzte Empfang. Alarme ohne Empfangszeit erscheinen nicht bei gesetztem Datumsfilter. Der Datumsfilter ändert keine Zustände. Die konfigurierte Aufbewahrungsdauer (`retention_days`, standardmäßig 365 Tage) gilt weiterhin; bereits gelöschte Ereignisse können nicht wieder angezeigt werden. Der separate Telegrammmonitor enthält weiterhin die letzten 250 Telegramme im Arbeitsspeicher.
+
+## KNX-Status manuell abfragen
+
+Admins und User können in **Meldungen → Status abfragen** die unbekannten/alten Werte oder alle Gruppenadressen der Alarmmatrix lesen. Bei mehreren Verbindungen die passende Linie wählen; ohne Auswahl wird die erste aktive Verbindung verwendet. Nicht die gesamte ETS-Adressliste wird abgefragt. Die Abfrage läuft unabhängig von der ausgewählten Meldungsseite und ihren Filtern im Hintergrund mit höchstens zwei Leseanfragen pro Sekunde. Fortschritt nennt gesendete Anfragen und gültige Antworten; das Senden einer Anfrage allein ist kein bestätigter Messwert. Gleichzeitige Abfragen werden abgewiesen. Dienstende oder KNX-Konfigurationswechsel beendet eine laufende Abfrage.
+
+Es werden ausschließlich **GroupValueRead**-Telegramme gesendet, keine Werte geschrieben und keine Alarmquittierungen oder Reset-Befehle ausgeführt. Ein Gerät muss das Lesen seines Kommunikationsobjekts erlauben (Lesen-/Read-Flag); Filtertabellen und sendende Gruppenadresse müssen passen. Ohne gültige Antwort bleibt der bisherige Zustand erhalten. Empfangene Antworten durchlaufen dieselbe Dekodierung und Alarmregel wie normale Telegramme und können damit auch echte Alarme auslösen.
+
+In ETS: **Diagnose → Gruppenmonitor → Start → Gruppenfunktionen**, gewünschte Gruppenadresse wählen und **Lesen** drücken. Alternativ Gruppenadresse markieren und im Kontextmenü den Wert lesen. Die Flags werden am Kommunikationsobjekt des antwortenden Geräts parametriert und anschließend auf das Gerät geladen. Ein Geräte-Neustart ist dafür kein geeigneter pauschaler Statusabruf.
+
+Dokumentation: [KNX Gruppenmonitor lesen](https://support.knx.org/hc/en-us/articles/360019107679-Extended-options-Group-Monitor), [Gruppenadressen lesen](https://support.knx.org/hc/en-us/articles/360009510539-Group-Address-Read-Write-Display).
+
 ## Zustände und Quittierung
 
 Ein kommender Alarm wird unquittiert gespeichert. Quittieren setzt den lokalen Quittierungsstatus, nicht den KNX-Wert. Geht eine unquittierte Störung, bleibt sie als „Gegangen · unquittiert“ stehen. Ein erneutes Kommen erfordert eine neue Quittierung. Wiederholte identische Telegramme aktualisieren den Empfangszeitpunkt ohne neue Alarmereignisse.
@@ -198,7 +214,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.2
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.3
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -208,8 +224,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.12.2
-git push origin v0.12.2
+git tag v0.12.3
+git push origin v0.12.3
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.

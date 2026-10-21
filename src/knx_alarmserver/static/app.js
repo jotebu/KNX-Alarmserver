@@ -6,6 +6,14 @@ const managementPages=['/knx','/ets','/users','/priorities'];
 let pageInitialized=false, newerVersionKnown=false, checkingVersionStatus=false;
 let access = {role:null,configure:false,acknowledge:false};
 let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
+let listPages={alarms:1,history:1}, listing=null, listGeneration=0;
+let listFilters={search:'',openOnly:true,from:'',until:''};
+function listQuery(selected){
+  let query='&paged=true&page='+listPages[selected]+'&search='+encodeURIComponent(listFilters.search)+'&open_only='+listFilters.openOnly;
+  if(listFilters.from)query+='&from_time='+encodeURIComponent(listFilters.from);
+  if(listFilters.until)query+='&until_time='+encodeURIComponent(listFilters.until);
+  return query;
+}
 const date = value => value ? new Date(value).toLocaleString('de-DE') : '—';
 const text = (tag, value, cls) => {const node=document.createElement(tag);node.textContent=value;if(cls)node.className=cls;return node;};
 async function api(path, options={}) {
@@ -32,13 +40,21 @@ function failure(error) {$('error').hidden=false;$('error').textContent=`Keine a
 function render(){
   if(settingsOpen)return;
   $('filter-wrap').hidden=view!=='alarms';
+  const paged=view!=='telegrams';
+  $('date-filters').hidden=!paged;$('list-pagination').hidden=!paged;
+  $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: letzter Empfang; ohne Empfangszeit nicht im Datumsfilter enthalten';
+  if(paged&&listing){
+    $('list-prev').disabled=listing.page<=1;$('list-next').disabled=listing.page>=listing.pages;
+    $('list-page-number').value=listing.page;$('list-page-number').max=listing.pages;
+    $('list-page').textContent=`Einträge ${listing.first}–${listing.last} von ${listing.total} · Seite ${listing.page} / ${listing.pages}`;
+  }
   const titles={alarms:'Meldungen',history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
   const heads={alarms:['Status','Meldung / Bereich','Wert / Regel','Letzter Empfang','Quittierung'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
   const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
   const query=$('search').value.toLocaleLowerCase('de');
-  const rows=data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||!$('open-only').checked||r.status!=='normal'||r.quality!=='ok');
-  if(view==='alarms')rows.sort((a,b)=>({active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[a.status]-{active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[b.status])||Number(a.priority)-Number(b.priority));
+  const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||!$('open-only').checked||r.status!=='normal'||r.quality!=='ok');
+  if(view==='alarms'&&!listing)rows.sort((a,b)=>({active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[a.status]-{active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[b.status])||Number(a.priority)-Number(b.priority));
   const body=document.createDocumentFragment();
   for(const row of rows){
     const tr=document.createElement('tr');
@@ -61,14 +77,18 @@ function render(){
   }
   $('table-body').replaceChildren(body);$('empty').hidden=rows.length>0;
   $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. Admins und User können Alarme im Bereich Alarmmatrix einrichten.':'Keine passenden Einträge.';
-  $('hint').textContent={alarms:'Nach einem Neustart bleiben gespeicherte Zustände als alte Werte gekennzeichnet, bis ein neues Telegramm eintrifft. „Normal“ bedeutet zuletzt empfangener Normalwert; es ist keine zyklische Erreichbarkeitsprüfung.',history:'Die letzten 200 Ereignisse. Quittierungen ändern ausschließlich den lokalen Alarmstatus.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
+  $('hint').textContent={alarms:'Nach einem Neustart bleiben gespeicherte Zustände als alte Werte gekennzeichnet, bis ein neues Telegramm eintrifft. „Normal“ bedeutet zuletzt empfangener Normalwert; es ist keine zyklische Erreichbarkeitsprüfung.',history:'Alle gespeicherten Ereignisse, 200 je Seite. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
 }
 async function refresh(){
   if(busy)return;
   clearTimeout(pollTimer);busy=true;
+  const generation=listGeneration;
   try{
     const requestedView=settingsOpen?'alarms':view;
-    const snapshot=await api('/api/dashboard?view='+encodeURIComponent(requestedView));
+    const snapshot=await api('/api/dashboard?view='+encodeURIComponent(requestedView)+(!settingsOpen&&requestedView!=='telegrams'?listQuery(requestedView):''));
+    if(generation!==listGeneration)return;
+    listing=snapshot.pagination||null;
+    if(listing)listPages[requestedView]=listing.page;
     const status=snapshot.status;
     access={role:status.role,matrix:['admin','user'].includes(status.role),...status.permissions};
     applyAccess();
@@ -78,18 +98,19 @@ async function refresh(){
     $('profile-user').textContent=status.user;
     $('update-version').textContent=status.version;
     $('version-link').textContent='Version '+status.version;
-    $('active').textContent=data.alarms.filter(r=>r.status==='active').length;
-    $('acked').textContent=data.alarms.filter(r=>r.status==='active_ack').length;
-    $('pending').textContent=data.alarms.filter(r=>r.status==='clear_pending').length;
-    $('unknown').textContent=data.alarms.filter(r=>r.quality!=='ok').length;
+    $('active').textContent=snapshot.counts?snapshot.counts.active:data.alarms.filter(r=>r.status==='active').length;
+    $('acked').textContent=snapshot.counts?snapshot.counts.acked:data.alarms.filter(r=>r.status==='active_ack').length;
+    $('pending').textContent=snapshot.counts?snapshot.counts.pending:data.alarms.filter(r=>r.status==='clear_pending').length;
+    $('unknown').textContent=snapshot.counts?snapshot.counts.unknown:data.alarms.filter(r=>r.quality!=='ok').length;
     $('connection-status').textContent=!status.knx.enabled?'KNX deaktiviert':status.knx.ready?'Verbindungen bereit':'Verbindung gestört / wird aufgebaut';
     $('connection-detail').textContent=status.knx.connections.map(c=>`${c.name}: ${c.state} · letzter Empfang ${date(c.last_received)}`).join(' | ')||'KNX-Empfang in der Konfiguration noch nicht aktiviert.';
     if(status.knx.storage_error)$('connection-detail').textContent+=' | FEHLER beim Speichern; Dienstprotokoll prüfen.';
     const knxColor=status.knx.storage_error?'red':!status.knx.enabled?'yellow':status.knx.ready?'green':'red';
     setKnxIndicator(knxColor,$('connection-status').textContent);
+    renderReadStatus(status.knx);
     if(!pageInitialized){pageInitialized=true;await initializePage();}
     $('clock').textContent='Aktualisiert: '+new Date().toLocaleTimeString('de-DE');$('error').hidden=true;refreshFailures=0;render();
-  }catch(error){refreshFailures+=1;setKnxIndicator('red','Server nicht erreichbar; KNX-Status unbekannt');failure(error);}finally{busy=false;scheduleRefresh();}
+  }catch(error){refreshFailures+=1;setKnxIndicator('red','Server nicht erreichbar; KNX-Status unbekannt');failure(error);}finally{busy=false;if(generation!==listGeneration)refresh();else scheduleRefresh();}
 }
 let settingsOpen=managementPages.includes(page)||page==='/account/password'||page==='/versions'||page==='/matrix', knxConfig=null, knxRevision=null, editingConnection=null, savingKnx=false;
 function knxFeedback(message){$('knx-feedback').textContent=message;}
@@ -149,7 +170,7 @@ $('knx-form').onsubmit=event=>{
   if(editingConnection===null)next.connections.push(c);else next.connections[editingConnection]=c;
   saveKnx(next);
 };
-document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
+document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{view=button.dataset.view;listing=null;listGeneration++;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));refresh();});
 let etsRows=[], etsPage=0, etsPreview=null, etsFile=null, etsBusy=false;
 function resetEtsPreview(){etsPreview=null;etsFile=null;$('ets-apply').disabled=true;}
 function renderEts(){
@@ -308,6 +329,32 @@ $('matrix-import-form').onsubmit=event=>{
   });
 };
 window.addEventListener('beforeunload',event=>{if(page==='/matrix'&&matrixDirty){event.preventDefault();event.returnValue='';}});
+
+let startingRead=false;
+function renderReadStatus(knx){
+  const allowed=page==='/'&&view==='alarms'&&access.matrix;
+  $('knx-read-controls').hidden=!allowed;$('knx-read-feedback').hidden=!allowed;
+  if(!allowed)return;
+  const select=$('knx-read-connection'),selected=select.value;
+  const options=document.createDocumentFragment();const automatic=text('option','Erste aktive Verbindung');automatic.value='';options.append(automatic);
+  for(const connection of knx.connections.filter(row=>row.state==='CONNECTED')){const option=text('option',connection.name);option.value=connection.name;options.append(option);}
+  select.replaceChildren(options);select.value=[...select.options].some(option=>option.value===selected)?selected:'';
+  const job=knx.read||{state:'idle'},running=job.state==='running';
+  $('knx-read-start').disabled=startingRead||running||!knx.enabled||!knx.connections.some(row=>row.state==='CONNECTED');
+  if(running)$('knx-read-feedback').textContent=`Statusabfrage: ${job.sent} / ${job.total} Leseanfragen gesendet; ${job.answered} gültige Antworten.`;
+  else if(job.state==='complete')$('knx-read-feedback').textContent=`Statusabfrage beendet: ${job.sent} Anfragen, ${job.answered} gültige Antworten. Nicht beantwortete Adressen behalten ihren bisherigen Zustand.`;
+  else if(job.state==='failed'||job.state==='cancelled')$('knx-read-feedback').textContent=job.message;
+  else $('knx-read-feedback').textContent='Liest die Gruppenadressen der Alarmmatrix. Antworten erfordern das Lesen-Flag in ETS; Werte werden nicht geschrieben.';
+}
+$('knx-read-start').onclick=async()=>{
+  if(startingRead||$('knx-read-start').disabled)return;startingRead=true;$('knx-read-start').disabled=true;
+  try{
+    await api('/api/knx/read',{method:'POST',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'read-knx'},body:JSON.stringify({mode:$('knx-read-mode').value,connection:$('knx-read-connection').value})});
+    $('knx-read-feedback').textContent='Statusabfrage gestartet.';
+    await refresh();
+  }catch(error){$('knx-read-feedback').textContent=error.message;}
+  finally{startingRead=false;}
+};
 
 function applyAccess(){
   $('settings-menu').hidden=!access.configure&&!access.matrix;
@@ -497,7 +544,23 @@ document.addEventListener('click',event=>{for(const menu of menus)if(!menu.conta
 document.addEventListener('keydown',event=>{if(event.key==='Escape')for(const menu of menus)menu.open=false;});
 layoutPage();
 if(page!=='/versions')checkVersion();
-$('search').oninput=render;$('open-only').onchange=render;
+let searchTimer=null;
+function applyListFilters(){
+  try{
+    const from=$('date-from').value,until=$('date-until').value;
+    if(from&&until&&from>until)throw Error('Von darf nicht nach Bis liegen.');
+    const after=until?new Date(until+'T00:00:00'):null;if(after)after.setDate(after.getDate()+1);
+    listFilters={search:$('search').value,openOnly:$('open-only').checked,
+      from:from?new Date(from+'T00:00:00').toISOString():'',until:after?after.toISOString():''};
+    listPages.alarms=listPages.history=1;listGeneration++;refresh();
+  }catch(error){failure(error);}
+}
+$('search').oninput=()=>{if(view==='telegrams')render();else{clearTimeout(searchTimer);searchTimer=setTimeout(applyListFilters,300);}};
+$('open-only').onchange=applyListFilters;$('date-apply').onclick=applyListFilters;
+$('date-clear').onclick=()=>{$('date-from').value='';$('date-until').value='';$('search').value='';$('open-only').checked=true;applyListFilters();};
+function goToPage(value){if(!listing)return;listPages[view]=Math.max(1,Math.min(listing.pages,Math.trunc(value)||1));listGeneration++;refresh();}
+$('list-prev').onclick=()=>goToPage(listPages[view]-1);$('list-next').onclick=()=>goToPage(listPages[view]+1);
+$('list-go').onclick=()=>goToPage(Number($('list-page-number').value));
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
 refresh();
 
