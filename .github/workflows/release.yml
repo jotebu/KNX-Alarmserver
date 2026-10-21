@@ -1,0 +1,24 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install build '.[test]'
+      - run: python -m unittest discover -s tests -v
+      - run: bash -n scripts/install.sh scripts/update.sh
+      - name: Check version
+        run: python -c 'import os,tomllib; p=tomllib.load(open("pyproject.toml","rb")); assert os.environ["GITHUB_REF_NAME"] == "v"+p["project"]["version"]'
+      - run: python -m build
+      - run: cd dist && sha256sum *.whl *.tar.gz > SHA256SUMS
+      - run: gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --generate-notes --prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}

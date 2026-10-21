@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="de">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KNX · Alarmserver</title><link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script></head>
+<body>
+<header><div class="brand">KNX<span>ALARM SERVER</span></div><div id="identity">Verbindung wird hergestellt …</div></header>
+<main>
+<div class="heading"><div><p class="eyebrow">GEBÄUDEÜBERWACHUNG</p><h1>Störungen &amp; Alarme</h1><p class="muted">Aktuelle Meldungen, Quittierungen und Ereignisverlauf.</p></div><span id="clock"></span></div>
+<div id="error" role="alert" hidden></div>
+<section class="cards" aria-label="Übersicht"><article><span>Aktiv · offen</span><strong id="active">—</strong></article><article><span>Aktiv · quittiert</span><strong id="acked">—</strong></article><article><span>Gegangen · offen</span><strong id="pending">—</strong></article><article><span>Unbekannt / alter Wert</span><strong id="unknown">—</strong></article></section>
+<section class="connection"><div><b>KNX-Verbindung</b><span id="connection-status">Wird geprüft …</span></div><p id="connection-detail"></p></section>
+<nav aria-label="Ansichten"><button data-view="alarms" class="selected">Meldungen</button><button data-view="history">Historie</button><button data-view="telegrams">Telegramme</button></nav>
+<section class="panel"><div class="toolbar"><h2 id="view-title">Meldungen</h2><label>Suche <input id="search" type="search" placeholder="Name, Bereich, Gruppenadresse"></label><label id="filter-wrap"><input id="open-only" type="checkbox" checked> Nur offene / unbekannte</label></div><div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div><p id="empty" hidden></p><p id="hint" class="muted"></p></section>
+<footer>Lokale Quittierung mit angemeldetem Benutzer · Keine Schaltbefehle an den KNX-Bus</footer>
+</main></body></html>

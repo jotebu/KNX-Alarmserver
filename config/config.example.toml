@@ -1,0 +1,32 @@
+# Nur generische Beispiele. Keine echten Zugangsdaten oder Gebaeudedaten einchecken.
+[server]
+host = "127.0.0.1" # LAN-Zugriff vorzugsweise per HTTPS-Reverse-Proxy
+port = 8080
+database = "/var/lib/knx-alarmserver/alarmserver.sqlite3"
+alarms = "/etc/knx-alarmserver/alarms.csv"
+retention_days = 365
+
+[knx]
+# Erst nach Abgleich von ETS, Router und Alarmmatrix aktivieren.
+enabled = false
+
+[[knx.connections]]
+name = "Hauptlinie"
+type = "tunneling"
+gateway_ip = "192.0.2.30" # Dokumentationsadresse: durch echte MDT-IP ersetzen
+gateway_port = 3671
+# local_ip = "192.0.2.50" # Pi-IP bei mehreren Netzwerkschnittstellen
+
+# Weitere Tunnel nur, wenn die Hauptlinie nicht alle Alarmadressen liefert.
+# [[knx.connections]]
+# name = "Untergeschoss"
+# type = "tunneling"
+# gateway_ip = "192.0.2.31"
+
+# Alternative: EIN Routing-Empfaenger fuer das gemeinsame Multicast-Netz.
+# [[knx.connections]]
+# name = "Routing"
+# type = "routing"
+# local_ip = "192.0.2.50"
+# individual_address = "1.0.250" # Freie Adresse vorher mit ETS abstimmen
+# multicast_group = "224.0.23.12"

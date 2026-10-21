@@ -1,0 +1,8 @@
+id;name;group_address;dpt;operator;threshold;hysteresis;field;area;priority
+demo_pump;Beispiel Pumpenstörung;31/7/250;1.005;eq;true;0;;Technik;critical
+demo_contact;Beispiel Öffnerkontakt;31/7/251;1.002;eq;false;0;;Technik;warning
+demo_temperature;Beispiel Übertemperatur;31/7/252;9.001;gt;50;2;;Technik;critical
+demo_humidity;Beispiel Luftfeuchte;31/7/253;5.001;outside;[20, 80];3;;Technik;warning
+demo_hvac;Beispiel Betriebsart;31/7/254;20.102;eq;4;0;;Technik;info
+demo_text;Beispiel Statustext;31/7/255;16.001;contains;Störung;0;;Technik;warning
+demo_date;Beispiel Datum nur anzeigen;31/6/250;11.001;monitor;;0;;Technik;info

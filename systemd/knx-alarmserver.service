@@ -1,0 +1,29 @@
+[Unit]
+Description=KNX Alarmserver
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=knx-alarmserver
+Group=knx-alarmserver
+WorkingDirectory=/var/lib/knx-alarmserver
+ExecStart=/opt/knx-alarmserver/current/venv/bin/knx-alarmserver --config /etc/knx-alarmserver/config.toml serve
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/knx-alarmserver
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

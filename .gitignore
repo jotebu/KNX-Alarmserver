@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.test-deps/
+build/
+dist/
+*.sqlite3*
+config.local.toml
+alarms.local.csv
+*.knxkeys
