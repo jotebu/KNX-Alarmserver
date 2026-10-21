@@ -270,7 +270,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
                                 'pending': sum(row['status'] == 'clear_pending' for row in rows),
                                 'unknown': sum(row['quality'] != 'ok' for row in rows)}
             if list_mode:
-                listing = store.history_page(1, start, end, search, page_size=500) if view == 'history' else alarms_page(rows, 1, start, end, search, open_only, unlimited=True)
+                listing = store.history_page(1, start, end, search, page_size=500) if view == 'history' else alarms_page(rows, 1, start, end, search, open_only, unlimited=True, incidents_only=True)
             else:
                 listing = store.history_page(page, start, end, search) if view == 'history' else alarms_page(rows, page, start, end, search, open_only)
             result['alarms'] = listing['rows'] if view == 'alarms' else []

@@ -2,6 +2,13 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.6 – 22.10.2026
+
+- Zusatzhinweis „Wert vor Neustart“ aus der Meldungsliste entfernen.
+
+- Meldungsliste auf aktive, aktiv quittierte und gegangene noch nicht quittierte Alarme/Störungen beschränken. Normale und unbekannte Zustände erscheinen nicht als Meldung; Zähler und Statusabfrage bleiben vollständig.
+- Meldungen zuerst nach Priorität (kleinste Nummer zuerst), dann nach Zeitstempel (neueste zuerst) sortieren, unabhängig vom Quittierstatus. Den bisherigen Filter „Nur offene / unbekannte“ entfernen.
+
 ## 0.12.5 – 22.10.2026
 
 - Such- und Datumsfilter in Meldungen und Historie über „Filter anzeigen“ ein-/ausklappen; aktive Filter bleiben beim Einklappen wirksam und sind am Button erkennbar.

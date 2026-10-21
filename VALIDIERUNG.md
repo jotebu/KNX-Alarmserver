@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.5, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.6, Inbetriebnahmeversion.
+
+## Meldungsauswahl und Sortierung
+
+- Normale (auch wiederhergestellte) und unbekannte Zustände aus der Meldungsliste ausgeschlossen; aktive, aktiv quittierte und gegangene nicht quittierte Einträge berücksichtigt. Priorität vor Zeitstempel und unabhängig vom Quittierstatus geprüft. Hinweis „Wert vor Neustart“ entfernt.
 
 ## Scrollbare Listen und Filter
 
@@ -25,7 +29,7 @@ Stand: 22.10.2026. Projektversion 0.12.5, Inbetriebnahmeversion.
 
 ## Alarmmatrix im Dashboard
 
-- Gesamter Prüfstand: 110 Python-Tests und 19 Dashboard-Tests erfolgreich.
+- Gesamter Prüfstand: 111 Python-Tests und 19 Dashboard-Tests erfolgreich.
 
 - Gemeinsame Validierung für Tabellenzeilen und CSV, automatische IDs, sofortige Auswertung, Neustart-Persistenz, Bearbeitung mit Zustandserhalt bzw. gezieltem Reset, unveränderte Historie und Datenbankfehler mit Rücknahme geprüft.
 - API-Prüfungen für Admin/User/Viewer, fremde Herkunft, fehlenden Aktionsheader, parallele Revisionen, CSV-Vorlage und abgelehnten Doppelimport.

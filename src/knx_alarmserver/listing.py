@@ -25,14 +25,19 @@ def page_info(total, page, page_size=PAGE_SIZE):
             'last': min(page * page_size, total)}
 
 
-def alarms_page(rows, page=1, start=None, end=None, query='', open_only=False, unlimited=False):
+def alarms_page(rows, page=1, start=None, end=None, query='', open_only=False, unlimited=False, incidents_only=False):
     import json
     filtered = [row for row in rows if (not start or row['last_seen'] and row['last_seen'] >= start)
                 and (not end or row['last_seen'] and row['last_seen'] < end)
                 and (not open_only or row['status'] != 'normal' or row['quality'] != 'ok')
+                and (not incidents_only or row['status'] in {'active', 'active_ack', 'clear_pending'})
                 and query.casefold() in json.dumps(row, ensure_ascii=False).casefold()]
-    order = {'active': 0, 'clear_pending': 1, 'active_ack': 2, 'unknown': 3, 'normal': 4}
-    filtered.sort(key=lambda row: (order[row['status']], row['priority'], row['id']))
+    def received(row):
+        value = row.get('last_seen')
+        if not value:
+            return float('-inf')
+        return datetime.fromisoformat(value).timestamp()
+    filtered.sort(key=lambda row: (row['priority'], -received(row), row['id']))
     if unlimited:
         return {'rows': filtered, 'total': len(filtered), 'shown': len(filtered), 'limit': None}
     info = page_info(len(filtered), page)

@@ -40,5 +40,5 @@ test('hidden page pauses polling and repeated failures have a bounded backoff',a
 });
 test('one dashboard request per refresh includes only selected view',async()=>{
   const urls=[];const s=setup(async url=>{urls.push(url);return {ok:true,json:async()=>({...snapshot(),history:[]})};});
-  s.run("view='history'");await s.run('refresh()');assert.deepEqual(urls,['/api/dashboard?view=history&list_mode=true&search=&open_only=true']);assert.equal(s.timers.size,1);
+  s.run("view='history'");await s.run('refresh()');assert.deepEqual(urls,['/api/dashboard?view=history&list_mode=true&search=']);assert.equal(s.timers.size,1);
 });

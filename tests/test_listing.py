@@ -61,6 +61,7 @@ class ListingTests(unittest.TestCase):
         store=Store(':memory:',alarms);store.create_user('reader','test-password-123','viewer')
         try:
             with store.transaction():
+                store.db.execute("UPDATE states SET active=1,pending=1,last_seen='2026-10-21T12:00:00+00:00'")
                 store._event(replace(ALARM,name='Alter Sondertreffer'),'active','2026-10-20T12:00:00+00:00')
                 for i in range(600):store._event(ALARM,'active','2026-10-21T12:00:00+00:00')
             with TestClient(create_app({'knx':{'enabled':False}},store)) as client:
@@ -71,7 +72,7 @@ class ListingTests(unittest.TestCase):
                 result=get('alarms')
                 self.assertEqual(len(result['alarms']),601)
                 self.assertEqual(result['list_info'],{'total':601,'shown':601,'limit':None})
-                self.assertEqual(result['counts']['unknown'],601)
+                self.assertEqual(result['counts']['active'],601)
                 history=get('history')
                 self.assertEqual(len(history['history']),500)
                 self.assertEqual(history['list_info'],{'total':601,'shown':500,'limit':500})
@@ -83,6 +84,20 @@ class ListingTests(unittest.TestCase):
                 self.assertEqual(dated['list_info']['total'],1)
                 self.assertEqual(len(get('alarms','&search=notfound')['alarms']),0)
         finally:store.close()
+
+    def test_incident_list_excludes_normal_unknown_and_sorts_priority_then_time(self):
+        def row(identifier,priority,status,time,quality='ok'):
+            return {'id':identifier,'name':identifier,'priority':priority,'status':status,'last_seen':time,'quality':quality}
+        rows=[row('normal',1,'normal','2026-10-22T13:00:00+00:00','restored'),
+              row('unknown',1,'unknown',None,'unseen'),
+              row('low-new',4,'active','2026-10-22T14:00:00+00:00'),
+              row('high-old',1,'active_ack','2026-10-21T10:00:00+00:00'),
+              row('high-new',1,'clear_pending','2026-10-22T11:00:00+00:00'),
+              row('high-middle',1,'active','2026-10-22T10:00:00+00:00')]
+        result=alarms_page(rows,unlimited=True,incidents_only=True)
+        self.assertEqual([r['id'] for r in result['rows']],['high-new','high-middle','high-old','low-new'])
+        self.assertEqual(result['total'],4)
+        self.assertEqual(alarms_page(rows,query='normal',unlimited=True,incidents_only=True)['total'],0)
 
     def test_read_api_roles_headers_and_reported_start(self):
         from fastapi.testclient import TestClient

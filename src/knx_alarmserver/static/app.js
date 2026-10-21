@@ -7,9 +7,9 @@ let pageInitialized=false, newerVersionKnown=false, checkingVersionStatus=false;
 let access = {role:null,configure:false,acknowledge:false};
 let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
 let listing=null, listGeneration=0;
-let listFilters={search:'',openOnly:true,from:'',until:''};
+let listFilters={search:'',from:'',until:''};
 function listQuery(selected){
-  let query='&list_mode=true&search='+encodeURIComponent(listFilters.search)+'&open_only='+listFilters.openOnly;
+  let query='&list_mode=true&search='+encodeURIComponent(listFilters.search);
   if(listFilters.from)query+='&from_time='+encodeURIComponent(listFilters.from);
   if(listFilters.until)query+='&until_time='+encodeURIComponent(listFilters.until);
   return query;
@@ -39,13 +39,12 @@ function scheduleRefresh(){
 function failure(error) {$('error').hidden=false;$('error').textContent=`Keine aktuellen Daten: ${error.message}. Die angezeigten Werte können veraltet sein.`;}
 function render(){
   if(settingsOpen)return;
-  $('filter-wrap').hidden=view!=='alarms';
   const filterable=view!=='telegrams';
   $('filter-toggle').hidden=!filterable;
   $('list-filters').hidden=filterable&&!filtersOpen;
   $('date-filters').hidden=!filterable;
   $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: Zeitstempel; ohne Empfangszeit nicht im Datumsfilter enthalten';
-  const active=Boolean(listFilters.search||listFilters.from||listFilters.until||!listFilters.openOnly);
+  const active=Boolean(listFilters.search||listFilters.from||listFilters.until);
   $('filter-toggle').textContent=(filtersOpen?'Filter ausblenden':'Filter anzeigen')+(active?' · aktiv':'');
   $('filter-toggle').setAttribute('aria-expanded',String(filtersOpen));
   $('list-summary').textContent=listing?(view==='history'?`${listing.shown} von ${listing.total} Treffern · höchstens 500 neueste Einträge`:`${listing.total} Meldungen`):'';
@@ -55,15 +54,14 @@ function render(){
   $('message-table').className=view==='alarms'?'alarm-list-table':'';
   const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
   const query=$('search').value.toLocaleLowerCase('de');
-  const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||!$('open-only').checked||r.status!=='normal'||r.quality!=='ok');
-  if(view==='alarms'&&!listing)rows.sort((a,b)=>({active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[a.status]-{active:0,clear_pending:1,active_ack:2,unknown:3,normal:4}[b.status])||Number(a.priority)-Number(b.priority));
+  const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||['active','active_ack','clear_pending'].includes(r.status));
+  if(view==='alarms'&&!listing)rows.sort((a,b)=>Number(a.priority)-Number(b.priority)||(Date.parse(b.last_seen)||0)-(Date.parse(a.last_seen)||0)||String(a.id).localeCompare(String(b.id)));
   const body=document.createDocumentFragment();
   for(const row of rows){
     const tr=document.createElement('tr');
     const cell=(value)=>{const td=text('td',value);tr.append(td);return td;};
     if(view==='alarms'){
       const state=cell('');state.append(text('span',labels[row.status],'badge '+row.status));
-      if(!row.fresh)state.append(text('small',row.last_seen?'Wert vor Neustart':'Noch kein Wert empfangen'));
       if(row.decode_error)state.append(text('small','DPT-/Regelfehler: '+row.decode_error));
       const name=cell(row.name);name.append(text('small',`${row.area} · Priorität ${row.priority}${row.priority_name?' · '+row.priority_name:''}`));
       const value=cell(row.display_value===null?'—':`${row.display_value}${row.unit?' '+row.unit:''}`);
@@ -78,7 +76,7 @@ function render(){
     body.append(tr);
   }
   $('table-body').replaceChildren(body);$('empty').hidden=rows.length>0;
-  $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. Admins und User können Alarme im Bereich Alarmmatrix einrichten.':'Keine passenden Einträge.';
+  $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. Admins und User können Alarme im Bereich Alarmmatrix einrichten.':view==='alarms'?'Keine aktiven oder noch zu quittierenden Meldungen.':'Keine passenden Einträge.';
   $('hint').textContent={alarms:'Nach einem Neustart bleiben gespeicherte Zustände als alte Werte gekennzeichnet, bis ein neues Telegramm eintrifft. „Normal“ bedeutet zuletzt empfangener Normalwert; es ist keine zyklische Erreichbarkeitsprüfung.',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
 }
 async function refresh(){
@@ -553,14 +551,14 @@ function applyListFilters(){
     const from=$('date-from').value,until=$('date-until').value;
     if(from&&until&&from>until)throw Error('Von darf nicht nach Bis liegen.');
     const after=until?new Date(until+'T00:00:00'):null;if(after)after.setDate(after.getDate()+1);
-    listFilters={search:$('search').value,openOnly:$('open-only').checked,
+    listFilters={search:$('search').value,
       from:from?new Date(from+'T00:00:00').toISOString():'',until:after?after.toISOString():''};
     listGeneration++;refresh();
   }catch(error){failure(error);}
 }
 $('search').oninput=()=>{if(view==='telegrams')render();else{clearTimeout(searchTimer);searchTimer=setTimeout(applyListFilters,300);}};
-$('open-only').onchange=applyListFilters;$('date-apply').onclick=applyListFilters;
-$('date-clear').onclick=()=>{$('date-from').value='';$('date-until').value='';$('search').value='';$('open-only').checked=true;applyListFilters();};
+$('date-apply').onclick=applyListFilters;
+$('date-clear').onclick=()=>{$('date-from').value='';$('date-until').value='';$('search').value='';applyListFilters();};
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
 refresh();
 
