@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.10 – 22.10.2026
+
+- Alarmmatrix über die verfügbare Bildschirmbreite anzeigen und die bisherigen pauschalen Mindestbreiten der Eingabefelder entfernen.
+- Spaltenbreiten nach Inhalt aufteilen: mehr Platz für Name und Bereich, kompakte Zahlen-/DPT-/Operatorfelder. Bei FullHD und 100 % Browserzoom passen alle Spalten in die Tabelle; auf schmaleren Bildschirmen bleibt horizontales Scrollen möglich.
+
 ## 0.12.9 – 22.10.2026
 
 - Auch den Zähler „Unbekannt“ als Filterbutton anbieten. Bei expliziter Auswahl ausschließlich unbekannte Alarme aus der gesamten Matrix laden, unabhängig von ihrer Ausblendung in der normalen Meldungsliste.

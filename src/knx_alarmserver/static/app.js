@@ -391,6 +391,7 @@ function layoutPage(){
     '/account/password':['Kennwort ändern','Dein persönliches Kennwort aktualisieren.'],
     '/versions':['Versionshistorie','Änderungen, Softwarestand und verfügbare Updates.']};
   document.body.classList.toggle('scroll-list-page',!settingsOpen);
+  document.body.classList.toggle('matrix-page',page==='/matrix');
   const separate=page!=='/';
   $('counters').hidden=separate;$('main-nav').hidden=separate;$('back-dashboard').hidden=!separate;
   if(names[page]){$('page-title').textContent=names[page][0];$('page-description').textContent=names[page][1];document.title=names[page][0]+' · KNX Alarmserver';}

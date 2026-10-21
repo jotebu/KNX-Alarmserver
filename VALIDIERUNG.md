@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.9, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.10, Inbetriebnahmeversion.
+
+## Alarmmatrix bei FullHD
+
+- Nur die Matrixseite nutzt die volle Breite mit 24 Pixel Seitenabstand. Feste Tabellenaufteilung (100 Prozent insgesamt), 11 Spalten und aufgehobene Feld-Mindestbreiten per DOM/CSS geprüft; 19 JavaScript-Prüfungen erfolgreich. Chromium-Download in dieser Umgebung fehlgeschlagen; visuelle Browserabnahme bei 1920×1080 auf dem Raspberry steht aus.
 
 ## Unbekannt-Filter
 
