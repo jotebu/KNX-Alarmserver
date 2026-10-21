@@ -16,4 +16,4 @@ git push -u origin main
 
 Falls das Repository inzwischen bereits Commits enthält, stattdessen das aktuelle Repository klonen und die gelieferten Projektdateien dort kontrolliert übernehmen. Keinen erzwungenen Push verwenden.
 
-Danach den Workflow **Tests** prüfen und mögliche Integrationsprobleme beheben. Erst nach erfolgreichen vollständigen Tests und dem Raspberry-/KNX-Abnahmetest einen Versionstag veröffentlichen. Die v0.1.0 ist eine Inbetriebnahmeversion. Der vorbereitete Release-Workflow erzeugt ausdrücklich ein Vorab-Release.
+Danach den Workflow **Tests** prüfen und mögliche Integrationsprobleme beheben. Erst nach erfolgreichen vollständigen Tests und dem Raspberry-/KNX-Abnahmetest einen Versionstag veröffentlichen. Die v0.10.01 ist eine Inbetriebnahmeversion. Der vorbereitete Release-Workflow erzeugt ausdrücklich ein Vorab-Release.
