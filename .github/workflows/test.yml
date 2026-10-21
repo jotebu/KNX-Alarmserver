@@ -22,7 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/dashboard_polling.cjs
+      - run: node --test tests/dashboard_*.cjs
       - run: bash -n scripts/install.sh scripts/update.sh
       - name: Check service unit
         run: systemd-analyze verify systemd/knx-alarmserver.service 2>&1 | tee /tmp/verify.log; ! grep -v 'Command.*is not executable\|No such file or directory' /tmp/verify.log | grep -q .

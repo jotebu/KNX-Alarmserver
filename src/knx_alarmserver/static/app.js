@@ -1,6 +1,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const labels = {unknown:'Unbekannt',active:'Störung aktiv',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · unquittiert',normal:'Normal'};
+let access = {role:null,configure:false,acknowledge:false};
 let view = 'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
 const date = value => value ? new Date(value).toLocaleString('de-DE') : '—';
 const text = (tag, value, cls) => {const node=document.createElement(tag);node.textContent=value;if(cls)node.className=cls;return node;};
@@ -10,7 +11,7 @@ async function api(path, options={}) {
   const deadline=setTimeout(()=>controller.abort(),timeoutMs);
   try{
     const response=await fetch(path,{...options,cache:'no-store',credentials:'same-origin',signal:controller.signal});
-    if(!response.ok){let message;try{message=(await response.json()).detail;}catch(error){if(controller.signal.aborted)throw error;}throw new Error(response.status===401?'Anmeldung erforderlich. Seite neu laden.':message||`Anfrage fehlgeschlagen (${response.status})`);}
+    if(!response.ok){if(response.status===401)window.location.replace('/login');let message;try{message=(await response.json()).detail;}catch(error){if(controller.signal.aborted)throw error;}throw new Error(response.status===401?'Anmeldung erforderlich. Seite neu laden.':message||`Anfrage fehlgeschlagen (${response.status})`);}
     return await response.json();
   }catch(error){
     if(controller.signal.aborted)throw new Error(`Server antwortet seit ${timeoutMs/1000} Sekunden nicht. Verbindung wird erneut geprüft.`);
@@ -49,7 +50,7 @@ function render(){
       value.append(text('small',row.operator==='monitor'?'Nur Anzeige':`${row.field?row.field+' ':''}${row.operator} ${JSON.stringify(row.threshold)}${row.hysteresis?' · Hysterese '+row.hysteresis:''}`));
       cell(date(row.last_seen));
       const ack=cell(row.acknowledged_by?`${row.acknowledged_by} · ${date(row.acknowledged_at)}`:'—');
-      if(row.pending){ack.textContent='';const button=text('button','Quittieren','ack');button.onclick=async()=>{button.disabled=true;try{await api(`/api/alarms/${encodeURIComponent(row.id)}/acknowledge`,{method:'POST',headers:{'X-Alarmserver-Action':'acknowledge'}});await refresh();}catch(e){failure(e);}finally{button.disabled=false;}};ack.append(button);}
+      if(row.pending && access.acknowledge){ack.textContent='';const button=text('button','Quittieren','ack');button.onclick=async()=>{button.disabled=true;try{await api(`/api/alarms/${encodeURIComponent(row.id)}/acknowledge`,{method:'POST',headers:{'X-Alarmserver-Action':'acknowledge'}});await refresh();}catch(e){failure(e);}finally{button.disabled=false;}};ack.append(button);}
     }else if(view==='history'){
       cell(date(row.timestamp));cell(row.alarm_name);cell({active:'Störung gekommen',clear:'Störung gegangen',acknowledge:'Quittiert'}[row.kind]||row.kind);cell(row.username||row.source||'—');
     }else{cell(date(row.timestamp));cell(row.connection);const target=cell(`${row.source} → ${row.destination}`);if(row.name)target.append(text('small',row.name));if(row.ets_warning)target.append(text('small',row.ets_warning));cell(row.service+(row.dpt?' · '+row.dpt:''));cell(row.error||(row.display!==undefined?row.display+(row.unit?' '+row.unit:''):(row.raw===undefined?'—':JSON.stringify(row.raw))));}
@@ -66,9 +67,11 @@ async function refresh(){
     const requestedView=settingsOpen?'alarms':view;
     const snapshot=await api('/api/dashboard?view='+encodeURIComponent(requestedView));
     const status=snapshot.status;
+    access={role:status.role,...status.permissions};
+    applyAccess();
     data.alarms=snapshot.alarms;
     if(requestedView!=='alarms')data[requestedView]=snapshot[requestedView];
-    $('identity').textContent=`${status.user} · Version ${status.version}`;
+    $('identity').textContent=`${status.user} · ${{admin:"Admin",user:"User",viewer:"Viewer"}[status.role]||""} · Version ${status.version}`;
     $('active').textContent=data.alarms.filter(r=>r.status==='active').length;
     $('acked').textContent=data.alarms.filter(r=>r.status==='active_ack').length;
     $('pending').textContent=data.alarms.filter(r=>r.status==='clear_pending').length;
@@ -124,7 +127,7 @@ async function saveKnx(next){
   }catch(error){knxFeedback(error.message+' Bei fehlender Speicherbestätigung bitte Neu laden und den gespeicherten Stand prüfen.');}
   finally{controls.forEach((c,i)=>c.disabled=disabled[i]);savingKnx=false;switchKnxType();}
 }
-$('knx-settings-tab').onclick=async()=>{$('ets-panel').hidden=true;$('ets-tab').classList.remove('selected');settingsOpen=true;$('knx-settings').hidden=false;$('data-panel').hidden=true;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.add('selected');await loadKnx();};
+$('knx-settings-tab').onclick=async()=>{if(!access.configure)return;closeUsers();$('ets-panel').hidden=true;$('ets-tab').classList.remove('selected');settingsOpen=true;$('knx-settings').hidden=false;$('data-panel').hidden=true;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.add('selected');await loadKnx();};
 $('knx-add').onclick=()=>openKnxForm();$('knx-cancel').onclick=()=>{$('knx-form').hidden=true;};$('knx-type').onchange=switchKnxType;
 $('knx-reload').onclick=loadKnx;
 $('knx-apply').onclick=()=>{if(knxConfig){const next=structuredClone(knxConfig);next.enabled=$('knx-enabled').checked;saveKnx(next);}};
@@ -138,7 +141,7 @@ $('knx-form').onsubmit=event=>{
   if(editingConnection===null)next.connections.push(c);else next.connections[editingConnection]=c;
   saveKnx(next);
 };
-document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{$('ets-panel').hidden=true;$('ets-tab').classList.remove('selected');settingsOpen=false;$('knx-settings').hidden=true;$('data-panel').hidden=false;$('knx-settings-tab').classList.remove('selected');view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
+document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{closeUsers();$('ets-panel').hidden=true;$('ets-tab').classList.remove('selected');settingsOpen=false;$('knx-settings').hidden=true;$('data-panel').hidden=false;$('knx-settings-tab').classList.remove('selected');view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
 let etsRows=[], etsPage=0, etsPreview=null, etsFile=null, etsBusy=false;
 function resetEtsPreview(){etsPreview=null;etsFile=null;$('ets-apply').disabled=true;}
 function renderEts(){
@@ -189,12 +192,75 @@ async function etsAction(action){
   }catch(error){if(action==='preview')resetEtsPreview();$('ets-feedback').textContent=error.message+' Bei fehlender Speicherbestätigung zuerst den gespeicherten Katalog laden und prüfen.';}
   finally{etsBusy=false;controls.forEach(c=>c.disabled=false);$('ets-apply').disabled=!etsPreview;renderEts();}
 }
-$('ets-tab').onclick=async()=>{settingsOpen=true;$('knx-settings').hidden=true;$('data-panel').hidden=true;$('ets-panel').hidden=false;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.remove('selected');$('ets-tab').classList.add('selected');await loadEts();};
+$('ets-tab').onclick=async()=>{if(!access.configure)return;closeUsers();settingsOpen=true;$('knx-settings').hidden=true;$('data-panel').hidden=true;$('ets-panel').hidden=false;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.remove('selected');$('ets-tab').classList.add('selected');await loadEts();};
 $('ets-form').onsubmit=event=>{event.preventDefault();etsAction('preview');};
 $('ets-file').onchange=()=>{resetEtsPreview();$('ets-feedback').textContent='Datei gewählt. Bitte Vorschau prüfen.';};
 $('ets-apply').onclick=()=>etsAction('import');$('ets-reload').onclick=loadEts;
 $('ets-search').oninput=()=>{etsPage=0;renderEts();};
 $('ets-prev').onclick=()=>{etsPage--;renderEts();};$('ets-next').onclick=()=>{etsPage++;renderEts();};
+
+function closeUsers(){ $('users-panel').hidden=true;$('users-tab').classList.remove('selected'); }
+function applyAccess(){
+  for(const id of ['knx-settings-tab','ets-tab','users-tab'])$(id).hidden=!access.configure;
+  if(!access.configure){
+    $('knx-settings').hidden=true;$('ets-panel').hidden=true;closeUsers();
+    if(settingsOpen){settingsOpen=false;$('data-panel').hidden=false;}
+  }
+}
+let editingUser=null, usersBusy=false;
+function openUser(account=null){
+  editingUser=account?account.username:null;
+  $('users-form-title').textContent=account?'Benutzer bearbeiten':'Benutzer hinzufügen';
+  $('users-name').value=editingUser||'';$('users-name').disabled=!!account;
+  $('users-role').value=account?account.role:'viewer';
+  for(const id of ['users-password','users-confirm']){$(id).value='';$(id).required=!account;}
+  $('users-form').hidden=false;
+}
+async function loadUsers(){
+  try{
+    const accounts=await api('/api/users'),rows=document.createDocumentFragment();
+    for(const account of accounts){
+      const tr=document.createElement('tr');tr.append(text('td',account.username),text('td',{admin:'Admin',user:'User',viewer:'Viewer'}[account.role]));
+      const td=document.createElement('td'),edit=text('button','Bearbeiten'),remove=text('button','Löschen');
+      edit.type=remove.type='button';edit.onclick=()=>openUser(account);
+      remove.onclick=async()=>{
+        if(usersBusy||!confirm(`Benutzer „${account.username}“ löschen?`))return;
+        await saveUser('/api/users/'+encodeURIComponent(account.username),'DELETE');
+      };
+      td.append(edit,remove);tr.append(td);rows.append(tr);
+    }
+    $('users-rows').replaceChildren(rows);
+  }catch(error){$('users-feedback').textContent=error.message;}
+}
+async function saveUser(url,method,payload){
+  if(usersBusy)return;usersBusy=true;
+  const controls=[...$('users-panel').querySelectorAll('button,input,select')],disabled=controls.map(c=>c.disabled);
+  controls.forEach(c=>c.disabled=true);
+  try{
+    await api(url,{method,headers:{'Content-Type':'application/json','X-Alarmserver-Action':'manage-users'},...(payload?{body:JSON.stringify(payload)}:{})});
+    $('users-form').hidden=true;$('users-password').value='';$('users-confirm').value='';
+    $('users-feedback').textContent='Gespeichert. Geänderte Konten müssen sich erneut anmelden.';
+    await refresh();if(access.configure)await loadUsers();
+  }catch(error){$('users-feedback').textContent=error.message+' Bei fehlender Bestätigung bitte Neu laden und den Stand prüfen.';}
+  finally{controls.forEach((c,i)=>c.disabled=disabled[i]);usersBusy=false;}
+}
+$('users-tab').onclick=async()=>{
+  if(!access.configure)return;
+  settingsOpen=true;$('knx-settings').hidden=true;$('ets-panel').hidden=true;$('data-panel').hidden=true;$('users-panel').hidden=false;
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('selected'));$('users-tab').classList.add('selected');
+  await loadUsers();
+};
+$('users-add').onclick=()=>openUser();$('users-reload').onclick=loadUsers;
+$('users-cancel').onclick=()=>{$('users-form').hidden=true;$('users-password').value='';$('users-confirm').value='';};
+$('users-form').onsubmit=event=>{
+  event.preventDefault();const password=$('users-password').value;
+  if(password!==$('users-confirm').value){$('users-feedback').textContent='Passwörter stimmen nicht überein.';return;}
+  const payload={role:$('users-role').value};
+  if(editingUser===null){payload.username=$('users-name').value;payload.password=password;}else if(password)payload.password=password;
+  saveUser('/api/users'+(editingUser===null?'':'/'+encodeURIComponent(editingUser)),editingUser===null?'POST':'PUT',payload);
+};
+$('logout').onclick=async()=>{try{await api('/api/logout',{method:'POST',headers:{'X-Alarmserver-Action':'logout'}});window.location.replace('/login');}catch(error){failure(error);}};
+
 $('search').oninput=render;$('open-only').onchange=render;
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
 refresh();

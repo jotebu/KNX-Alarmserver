@@ -1,6 +1,17 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.07, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.08, Inbetriebnahmeversion.
+
+## Anmeldung und Benutzerrollen
+
+- 68 Python-Tests einschließlich Rollenmatrix, verweigerter direkter Konfigurations- und Benutzeraktionen, Login, Logout, Sitzungsablauf, Widerruf und Migration bestehender Kennwörter erfolgreich.
+- Alte Datenbank mit dreispaltiger Benutzertabelle migriert; Konten und Sitzungen nach Neustart und konsistentem Backup geprüft.
+- Schutz des letzten Admins, Eingabevalidierung, unbekannte Benutzer, doppelte Namen, Größenlimit und Herkunfts-/Aktionsheader geprüft. Benutzerliste enthält keine Hashes oder Passwörter.
+- Passwortberechnung beim Login hält keine Alarm-/Datenbanksperre; parallele Alarmabfrage während blockierter Passwortprüfung getestet.
+- Wiederholte Dashboard-Abrufe über Sitzung führen keine Passwortberechnung aus. Der frühere Testschalter kann Anmeldung und Rechte nicht umgehen.
+- Sechs JavaScript-Tests erfolgreich. JavaScript-Rollenprüfung: Einstellungsreiter für User/Viewer ausgeblendet, Quittierschaltfläche für Viewer entfernt; Verlust von Adminrechten schließt Einstellungsansichten.
+- Vollständige Dashboard-DOM-Simulation für alle Rollen einschließlich Anlegen eines Kontos, Passwortbestätigung, sicherer Darstellung von Benutzernamen und Navigation erfolgreich.
+- Update und Browser-Anmeldung auf dem Raspberry sowie visuelle Abnahme stehen noch aus. Keine Behebung der ungeklärten Netzwerkausfälle behauptet.
 
 ## DPT-Prüfung und Korrekturen
 
@@ -20,17 +31,8 @@ Stand: 21.10.2026. Projektversion 0.10.07, Inbetriebnahmeversion.
 - Vorschau ohne Speicherung, Rechte-/Herkunftsprüfung, geänderte Datei und veraltete Revision, Ergänzen/Ersetzen, Persistenz, Backup und Fehler ohne Katalogänderung getestet.
 - Echte xknx-Dekodierung für importierte Adressen ohne Alarmregel sowie Vorrang vorhandener Alarm-DPT geprüft.
 - DOM-Simulation: Dateivorschau vor Übernahme, Suchfilter, Seitenwechsel bei 205 Adressen, sichere Textdarstellung, Importanfrage, Katalog laden, Navigation und Telegrammnamen mit Einheiten erfolgreich. Keine visuelle Browserabnahme dieser Erweiterung.
-- Nutzer hat MDT-Verbindung mit Status CONNECTED und eingehenden Gruppentelegrammen am Raspberry bestätigt. Der ETS-Import mit dem echten Gebäudeexport und die Alarmmatrix-Abnahme stehen noch aus.
+- Nutzer hat MDT-Verbindung mit Status CONNECTED und eingehenden Gruppentelegrammen am Raspberry bestätigt. Der Anwender hat den ETS-Import bestätigt; die Alarmmatrix-Abnahme steht noch aus.
 - Zeitweise Web-Timeouts weiterhin ungeklärt; sie traten auch beim unabhängigen Python-Testserver auf. Keine Behebung durch diese Funktion behauptet.
-
-## Testmodus ohne Login
-
-- 45 Python-Tests erfolgreich, keine übersprungen; vier JavaScript-Tests und Shellsyntax weiterhin erfolgreich.
-- Ohne gespeicherten Benutzer starten, Seite und API ohne Login lesen, KNX-Konfiguration speichern sowie Alarme als `ohne-anmeldung` quittieren geprüft.
-- Alte oder ungültige Basic-Header werden im Testmodus ignoriert; es erfolgt keine Benutzer- oder Passwortprüfung.
-- „Hallo Welt“-Seite enthält kein JavaScript und ist nur im Testmodus erreichbar.
-- Normalbetrieb verlangt weiterhin Anmeldung; nur der exakte Umgebungswert `1` schaltet sie ab.
-- Der Vergleich auf dem Raspberry und auf den betroffenen Browsern steht noch aus. Der Testmodus bestätigt keine Behebung der gemeldeten Verbindungsabbrüche.
 
 ## Web-Aufrufe und Fehlererholung
 
@@ -51,7 +53,7 @@ Stand: 21.10.2026. Projektversion 0.10.07, Inbetriebnahmeversion.
 - Update und erneute Prüfung auf dem betroffenen Raspberry und Windows-Browser, insbesondere Öffnen des Dashboards, Abwarten und Wiederaufnahme nach Fehlern.
 - Ursache der zeitweisen TCP-Verbindungsabbrüche im konkreten Netzwerk, falls sie nach dem Update weiterhin auftreten.
 - Visuelle Abnahme im echten Browser und auf mobilen Geräten.
-- ETS-Import mit echtem Export, MDT-Wiederverbindung und Alarmmatrix-Abnahme.
+- MDT-Wiederverbindung und Alarmmatrix-Abnahme.
 - NAS-Backup anpassen; alter Timer bleibt bis dahin deaktiviert.
 
 Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).

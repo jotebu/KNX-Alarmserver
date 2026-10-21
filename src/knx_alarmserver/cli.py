@@ -18,6 +18,7 @@ def main():
     commands.add_parser("dpt-list")
     account = commands.add_parser("user-add")
     account.add_argument("username")
+    account.add_argument("--role", choices=("admin", "user", "viewer"))
     backup = commands.add_parser("backup")
     backup.add_argument("destination")
     args = parser.parse_args()
@@ -42,7 +43,7 @@ def main():
             password = getpass.getpass("Passwort (mindestens 12 Zeichen): ")
             if password != getpass.getpass("Passwort wiederholen: "):
                 raise ValueError("Passwoerter stimmen nicht ueberein")
-            store.set_password(args.username, password)
+            store.set_password(args.username, password, args.role)
             print("Benutzer gespeichert.")
         elif args.command == "backup":
             if Path(args.destination).exists():
@@ -60,3 +61,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

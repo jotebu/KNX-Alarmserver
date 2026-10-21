@@ -4,13 +4,13 @@ import asyncio
 import copy
 import json
 import logging
-import os
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.exception_handlers import http_exception_handler
 
 from . import __version__
 from .knx import Monitor
@@ -21,7 +21,6 @@ STATIC = Path(__file__).parent / "static"
 
 
 def create_app(config, store):
-    auth_enabled = os.environ.get("KNX_ALARMSERVER_DISABLE_AUTH") != "1"
     initial = store.knx_settings(config["knx"])["config"]
     validate_knx(initial)
     monitor = Monitor(initial, store)
@@ -34,10 +33,8 @@ def create_app(config, store):
 
     @asynccontextmanager
     async def lifespan(app):
-        if auth_enabled and not store.has_users():
+        if not store.has_users():
             raise RuntimeError("Zuerst mit knx-alarmserver user-add einen Benutzer anlegen")
-        if not auth_enabled:
-            logging.getLogger(__name__).warning("Testmodus: Web-Anmeldung deaktiviert; Zugriff ohne Benutzerkonto")
         await monitor.start()
         task = asyncio.create_task(housekeeping())
         try:
@@ -51,16 +48,132 @@ def create_app(config, store):
     app = FastAPI(title="KNX Alarmserver", version=__version__, lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.monitor = monitor
-    # In test mode do not parse even cached or malformed Basic credentials.
-    security = HTTPBasic(auto_error=False) if auth_enabled else lambda: None
+    security = HTTPBasic(auto_error=False)
+    cookie_name = 'knx_session'
 
-    def user(credentials: HTTPBasicCredentials | None = Depends(security)):
-        if not auth_enabled:
-            return "ohne-anmeldung"
-        if credentials is None or not store.authenticate(credentials.username, credentials.password):
-            raise HTTPException(status_code=401, detail="Anmeldung erforderlich",
-                                headers={"WWW-Authenticate": 'Basic realm="KNX Alarmserver", charset="UTF-8"'})
-        return credentials.username
+    def user(request: Request, credentials: HTTPBasicCredentials | None = Depends(security)):
+        token = request.cookies.get(cookie_name)
+        account = store.session_user(token) if token else None
+        if token is None and credentials is not None and store.authenticate(credentials.username, credentials.password):
+            account = store.account(credentials.username)
+        if account is None:
+            # Browser uses the form; curl can still send Basic credentials explicitly.
+            raise HTTPException(status_code=401, detail='Anmeldung erforderlich')
+        request.state.account = account
+        return account['username']
+
+    def admin(request: Request, username=Depends(user)):
+        if request.state.account['role'] != 'admin':
+            raise HTTPException(status_code=403, detail='Nur fuer Admins erlaubt')
+        return username
+
+    def acknowledger(request: Request, username=Depends(user)):
+        if request.state.account['role'] not in {'admin', 'user'}:
+            raise HTTPException(status_code=403, detail='Viewer duerfen nicht quittieren')
+        return username
+
+    def identity(request, username):
+        role = request.state.account['role']
+        return {'user': username, 'role': role,
+                'permissions': {'configure': role == 'admin', 'acknowledge': role in {'admin', 'user'}}}
+
+    def action(request, expected):
+        if (request.headers.get('X-Alarmserver-Action') != expected
+                or request.headers.get('Sec-Fetch-Site') == 'cross-site'):
+            raise HTTPException(status_code=403, detail='Aktionsheader fehlt oder fremde Herkunft')
+        origin = request.headers.get('Origin')
+        if origin and origin != str(request.base_url).rstrip('/'):
+            raise HTTPException(status_code=403, detail='Fremde Herkunft')
+
+    async def json_body(request, max_bytes=8192):
+        raw = bytearray()
+        async for chunk in request.stream():
+            raw.extend(chunk)
+            if len(raw) > max_bytes:
+                raise HTTPException(status_code=413, detail='Anfrage zu gross')
+        try:
+            payload = json.loads(raw)
+            if not isinstance(payload, dict):
+                raise ValueError()
+            return payload
+        except (ValueError, UnicodeError):
+            raise HTTPException(status_code=422, detail='JSON-Objekt erwartet') from None
+
+    @app.exception_handler(HTTPException)
+    async def auth_page(request, error):
+        if error.status_code == 401 and request.url.path == '/':
+            return FileResponse(STATIC / 'login.html', status_code=401)
+        return await http_exception_handler(request, error)
+
+    @app.get('/login')
+    async def login_page():
+        return FileResponse(STATIC / 'login.html')
+
+    @app.post('/api/login')
+    async def login(request: Request):
+        action(request, 'login')
+        payload = await json_body(request)
+        if (set(payload) != {'username', 'password'}
+                or not isinstance(payload['username'], str) or len(payload['username']) > 64
+                or not isinstance(payload['password'], str) or len(payload['password']) > 1024):
+            raise HTTPException(status_code=422, detail='Benutzername und Passwort erforderlich')
+        token = await asyncio.to_thread(store.login, payload['username'], payload['password'])
+        if token is None:
+            raise HTTPException(status_code=401, detail='Benutzername oder Passwort falsch')
+        await asyncio.to_thread(store.logout, request.cookies.get(cookie_name))
+        response = JSONResponse({'ok': True})
+        response.set_cookie(cookie_name, token, max_age=43200, httponly=True,
+                            secure=request.url.scheme == 'https', samesite='strict', path='/')
+        return response
+
+    @app.post('/api/logout')
+    def logout(request: Request):
+        action(request, 'logout')
+        store.logout(request.cookies.get(cookie_name))
+        response = JSONResponse({'ok': True})
+        response.delete_cookie(cookie_name, path='/')
+        return response
+
+    @app.get('/api/users')
+    def users(username=Depends(admin)):
+        return store.users()
+
+    @app.post('/api/users')
+    async def create_user(request: Request, username=Depends(admin)):
+        action(request, 'manage-users')
+        payload = await json_body(request)
+        if set(payload) != {'username', 'password', 'role'}:
+            raise HTTPException(status_code=422, detail='Benutzername, Passwort und Rolle erforderlich')
+        try:
+            await asyncio.to_thread(store.create_user, payload['username'], payload['password'], payload['role'])
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        return {'ok': True}
+
+    @app.put('/api/users/{target:path}')
+    async def update_user(target: str, request: Request, username=Depends(admin)):
+        action(request, 'manage-users')
+        payload = await json_body(request)
+        if 'role' not in payload or set(payload) - {'role', 'password'}:
+            raise HTTPException(status_code=422, detail='Rolle und optional Passwort erforderlich')
+        try:
+            await asyncio.to_thread(store.update_user, target, payload['role'], payload.get('password'))
+        except KeyError:
+            raise HTTPException(status_code=404, detail='Benutzer nicht gefunden') from None
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        return {'ok': True}
+
+    @app.delete('/api/users/{target:path}')
+    def delete_user(target: str, request: Request, username=Depends(admin)):
+        action(request, 'manage-users')
+        try:
+            store.delete_user(target)
+        except KeyError:
+            raise HTTPException(status_code=404, detail='Benutzer nicht gefunden') from None
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        return {'ok': True}
 
     @app.middleware("http")
     async def headers(request: Request, call_next):
@@ -75,20 +188,15 @@ def create_app(config, store):
         # No user or building information; used by installer and systemd checks.
         return {"status": "ok", "version": __version__}
 
-    if not auth_enabled:
-        @app.get("/test/hallo", response_class=HTMLResponse)
-        async def hello():
-            return '<!doctype html><html lang="de"><meta charset="utf-8"><title>Hallo Welt</title><body>Hallo Welt</body></html>'
-
     @app.get("/api/status")
-    def status(username=Depends(user)):
-        return {"version": __version__, "user": username, "knx": monitor.status(), "started_at": store.started_at}
+    def status(request: Request, username=Depends(user)):
+        return {"version": __version__, **identity(request, username), "knx": monitor.status(), "started_at": store.started_at}
 
     @app.get("/api/dashboard")
-    def dashboard(view: str = "alarms", username=Depends(user)):
+    def dashboard(request: Request, view: str = "alarms", username=Depends(user)):
         if view not in {"alarms", "history", "telegrams"}:
             raise HTTPException(status_code=400, detail="Unbekannte Dashboard-Ansicht")
-        result = {"status": {"version": __version__, "user": username,
+        result = {"status": {"version": __version__, **identity(request, username),
                              "knx": monitor.status(), "started_at": store.started_at},
                   "alarms": store.snapshot()}
         if view == "history":
@@ -120,11 +228,11 @@ def create_app(config, store):
         return catalog()
 
     @app.get("/api/knx/config")
-    def knx_config(username=Depends(user)):
+    def knx_config(username=Depends(admin)):
         return store.knx_settings(config["knx"])
 
     @app.get('/api/ets')
-    def ets_catalog(username=Depends(user)):
+    def ets_catalog(username=Depends(admin)):
         return store.ets_catalog()
 
     async def read_ets(request):
@@ -139,7 +247,7 @@ def create_app(config, store):
         return bytes(raw)
 
     @app.post('/api/ets/preview')
-    async def ets_preview(request: Request, filename: str, username=Depends(user)):
+    async def ets_preview(request: Request, filename: str, username=Depends(admin)):
         raw = await read_ets(request)
         try:
             result = await asyncio.to_thread(parse_export, raw, filename)
@@ -156,7 +264,7 @@ def create_app(config, store):
 
     @app.post('/api/ets/import')
     async def ets_import(request: Request, filename: str, revision: str, digest: str,
-                         mode: str = 'merge', username=Depends(user)):
+                         mode: str = 'merge', username=Depends(admin)):
         raw = await read_ets(request)
         if mode not in {'merge', 'replace'}:
             raise HTTPException(status_code=422, detail='Importmodus ungueltig')
@@ -177,7 +285,7 @@ def create_app(config, store):
         return result
 
     @app.put("/api/knx/config")
-    async def save_knx_config(request: Request, username=Depends(user)):
+    async def save_knx_config(request: Request, username=Depends(admin)):
         nonlocal monitor
         if request.headers.get("X-Alarmserver-Action") != "configure-knx" or request.headers.get("Sec-Fetch-Site") == "cross-site":
             raise HTTPException(status_code=403, detail="Aktionsheader fehlt oder fremde Herkunft")
@@ -215,7 +323,7 @@ def create_app(config, store):
             return store.knx_settings(config["knx"])
 
     @app.post("/api/alarms/{alarm_id}/acknowledge")
-    def acknowledge(alarm_id: str, request: Request, username=Depends(user)):
+    def acknowledge(alarm_id: str, request: Request, username=Depends(acknowledger)):
         # A foreign HTML form cannot set this header. CORS is deliberately disabled.
         if request.headers.get("X-Alarmserver-Action") != "acknowledge":
             raise HTTPException(status_code=403, detail="Aktionsheader fehlt")
@@ -229,6 +337,14 @@ def create_app(config, store):
     @app.get("/")
     def index(username=Depends(user)):
         return FileResponse(STATIC / "index.html")
+
+    @app.get('/static/login.js')
+    async def login_script():
+        return FileResponse(STATIC / 'login.js')
+
+    @app.get('/static/style.css')
+    async def stylesheet():
+        return FileResponse(STATIC / 'style.css')
 
     @app.get("/static/{filename}")
     def static(filename: str, username=Depends(user)):

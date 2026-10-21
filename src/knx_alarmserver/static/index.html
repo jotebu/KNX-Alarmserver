@@ -3,13 +3,13 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KNX · Alarmserver</title><link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script></head>
 <body>
-<header><div class="brand">KNX<span>ALARM SERVER</span></div><div id="identity">Verbindung wird hergestellt …</div></header>
+<header><div class="brand">KNX<span>ALARM SERVER</span></div><div><span id="identity">Verbindung wird hergestellt …</span> <button id="logout" type="button">Abmelden</button></div></header>
 <main>
 <div class="heading"><div><p class="eyebrow">GEBÄUDEÜBERWACHUNG</p><h1>Störungen &amp; Alarme</h1><p class="muted">Aktuelle Meldungen, Quittierungen und Ereignisverlauf.</p></div><span id="clock"></span></div>
 <div id="error" role="alert" hidden></div>
 <section class="cards" aria-label="Übersicht"><article><span>Aktiv · offen</span><strong id="active">—</strong></article><article><span>Aktiv · quittiert</span><strong id="acked">—</strong></article><article><span>Gegangen · offen</span><strong id="pending">—</strong></article><article><span>Unbekannt / alter Wert</span><strong id="unknown">—</strong></article></section>
 <section class="connection"><div><b>KNX-Verbindung</b><span id="connection-status">Wird geprüft …</span></div><p id="connection-detail"></p></section>
-<nav aria-label="Ansichten"><button data-view="alarms" class="selected">Meldungen</button><button data-view="history">Historie</button><button data-view="telegrams">Telegramme</button><button id="knx-settings-tab">KNX-Verbindungen</button><button id="ets-tab">ETS-Import</button></nav>
+<nav aria-label="Ansichten"><button data-view="alarms" class="selected">Meldungen</button><button data-view="history">Historie</button><button data-view="telegrams">Telegramme</button><button id="knx-settings-tab" hidden>KNX-Verbindungen</button><button id="ets-tab" hidden>ETS-Import</button><button id="users-tab" hidden>Benutzerverwaltung</button></nav>
 <section id="data-panel" class="panel"><div class="toolbar"><h2 id="view-title">Meldungen</h2><label>Suche <input id="search" type="search" placeholder="Name, Bereich, Gruppenadresse"></label><label id="filter-wrap"><input id="open-only" type="checkbox" checked> Nur offene / unbekannte</label></div><div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div><p id="empty" hidden></p><p id="hint" class="muted"></p></section>
 <section id="knx-settings" class="panel" hidden aria-labelledby="knx-title">
 <div class="toolbar"><h2 id="knx-title">KNX-Verbindungen</h2><button id="knx-add" type="button">Verbindung hinzufügen</button></div>
@@ -44,6 +44,19 @@
 <p id="ets-feedback" role="status" aria-live="polite"></p><p id="ets-summary"></p>
 <div class="toolbar"><label>Suche<input id="ets-search" type="search" placeholder="Name, Gruppenadresse, DPT"></label><button id="ets-prev" type="button">Zurück</button><span id="ets-page"></span><button id="ets-next" type="button">Weiter</button></div>
 <div class="table-scroll"><table><thead><tr><th>Gruppenadresse</th><th>Name / Beschreibung</th><th>DPT</th><th>Prüfung / Änderung</th></tr></thead><tbody id="ets-rows"></tbody></table></div>
+</section>
+<section id="users-panel" class="panel" hidden aria-labelledby="users-title">
+<div class="toolbar"><h2 id="users-title">Benutzerverwaltung</h2><button id="users-add" type="button">Benutzer hinzufügen</button><button id="users-reload" type="button">Neu laden</button></div>
+<p>Admin: alle Funktionen · User: ansehen und quittieren · Viewer: nur ansehen. Der letzte Admin bleibt erhalten.</p>
+<p id="users-feedback" role="status" aria-live="polite"></p>
+<div class="table-scroll"><table><thead><tr><th>Benutzer</th><th>Rolle</th><th>Aktionen</th></tr></thead><tbody id="users-rows"></tbody></table></div>
+<form id="users-form" hidden><h3 id="users-form-title">Benutzer hinzufügen</h3><div class="knx-fields">
+<label>Benutzername<input id="users-name" required maxlength="64" autocomplete="off"></label>
+<label>Rolle<select id="users-role"><option value="viewer">Viewer</option><option value="user">User</option><option value="admin">Admin</option></select></label>
+<label>Neues Passwort<input id="users-password" type="password" minlength="12" maxlength="1024" autocomplete="new-password"></label>
+<label>Passwort wiederholen<input id="users-confirm" type="password" minlength="12" maxlength="1024" autocomplete="new-password"></label></div>
+<p>Mindestens 12 Zeichen. Beim Bearbeiten beide Passwortfelder leer lassen, um das Kennwort beizubehalten. Änderungen melden den betroffenen Benutzer ab.</p>
+<div class="toolbar"><button id="users-save" type="submit">Speichern</button><button id="users-cancel" type="button">Abbrechen</button></div></form>
 </section>
 <footer>Lokale Quittierung mit angemeldetem Benutzer · Keine Schaltbefehle an den KNX-Bus</footer>
 </main></body></html>

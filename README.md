@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.07 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import mit dem Gebäudeexport, Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.08 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -33,7 +33,7 @@ Beim ersten Durchlauf wird das Passwort für den Webbenutzer `admin` interaktiv 
 
 Standardmäßig lauscht der Dienst auf **0.0.0.0:8080**. Die Weboberfläche ist direkt unter `http://RASPBERRY-IP:8080` erreichbar; SSH-Tunnel sind nicht erforderlich. KNX ist zunächst deaktiviert und die Alarmmatrix leer. nginx auf Port 80 wird nicht verändert.
 
-HTTP-Basic-Anmeldung ist bei HTTP unverschlüsselt. Diesen Zugriff nur im vertrauenswürdigen LAN oder über VPN verwenden, ohne Internet-Portfreigabe. Für verschlüsselten Webzugriff einen HTTPS-Reverse-Proxy einrichten und bei Bedarf `host = "127.0.0.1"` setzen. Alle Benutzer können sämtliche Daten sehen und quittieren; Rollen sind noch nicht enthalten.
+Anmeldung und Sitzungscookie sind bei HTTP unverschlüsselt. Diesen Zugriff nur im vertrauenswürdigen LAN oder über VPN verwenden, ohne Internet-Portfreigabe. Für verschlüsselten Webzugriff einen HTTPS-Reverse-Proxy einrichten und bei Bedarf `host = "127.0.0.1"` setzen. Browser melden sich über ein Formular an; Abmelden beendet die Sitzung. Die Rollen Admin, User und Viewer gelten sowohl im Dashboard als auch für direkte API-Aufrufe.
 
 ### Bestehende Installation auf LAN-Zugriff umstellen
 
@@ -69,7 +69,7 @@ Einträge lassen sich bearbeiten, einzeln deaktivieren oder nach Bestätigung l�
 
 Verbindungsänderungen werden ohne Webserver-Neustart übernommen. Dafür werden die bisherigen KNX-Verbindungen geschlossen und neu aufgebaut; während dieser kurzen Unterbrechung können Telegramme fehlen. Speichern bestätigt die Konfiguration, nicht die Erreichbarkeit des Routers. Verbindungsfehler erscheinen im Status und Protokoll.
 
-Die anfänglichen KNX-Einstellungen stammen aus `config.toml`. Ab dem ersten Speichern im Dashboard hat der in SQLite gespeicherte KNX-Abschnitt Vorrang, auch nach Neustarts und Updates. Webserver-Einstellungen und Alarmmatrix bleiben weiterhin dateibasiert. Ein SQLite-Backup enthält somit auch die Dashboard-Verbindungen. Alle angemeldeten Benutzer können derzeit Verbindungen ändern; Rollenverwaltung ist noch nicht enthalten.
+Die anfänglichen KNX-Einstellungen stammen aus `config.toml`. Ab dem ersten Speichern im Dashboard hat der in SQLite gespeicherte KNX-Abschnitt Vorrang, auch nach Neustarts und Updates. Webserver-Einstellungen und Alarmmatrix bleiben weiterhin dateibasiert. Ein SQLite-Backup enthält somit auch die Dashboard-Verbindungen. Nur Admins können KNX-Verbindungen und ETS-Import verwalten.
 
 Neuinstallationen enthalten keine vorgegebenen Router-Verbindungen. Bei Updates bleibt die bestehende Konfiguration erhalten. Ein vorhandener Beispielrouter mit `192.0.2.30` muss im Dashboard bearbeitet oder gelöscht werden; diese Dokumentationsadresse ist kein realer Router.
 
@@ -169,7 +169,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.07
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.08
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -179,44 +179,46 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.07
-git push origin v0.10.07
+git tag v0.10.08
+git push origin v0.10.08
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
 
-## Vorübergehender Test ohne Anmeldung
+## Anmeldung und Benutzerverwaltung
 
-Nur der exakte Umgebungswert `KNX_ALARMSERVER_DISABLE_AUTH=1` deaktiviert die gesamte Web-Anmeldung. In diesem Modus kann jeder, der den Webdienst erreicht, Daten lesen, Alarme quittieren und KNX-Verbindungen ändern. Quittierungen tragen den Namen `ohne-anmeldung`. Bestehende Benutzer bleiben gespeichert. Ohne diesen Wert ist die Anmeldung weiterhin erforderlich.
+| Rolle | Meldungen, Historie und Telegramme sehen | Quittieren | KNX / ETS / Benutzer verwalten |
+|---|---|---|---|
+| Admin | Ja | Ja | Ja |
+| User | Ja | Ja | Nein |
+| Viewer | Ja | Nein | Nein |
 
-Nach Installation des aktuellen Codes auf dem Raspberry aktivieren:
+Nach dem Update im Browser die Serveradresse öffnen und mit dem bisherigen Konto anmelden. Bestehende Konten erhalten bei der Migration die Rolle **Admin**, ihre Kennwörter bleiben gültig. Neue Konten legt ein Admin unter **Benutzerverwaltung** an; die vorausgewählte Rolle ist Viewer. Dort können Admins auch Rollen ändern, Kennwörter setzen und Konten löschen. Der Benutzername bleibt beim Bearbeiten unverändert. Der letzte Admin kann nicht gelöscht oder herabgestuft werden.
 
-```bash
-sudo mkdir -p /etc/systemd/system/knx-alarmserver.service.d
-sudo tee /etc/systemd/system/knx-alarmserver.service.d/no-login-test.conf >/dev/null <<'EOF'
-[Service]
-Environment=KNX_ALARMSERVER_DISABLE_AUTH=1
-EOF
-sudo systemctl daemon-reload
-sudo systemctl restart knx-alarmserver
-curl --fail http://127.0.0.1:8080/api/dashboard
-```
+Die Einstellungsreiter sind bei User und Viewer ausgeblendet; Viewer sehen auch keine Quittierschaltflächen. Der Server verweigert die entsprechenden API-Aufrufe unabhängig vom Dashboard mit HTTP 403. Quittierungen protokollieren weiterhin den angemeldeten Benutzer und Zeitpunkt. Bisherige Quittierungsnamen bleiben auch nach Löschen eines Kontos erhalten.
 
-Für den Vergleich ein neues privates Browserfenster verwenden, damit keine zuvor gespeicherten HTTP-Basic-Zugangsdaten mitgesendet werden. Seite mehrfach neu laden. Der Benutzername im Dashboard lautet `ohne-anmeldung`. Der Testmodus bleibt bis zum Entfernen der Datei auch nach Neustarts und Updates aktiv.
+Eine Browser-Sitzung gilt 12 Stunden und überlebt einen Dienstneustart. Ein zufälliges Sitzungstoken liegt im HttpOnly-Cookie mit SameSite=Strict; in SQLite wird nur sein SHA256-Hash gespeichert. Bei direktem HTTPS setzt der Server zusätzlich Secure. Das Cookie ist nicht an eine IP-Adresse gebunden. Bei den regelmäßigen Dashboard-Abfragen wird die Sitzung geprüft, nicht erneut PBKDF2 berechnet. Passwörter bleiben individuell gesalzen mit PBKDF2-SHA256 und 600.000 Durchläufen gespeichert. Weder Passwörter noch Tokens erscheinen in API-Benutzerlisten. Es gibt keine Standardkennwörter.
 
-Falls das Dashboard weiterhin ausfällt, `http://RASPBERRY-IP:8080/test/hallo` aufrufen und mehrfach neu laden. Diese Seite liefert nur „Hallo Welt“, ohne JavaScript, Passwortprüfung oder Datenbankzugriff, über denselben Webserver. Sie ist nur im Testmodus vorhanden.
+Abmelden widerruft die aktuelle Sitzung. Rollen- und Passwortänderungen sowie Kontolöschung widerrufen alle Sitzungen des betroffenen Kontos; anschließend erneut anmelden. API-Werkzeuge können weiterhin explizite HTTP-Basic-Zugangsdaten senden; auch dafür gelten die aktuellen Rollen. Der Browser fordert keine HTTP-Basic-Anmeldung mehr an.
 
-Anmeldung wieder einschalten:
+Der frühere Schalter `KNX_ALARMSERVER_DISABLE_AUTH` wird nicht mehr ausgewertet. Auch ein vorhandenes `no-login-test.conf` kann die Anmeldung nicht mehr abschalten. `/test/hallo` entfällt. Die alte Testdatei kann nach dem Update entfernt werden:
 
 ```bash
-sudo rm /etc/systemd/system/knx-alarmserver.service.d/no-login-test.conf
+sudo rm -f /etc/systemd/system/knx-alarmserver.service.d/no-login-test.conf
 sudo systemctl daemon-reload
-sudo systemctl restart knx-alarmserver
 ```
+
+Falls ein Admin-Kennwort verloren geht, lässt sich über PuTTY ein Admin-Konto anlegen oder wiederherstellen; das Kennwort wird verdeckt abgefragt:
+
+```bash
+sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver user-add admin --role admin
+```
+
+Ohne `--role` bleibt bei vorhandenen Konten die Rolle erhalten. Das erste neue CLI-Konto wird Admin, weitere CLI-Konten werden standardmäßig Viewer. Die Datenbank bleibt auch bei Rückkehr zu einer älteren Programmversion um die Rollen- und Sitzungstabellen erweitert; vor Updates erzeugt der Installer ein konsistentes SQLite-Backup.
 
 ## Verhalten bei Verbindungsproblemen
 
-Das Dashboard holt Status, Meldungen und die gewählte Ansicht mit einer gemeinsamen Anfrage ab. Die Anmeldung wird dafür einmal pro Aktualisierung geprüft. Leseanfragen einschließlich Antwortinhalt werden nach 10 Sekunden abgebrochen; Speicheraktionen nach 30 Sekunden. Eine ausbleibende Speicherbestätigung bedeutet nicht zwingend, dass nichts gespeichert wurde: zuerst **Neu laden** und den Stand prüfen, bevor erneut gespeichert wird.
+Das Dashboard holt Status, Meldungen und die gewählte Ansicht mit einer gemeinsamen Anfrage ab. Die Sitzung wird dafür einmal pro Aktualisierung geprüft; nur beim expliziten Basic-API-Zugriff wird das Passwort erneut berechnet. Leseanfragen einschließlich Antwortinhalt werden nach 10 Sekunden abgebrochen; Speicheraktionen nach 30 Sekunden. Eine ausbleibende Speicherbestätigung bedeutet nicht zwingend, dass nichts gespeichert wurde: zuerst **Neu laden** und den Stand prüfen, bevor erneut gespeichert wird.
 
 Im Normalbetrieb erfolgt die nächste Aktualisierung fünf Sekunden nach Abschluss der vorherigen. Nach Fehlern steigt die Wartezeit auf 10, 20 und maximal 30 Sekunden; nach erfolgreichem Abruf wieder auf fünf Sekunden. Verdeckte Browser-Tabs pausieren die automatische Abfrage und aktualisieren beim Zurückkehren. Schreibaktionen werden nicht automatisch wiederholt. Angezeigte Daten bleiben bei Fehlern sichtbar und werden als möglicherweise veraltet gekennzeichnet.
 
@@ -239,7 +241,7 @@ GitHub CI prüft Python 3.11 und 3.13, die echten Decoder von xknx, Alarmregeln 
 
 1. Routermodell, KNX-Secure-Nutzung, Filtertabellen und tatsächlichen Telegrammempfang prüfen.
 2. Echte Alarmmatrix importieren und mit Testalarmen abnehmen.
-3. Alarmmatrix-Verwaltung in der Weboberfläche, Benutzerrollen und Login-Sitzungen.
+3. Alarmmatrix-Verwaltung in der Weboberfläche.
 4. Push/E-Mail, Zeitprogramme, Eskalation und zyklische Erreichbarkeitsüberwachung.
 5. Debian-Paket/APT-Verteilung, vollständige Dependency-Lockdatei und weitere Hardwaretests.
 

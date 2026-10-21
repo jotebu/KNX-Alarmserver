@@ -9,6 +9,7 @@ import sqlite3
 import threading
 from contextlib import contextmanager, closing
 import json
+import time
 
 from .rules import evaluate, normalized
 
@@ -58,6 +59,12 @@ class Store:
                 CREATE TABLE IF NOT EXISTS settings (name TEXT PRIMARY KEY, value TEXT NOT NULL);
                 PRAGMA user_version=1;
             """)
+            columns = {r['name'] for r in self.db.execute('PRAGMA table_info(users)')}
+            # Existing accounts had unrestricted access: preserve that as admin.
+            if 'role' not in columns:
+                self.db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'admin'")
+            self.db.execute("""CREATE TABLE IF NOT EXISTS sessions (
+                token_hash TEXT PRIMARY KEY, username TEXT NOT NULL, expires REAL NOT NULL)""")
             for alarm in alarms:
                 signature = json.dumps([alarm.group_address, alarm.dpt, alarm.operator, alarm.threshold,
                                         alarm.hysteresis, alarm.field], sort_keys=True, ensure_ascii=False)
@@ -151,17 +158,116 @@ class Store:
         with self.transaction():
             self.db.execute("DELETE FROM events WHERE timestamp < ?", (cutoff,))
 
-    def set_password(self, username, password):
-        if not username or len(username) > 64 or ":" in username or any(ord(c) < 32 for c in username):
+    @staticmethod
+    def _validate_account(username, password=None, role=None):
+        if (not isinstance(username, str) or not username or len(username) > 64
+                or username != username.strip() or ':' in username
+                or any(ord(c) < 32 or ord(c) == 127 for c in username)):
             raise ValueError("Ungueltiger Benutzername")
-        if len(password) < 12:
-            raise ValueError("Passwort muss mindestens 12 Zeichen haben")
+        if password is not None and (not isinstance(password, str) or not 12 <= len(password) <= 1024):
+            raise ValueError("Passwort muss 12 bis 1024 Zeichen haben")
+        if role is not None and (not isinstance(role, str) or role not in {'admin', 'user', 'viewer'}):
+            raise ValueError("Unbekannte Rolle")
+
+    def account(self, username):
+        with self.lock:
+            row = self.db.execute('SELECT username,role FROM users WHERE username=?', (username,)).fetchone()
+            return dict(row) if row else None
+
+    def users(self):
+        with self.lock:
+            return [dict(r) for r in self.db.execute('SELECT username,role FROM users ORDER BY username')]
+
+    def _guard_last_admin(self, username, role):
+        row = self.db.execute('SELECT role FROM users WHERE username=?', (username,)).fetchone()
+        if row and row['role'] == 'admin' and role != 'admin':
+            if self.db.execute("SELECT count(*) FROM users WHERE role='admin'").fetchone()[0] <= 1:
+                raise ValueError('Der letzte Admin darf nicht geloescht oder herabgestuft werden')
+
+    def set_password(self, username, password, role=None):
+        # CLI recovery: preserve an existing role unless explicitly requested.
+        self._validate_account(username, password, role)
+        if password is None:
+            raise ValueError("Passwort erforderlich")
         salt = secrets.token_hex(16)
-        hashed = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 600000).hex()
+        hashed = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 600000).hex()
         with self.transaction():
-            self.db.execute("INSERT OR REPLACE INTO users VALUES (?,?,?)", (username, salt, hashed))
+            self.db.execute('UPDATE users SET role=role WHERE username=?', (username,))
+            old = self.account(username)
+            selected = role or (old['role'] if old else 'viewer' if self.has_users() else 'admin')
+            self._guard_last_admin(username, selected)
+            self.db.execute("""INSERT INTO users(username,salt,password_hash,role) VALUES (?,?,?,?)
+                ON CONFLICT(username) DO UPDATE SET salt=excluded.salt,
+                password_hash=excluded.password_hash,role=excluded.role""", (username,salt,hashed,selected))
+            self.db.execute('DELETE FROM sessions WHERE username=?', (username,))
+
+    def create_user(self, username, password, role):
+        self._validate_account(username, password, role)
+        if role is None:
+            raise ValueError('Rolle erforderlich')
+        with self.transaction():
+            self.db.execute('UPDATE users SET role=role WHERE username=?', (username,))
+            if self.account(username):
+                raise ValueError('Benutzername bereits vergeben')
+            self.set_password(username, password, role)
+
+    def update_user(self, username, role, password=None):
+        self._validate_account(username, password, role)
+        if role is None:
+            raise ValueError('Rolle erforderlich')
+        with self.transaction():
+            self.db.execute('UPDATE users SET role=role WHERE username=?', (username,))
+            if not self.account(username):
+                raise KeyError(username)
+            self._guard_last_admin(username, role)
+            if password is not None:
+                self.set_password(username, password, role)
+            else:
+                self.db.execute('UPDATE users SET role=? WHERE username=?', (role,username))
+                self.db.execute('DELETE FROM sessions WHERE username=?', (username,))
+
+    def delete_user(self, username):
+        with self.transaction():
+            self.db.execute('UPDATE users SET role=role WHERE username=?', (username,))
+            if not self.account(username):
+                raise KeyError(username)
+            self._guard_last_admin(username, None)
+            self.db.execute('DELETE FROM sessions WHERE username=?', (username,))
+            self.db.execute('DELETE FROM users WHERE username=?', (username,))
+
+    def login(self, username, password):
+        with self.lock:
+            before = self.db.execute('SELECT password_hash FROM users WHERE username=?', (username,)).fetchone()
+        # Expensive password work must not hold the alarm/database lock.
+        if not self.authenticate(username, password):
+            return None
+        with self.transaction():
+            self.db.execute('UPDATE users SET role=role WHERE username=?', (username,))
+            current = self.db.execute('SELECT password_hash FROM users WHERE username=?', (username,)).fetchone()
+            if not before or not current or before['password_hash'] != current['password_hash']:
+                return None
+            token = secrets.token_urlsafe(32)
+            self.db.execute('DELETE FROM sessions WHERE expires<=?', (time.time(),))
+            self.db.execute('INSERT INTO sessions VALUES (?,?,?)',
+                            (hashlib.sha256(token.encode()).hexdigest(), username, time.time()+43200))
+            return token
+
+    def session_user(self, token):
+        if not token or len(token) > 128:
+            return None
+        with self.lock:
+            row = self.db.execute("""SELECT users.username,users.role FROM sessions JOIN users USING(username)
+                WHERE token_hash=? AND expires>?""", (hashlib.sha256(token.encode()).hexdigest(), time.time())).fetchone()
+            return dict(row) if row else None
+
+    def logout(self, token):
+        if token:
+            with self.transaction():
+                self.db.execute('DELETE FROM sessions WHERE token_hash=?', (hashlib.sha256(token.encode()).hexdigest(),))
 
     def authenticate(self, username, password):
+        if not isinstance(password, str) or len(password) > 1024:
+            return False
         with self.lock:
             row = self.db.execute("SELECT * FROM users WHERE username=?", (username,)).fetchone()
         salt = row["salt"] if row else "0" * 32

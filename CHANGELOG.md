@@ -2,6 +2,14 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.08 – 21.10.2026
+
+- Anmeldung wieder verpflichtend; den bisherigen Testschalter ohne Login und die Testseite entfernt. Bestehende Kennwörter erhalten, vorhandene Konten als Admin migriert.
+- Formularanmeldung mit 12-Stunden-Sitzung und Abmelden ergänzt. HttpOnly-/SameSite-Cookie, serverseitig nur Tokenhash, keine wiederholte Passwortberechnung bei Dashboard-Abfragen.
+- Rollen Admin (alles), User (ansehen und quittieren), Viewer (nur ansehen) auf allen betroffenen API-Endpunkten durchgesetzt. Einstellungsreiter nur für Admin, Quittierschaltflächen nur für Admin und User.
+- Benutzerverwaltung im Dashboard: anlegen, Rolle ändern, Kennwort neu setzen, löschen. Letzten Admin schützen; betroffene Sitzungen bei Änderungen und Löschung widerrufen. Quittierungshistorie bleibt erhalten.
+- CLI um explizite Rollenwahl zur Einrichtung und Wiederherstellung von Admin-Konten erweitert. Dokumentation und Tests für Migration, Rollen, direkte API-Zugriffe, Sitzungen und Bedienoberfläche ergänzt.
+
 ## 0.10.07 – 21.10.2026
 
 - DPT-Unterstützung geprüft und in `DPT-SUPPORT.md` dokumentiert: Hauptnummern, Untertypen und fehlende Familien getrennt ausgewiesen.
