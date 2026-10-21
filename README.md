@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.04 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.05 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
 
 ## Funktionen
 
@@ -150,7 +150,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.04
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.05
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -160,11 +160,40 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.04
-git push origin v0.10.04
+git tag v0.10.05
+git push origin v0.10.05
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
+
+## Vorübergehender Test ohne Anmeldung
+
+Nur der exakte Umgebungswert `KNX_ALARMSERVER_DISABLE_AUTH=1` deaktiviert die gesamte Web-Anmeldung. In diesem Modus kann jeder, der den Webdienst erreicht, Daten lesen, Alarme quittieren und KNX-Verbindungen ändern. Quittierungen tragen den Namen `ohne-anmeldung`. Bestehende Benutzer bleiben gespeichert. Ohne diesen Wert ist die Anmeldung weiterhin erforderlich.
+
+Nach Installation des aktuellen Codes auf dem Raspberry aktivieren:
+
+```bash
+sudo mkdir -p /etc/systemd/system/knx-alarmserver.service.d
+sudo tee /etc/systemd/system/knx-alarmserver.service.d/no-login-test.conf >/dev/null <<'EOF'
+[Service]
+Environment=KNX_ALARMSERVER_DISABLE_AUTH=1
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart knx-alarmserver
+curl --fail http://127.0.0.1:8080/api/dashboard
+```
+
+Für den Vergleich ein neues privates Browserfenster verwenden, damit keine zuvor gespeicherten HTTP-Basic-Zugangsdaten mitgesendet werden. Seite mehrfach neu laden. Der Benutzername im Dashboard lautet `ohne-anmeldung`. Der Testmodus bleibt bis zum Entfernen der Datei auch nach Neustarts und Updates aktiv.
+
+Falls das Dashboard weiterhin ausfällt, `http://RASPBERRY-IP:8080/test/hallo` aufrufen und mehrfach neu laden. Diese Seite liefert nur „Hallo Welt“, ohne JavaScript, Passwortprüfung oder Datenbankzugriff, über denselben Webserver. Sie ist nur im Testmodus vorhanden.
+
+Anmeldung wieder einschalten:
+
+```bash
+sudo rm /etc/systemd/system/knx-alarmserver.service.d/no-login-test.conf
+sudo systemctl daemon-reload
+sudo systemctl restart knx-alarmserver
+```
 
 ## Verhalten bei Verbindungsproblemen
 

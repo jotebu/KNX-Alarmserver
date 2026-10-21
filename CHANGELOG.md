@@ -2,6 +2,16 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.05 – 21.10.2026
+
+- Einfache „Hallo Welt“-Seite unter `/test/hallo` nur im Testmodus ergänzt, ohne JavaScript und Datenbankzugriff.
+
+- Expliziter Testbetrieb ohne Web-Anmeldung über `KNX_ALARMSERVER_DISABLE_AUTH=1`: Seite, Dateien und API überspringen HTTP-Basic-Auswertung, Benutzerabfrage und Passwortprüfung vollständig.
+- Der Testmodus benötigt kein Benutzerkonto; Quittierungen werden als `ohne-anmeldung` gespeichert. Aktionsheader und Herkunftsprüfung bleiben aktiv.
+- Anmeldung bleibt standardmäßig eingeschaltet. Bestehende Benutzer und Kennwörter werden nicht gelöscht; Rückkehr durch Entfernen der systemd-Testkonfiguration.
+- Tests für Lesezugriffe, KNX-Konfigurationsänderung, Quittierung, ignorierte alte Authorization-Header und weiterhin geschützten Normalbetrieb ergänzt.
+- Dient zur Eingrenzung der gemeldeten Timeouts; eine Behebung dieser Ausfälle ist damit noch nicht bestätigt.
+
 ## 0.10.04 – 21.10.2026
 
 - Dashboard-Anfragen erhalten feste Zeitlimits einschließlich des Lesens der Antwort. Eine hängende Anfrage blockiert die automatische Aktualisierung nicht mehr bis zum Browser-Timeout.

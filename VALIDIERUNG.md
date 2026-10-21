@@ -1,6 +1,15 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.04, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.05, Inbetriebnahmeversion.
+
+## Testmodus ohne Login
+
+- 45 Python-Tests erfolgreich, keine übersprungen; vier JavaScript-Tests und Shellsyntax weiterhin erfolgreich.
+- Ohne gespeicherten Benutzer starten, Seite und API ohne Login lesen, KNX-Konfiguration speichern sowie Alarme als `ohne-anmeldung` quittieren geprüft.
+- Alte oder ungültige Basic-Header werden im Testmodus ignoriert; es erfolgt keine Benutzer- oder Passwortprüfung.
+- „Hallo Welt“-Seite enthält kein JavaScript und ist nur im Testmodus erreichbar.
+- Normalbetrieb verlangt weiterhin Anmeldung; nur der exakte Umgebungswert `1` schaltet sie ab.
+- Der Vergleich auf dem Raspberry und auf den betroffenen Browsern steht noch aus. Der Testmodus bestätigt keine Behebung der gemeldeten Verbindungsabbrüche.
 
 ## Web-Aufrufe und Fehlererholung
 

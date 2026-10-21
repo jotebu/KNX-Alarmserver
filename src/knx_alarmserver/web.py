@@ -4,11 +4,12 @@ import asyncio
 import copy
 import json
 import logging
+import os
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from . import __version__
@@ -19,6 +20,7 @@ STATIC = Path(__file__).parent / "static"
 
 
 def create_app(config, store):
+    auth_enabled = os.environ.get("KNX_ALARMSERVER_DISABLE_AUTH") != "1"
     initial = store.knx_settings(config["knx"])["config"]
     validate_knx(initial)
     monitor = Monitor(initial, store)
@@ -31,8 +33,10 @@ def create_app(config, store):
 
     @asynccontextmanager
     async def lifespan(app):
-        if not store.has_users():
+        if auth_enabled and not store.has_users():
             raise RuntimeError("Zuerst mit knx-alarmserver user-add einen Benutzer anlegen")
+        if not auth_enabled:
+            logging.getLogger(__name__).warning("Testmodus: Web-Anmeldung deaktiviert; Zugriff ohne Benutzerkonto")
         await monitor.start()
         task = asyncio.create_task(housekeeping())
         try:
@@ -46,9 +50,12 @@ def create_app(config, store):
     app = FastAPI(title="KNX Alarmserver", version=__version__, lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.monitor = monitor
-    security = HTTPBasic(auto_error=False)
+    # In test mode do not parse even cached or malformed Basic credentials.
+    security = HTTPBasic(auto_error=False) if auth_enabled else lambda: None
 
     def user(credentials: HTTPBasicCredentials | None = Depends(security)):
+        if not auth_enabled:
+            return "ohne-anmeldung"
         if credentials is None or not store.authenticate(credentials.username, credentials.password):
             raise HTTPException(status_code=401, detail="Anmeldung erforderlich",
                                 headers={"WWW-Authenticate": 'Basic realm="KNX Alarmserver", charset="UTF-8"'})
@@ -66,6 +73,11 @@ def create_app(config, store):
     async def live():
         # No user or building information; used by installer and systemd checks.
         return {"status": "ok", "version": __version__}
+
+    if not auth_enabled:
+        @app.get("/test/hallo", response_class=HTMLResponse)
+        async def hello():
+            return '<!doctype html><html lang="de"><meta charset="utf-8"><title>Hallo Welt</title><body>Hallo Welt</body></html>'
 
     @app.get("/api/status")
     def status(username=Depends(user)):
