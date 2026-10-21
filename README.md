@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.1.0 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.01 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
 
 ## Funktionen
 
@@ -99,7 +99,7 @@ Verfügbare DPT auflisten:
 sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver dpt-list
 ```
 
-Es ist in Version 0.1 ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Werden Gruppenadresse, DPT oder Regel eines bereits gespeicherten Alarms geändert, eine neue ID verwenden; vorhandene Zustände werden nicht stillschweigend umgedeutet.
+Es ist in Version 0.10.01 ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Werden Gruppenadresse, DPT oder Regel eines bereits gespeicherten Alarms geändert, eine neue ID verwenden; vorhandene Zustände werden nicht stillschweigend umgedeutet.
 
 ## Zustände und Quittierung
 
@@ -127,7 +127,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.1.1
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.02
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -137,8 +137,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.10.01
+git push origin v0.10.01
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
