@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.17 – 21.10.2026
+
+- Zusätzlichen Bestätigungsdialog für „Update starten“ entfernt. Der freigegebene Update-Button startet die Aktualisierung direkt und wird sofort gegen Mehrfachklicks gesperrt.
+
 ## 0.10.16 – 21.10.2026
 
 - Oberfläche zwei Sekunden nach einem auf der Seite beobachteten erfolgreichen Update automatisch einmal neu laden. Gespeicherte frühere Erfolge lösen kein Neuladen aus.

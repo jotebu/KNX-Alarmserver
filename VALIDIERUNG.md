@@ -1,6 +1,6 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.16, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.17, Inbetriebnahmeversion.
 
 ## Automatisches Neuladen nach Updates
 

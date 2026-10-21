@@ -369,7 +369,6 @@ async function loadUpdate(){
 }
 $('update-start').onclick=async()=>{
   if($('update-start').disabled)return;
-  if(!confirm('Den aktuellen Stand von GitHub installieren? Weboberfläche und KNX-Empfang werden beim Neustart kurz unterbrochen.'))return;
   $('update-start').disabled=true;
   try{
     const result=await api('/api/update',{method:'POST',headers:{'X-Alarmserver-Action':'update-server'}});
