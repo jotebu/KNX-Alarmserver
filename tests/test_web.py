@@ -25,7 +25,7 @@ class WebTests(unittest.TestCase):
         self.store.close()
 
     def test_all_building_data_requires_authentication(self):
-        for path in ("/", "/api/status", "/api/alarms", "/api/history", "/api/telegrams", "/api/dpts", "/api/ready", "/static/app.js"):
+        for path in ("/", "/api/dashboard", "/api/status", "/api/alarms", "/api/history", "/api/telegrams", "/api/dpts", "/api/ready", "/static/app.js"):
             self.assertEqual(self.client.get(path).status_code, 401, path)
         self.assertEqual(self.client.get("/health/live").status_code, 200)
 
@@ -51,3 +51,52 @@ class WebTests(unittest.TestCase):
     def test_missing_alarm(self):
         self.assertEqual(self.client.post("/api/alarms/missing/acknowledge", auth=self.auth,
                                          headers={"X-Alarmserver-Action": "acknowledge"}).status_code, 404)
+
+
+    def test_dashboard_snapshot_authenticates_once_and_matches_selected_view(self):
+        from unittest.mock import patch
+        self.store.ingest("1/2/3", 1, "1.1.1")
+        for view in ("alarms", "history", "telegrams"):
+            with patch.object(self.store, "authenticate", wraps=self.store.authenticate) as auth:
+                response = self.client.get("/api/dashboard", params={"view": view}, auth=self.auth)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(auth.call_count, 1)
+            result = response.json()
+            self.assertEqual(result["status"]["user"], "andy")
+            self.assertEqual(result["alarms"][0]["status"], "active")
+            if view != "alarms":
+                self.assertIsInstance(result[view], list)
+        self.assertEqual(self.client.get("/api/dashboard?view=invalid", auth=self.auth).status_code, 400)
+
+    def test_liveness_remains_responsive_while_password_worker_is_busy(self):
+        import asyncio
+        import time
+        import anyio
+        import httpx
+        from unittest.mock import patch
+
+        async def scenario():
+            limiter = anyio.to_thread.current_default_thread_limiter()
+            previous_tokens = limiter.total_tokens
+            limiter.total_tokens = 1
+            started = asyncio.Event()
+            loop = asyncio.get_running_loop()
+            def slow_auth(username, password):
+                loop.call_soon_threadsafe(started.set)
+                time.sleep(0.3)
+                return True
+            try:
+                async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.client.app),
+                                             base_url='http://test', trust_env=False) as client:
+                    with patch.object(self.store, 'authenticate', side_effect=slow_auth):
+                        request = asyncio.create_task(client.get('/api/status', auth=self.auth))
+                        try:
+                            await asyncio.wait_for(started.wait(), 2)
+                            response = await asyncio.wait_for(client.get('/health/live'), .2)
+                            self.assertEqual(response.status_code, 200)
+                            self.assertEqual((await request).status_code, 200)
+                        finally:
+                            await request
+            finally:
+                limiter.total_tokens = previous_tokens
+        asyncio.run(scenario())

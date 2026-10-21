@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.03 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.04 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
 
 ## Funktionen
 
@@ -150,7 +150,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.03
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.10.04
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -160,11 +160,19 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.03
-git push origin v0.10.03
+git tag v0.10.04
+git push origin v0.10.04
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
+
+## Verhalten bei Verbindungsproblemen
+
+Das Dashboard holt Status, Meldungen und die gewählte Ansicht mit einer gemeinsamen Anfrage ab. Die Anmeldung wird dafür einmal pro Aktualisierung geprüft. Leseanfragen einschließlich Antwortinhalt werden nach 10 Sekunden abgebrochen; Speicheraktionen nach 30 Sekunden. Eine ausbleibende Speicherbestätigung bedeutet nicht zwingend, dass nichts gespeichert wurde: zuerst **Neu laden** und den Stand prüfen, bevor erneut gespeichert wird.
+
+Im Normalbetrieb erfolgt die nächste Aktualisierung fünf Sekunden nach Abschluss der vorherigen. Nach Fehlern steigt die Wartezeit auf 10, 20 und maximal 30 Sekunden; nach erfolgreichem Abruf wieder auf fünf Sekunden. Verdeckte Browser-Tabs pausieren die automatische Abfrage und aktualisieren beim Zurückkehren. Schreibaktionen werden nicht automatisch wiederholt. Angezeigte Daten bleiben bei Fehlern sichtbar und werden als möglicherweise veraltet gekennzeichnet.
+
+`/health/live` verwendet keinen synchronen Worker für Passwortprüfungen. Ein Timeout beim TCP-Verbindungsaufbau ist dadurch jedoch nicht automatisch behoben. Die gemeldeten zeitweisen LAN-Ausfälle konnten im lokalen Lasttest nicht reproduziert werden; die Korrekturen beheben einen nachgewiesenen Hänger der Dashboard-Aktualisierung und reduzieren die Anfragebelastung.
 
 ## Entwicklung und Prüfung
 
@@ -173,6 +181,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 pip install -e '.[test]'
 python -m unittest discover -s tests -v
+node --test tests/dashboard_polling.cjs
 bash -n scripts/install.sh scripts/update.sh
 ```
 

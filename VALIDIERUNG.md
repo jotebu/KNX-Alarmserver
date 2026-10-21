@@ -1,29 +1,27 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.03, weiterhin Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.04, Inbetriebnahmeversion.
 
-## Für die KNX-Verbindungsverwaltung geprüft
+## Web-Aufrufe und Fehlererholung
 
-- Python 3.12 mit FastAPI 0.143.0, Uvicorn 0.53.0, xknx 4.0.0 und HTTPX 0.28.1: 41 Tests erfolgreich, keine übersprungen.
-- Echte xknx-Decoder und Konstruktoren, Alarmregeln, SQLite-Zustände und HTTP-Endpunkte geprüft.
-- Verbindungen hinzufügen, bearbeiten und löschen, Speicherung über erneuten App-Start sowie Aufnahme ins SQLite-Backup geprüft.
-- Authentifizierung, Aktionsheader, Cross-Site-Abweisung, Größenlimit, Eingabevalidierung und Konflikte bei veralteten Revisionen geprüft.
-- Neuaufbau der Monitor-Verbindungen und Überspringen deaktivierter Verbindungen ohne reale Router-Sockets getestet.
-- Simulierter Datenbankschreibfehler: bisherige Einstellungen und Monitor werden beibehalten beziehungsweise wieder aktiviert.
-- Dashboard mit DOM-Simulation geprüft: Navigation, Hinzufügen, Bearbeiten, Wechsel zu Routing, Löschen und übertragene Formulardaten.
-- JavaScript- und Shellsyntax geprüft.
+- Python 3.12 mit den festgelegten FastAPI-/Uvicorn-/xknx-Versionen und HTTPX: 43 Tests erfolgreich, keine übersprungen.
+- Vier JavaScript-Regressionstests mit Node: keine überlappenden Aktualisierungen, Timeout auch beim Antwortinhalt, Freigabe nach Fehlern, erfolgreiche Wiederaufnahme, begrenzter Backoff und Pause in verdeckten Tabs.
+- Ein gemeinsamer authentifizierter Dashboard-Abruf statt mehrfacher Passwortprüfungen je Aktualisierung; Antwortdaten und Zugriffsschutz getestet.
+- Belegter Regressionstest: Liveness bleibt bei einem ausgelasteten synchronen Passwort-Worker erreichbar.
+- Echter TCP-Test mit Uvicorn, sechs parallelen Clients und jeweils 15 Aufrufen: keine HTTP-Fehler oder Verbindungsabbrüche. Der gemeldete vollständige Verbindungsverlust konnte lokal nicht reproduziert werden.
+- JavaScript- und Shellsyntax erfolgreich geprüft.
 
-## Auf dem Raspberry bestätigt
+## Weiterhin gültige Prüfungen
 
-- Installation und lokaler Webstart von 0.10.01 sowie direkter Zugriff nach dem LAN-Umbau bestätigt.
-- Zabbix, PostgreSQL und PHP entfernt; SSH, nginx, ntfy und Statusdisplay laufen.
+- KNX-Verbindungsverwaltung einschließlich Persistenz, Backup, Konfliktbehandlung und simulierter Speicherfehler geprüft.
+- Echte xknx-Decoder, Alarmregeln und HTTP-API getestet.
 
 ## Noch offen
 
-- Visuelle Abnahme der neuen Einstellungen im echten Browser, einschließlich mobiler Ansicht.
-- Update auf die neue Version und persistente Verbindungsverwaltung auf Raspberry Pi OS prüfen.
-- Echter KNX/IP-Empfang am MDT-Router, Wiederverbindung und Abnahme der Alarmmatrix.
-- Update-Rückwechsel auf Raspberry Pi OS testen.
-- NAS-Backup an SQLite, neue Verzeichnisse und weiterhin genutzte Dienste anpassen. Alter Backup-Timer bleibt bis dahin deaktiviert.
+- Update und erneute Prüfung auf dem betroffenen Raspberry und Windows-Browser, insbesondere Öffnen des Dashboards, Abwarten und Wiederaufnahme nach Fehlern.
+- Ursache der zeitweisen TCP-Verbindungsabbrüche im konkreten Netzwerk, falls sie nach dem Update weiterhin auftreten.
+- Visuelle Abnahme im echten Browser und auf mobilen Geräten.
+- Echter KNX-Empfang, MDT-Wiederverbindung und Alarmmatrix-Abnahme.
+- NAS-Backup anpassen; alter Timer bleibt bis dahin deaktiviert.
 
-Das Changelog steht in [CHANGELOG.md](CHANGELOG.md).
+Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).

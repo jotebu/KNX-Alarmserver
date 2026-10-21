@@ -5,9 +5,24 @@ let view = 'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
 const date = value => value ? new Date(value).toLocaleString('de-DE') : '—';
 const text = (tag, value, cls) => {const node=document.createElement(tag);node.textContent=value;if(cls)node.className=cls;return node;};
 async function api(path, options={}) {
-  const response=await fetch(path,{...options,cache:'no-store',credentials:'same-origin'});
-  if(!response.ok){let message;try{message=(await response.json()).detail;}catch{}throw new Error(response.status===401?'Anmeldung erforderlich. Seite neu laden.':message||`Anfrage fehlgeschlagen (${response.status})`);}
-  return response.json();
+  const controller=new AbortController();
+  const timeoutMs=options.method && options.method!=='GET'?30000:10000;
+  const deadline=setTimeout(()=>controller.abort(),timeoutMs);
+  try{
+    const response=await fetch(path,{...options,cache:'no-store',credentials:'same-origin',signal:controller.signal});
+    if(!response.ok){let message;try{message=(await response.json()).detail;}catch(error){if(controller.signal.aborted)throw error;}throw new Error(response.status===401?'Anmeldung erforderlich. Seite neu laden.':message||`Anfrage fehlgeschlagen (${response.status})`);}
+    return await response.json();
+  }catch(error){
+    if(controller.signal.aborted)throw new Error(`Server antwortet seit ${timeoutMs/1000} Sekunden nicht. Verbindung wird erneut geprüft.`);
+    throw error;
+  }finally{clearTimeout(deadline);}
+}
+let pollTimer=null, refreshFailures=0;
+function scheduleRefresh(){
+  clearTimeout(pollTimer);
+  if(document.hidden)return;
+  const delay=Math.min(30000,5000*2**Math.min(refreshFailures,3));
+  pollTimer=setTimeout(()=>refresh(),delay);
 }
 function failure(error) {$('error').hidden=false;$('error').textContent=`Keine aktuellen Daten: ${error.message}. Die angezeigten Werte können veraltet sein.`;}
 function render(){
@@ -45,12 +60,14 @@ function render(){
   $('hint').textContent={alarms:'Nach einem Neustart bleiben gespeicherte Zustände als alte Werte gekennzeichnet, bis ein neues Telegramm eintrifft. „Normal“ bedeutet zuletzt empfangener Normalwert; es ist keine zyklische Erreichbarkeitsprüfung.',history:'Die letzten 200 Ereignisse. Quittierungen ändern ausschließlich den lokalen Alarmstatus.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
 }
 async function refresh(){
-  if(busy)return;busy=true;
+  if(busy)return;
+  clearTimeout(pollTimer);busy=true;
   try{
-    const status=await api('/api/status');
-    // Sequential authenticated calls avoid a burst of expensive password verifications.
-    data.alarms=await api('/api/alarms');
-    data[view]=view==='alarms'?data.alarms:await api('/api/'+view);
+    const requestedView=settingsOpen?'alarms':view;
+    const snapshot=await api('/api/dashboard?view='+encodeURIComponent(requestedView));
+    const status=snapshot.status;
+    data.alarms=snapshot.alarms;
+    if(requestedView!=='alarms')data[requestedView]=snapshot[requestedView];
     $('identity').textContent=`${status.user} · Version ${status.version}`;
     $('active').textContent=data.alarms.filter(r=>r.status==='active').length;
     $('acked').textContent=data.alarms.filter(r=>r.status==='active_ack').length;
@@ -59,8 +76,8 @@ async function refresh(){
     $('connection-status').textContent=!status.knx.enabled?'KNX deaktiviert':status.knx.ready?'Verbindungen bereit':'Verbindung gestört / wird aufgebaut';
     $('connection-detail').textContent=status.knx.connections.map(c=>`${c.name}: ${c.state} · letzter Empfang ${date(c.last_received)}`).join(' | ')||'KNX-Empfang in der Konfiguration noch nicht aktiviert.';
     if(status.knx.storage_error)$('connection-detail').textContent+=' | FEHLER beim Speichern; Dienstprotokoll prüfen.';
-    $('clock').textContent='Aktualisiert: '+new Date().toLocaleTimeString('de-DE');$('error').hidden=true;render();
-  }catch(error){failure(error);}finally{busy=false;}
+    $('clock').textContent='Aktualisiert: '+new Date().toLocaleTimeString('de-DE');$('error').hidden=true;refreshFailures=0;render();
+  }catch(error){refreshFailures+=1;failure(error);}finally{busy=false;scheduleRefresh();}
 }
 let settingsOpen=false, knxConfig=null, knxRevision=null, editingConnection=null, savingKnx=false;
 function knxFeedback(message){$('knx-feedback').textContent=message;}
@@ -104,7 +121,7 @@ async function saveKnx(next){
     const result=await api('/api/knx/config',{method:'PUT',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'configure-knx'},body:JSON.stringify({config:next,revision:knxRevision})});
     knxConfig=result.config;knxRevision=result.revision;renderKnx();$('knx-form').hidden=true;
     knxFeedback('Gespeichert. Verbindungen werden neu aufgebaut; Status und Telegrammempfang oben prüfen.');await refresh();
-  }catch(error){knxFeedback(error.message);}
+  }catch(error){knxFeedback(error.message+' Bei fehlender Speicherbestätigung bitte Neu laden und den gespeicherten Stand prüfen.');}
   finally{controls.forEach((c,i)=>c.disabled=disabled[i]);savingKnx=false;switchKnxType();}
 }
 $('knx-settings-tab').onclick=async()=>{settingsOpen=true;$('knx-settings').hidden=false;$('data-panel').hidden=true;document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('selected'));$('knx-settings-tab').classList.add('selected');await loadKnx();};
@@ -123,5 +140,6 @@ $('knx-form').onsubmit=event=>{
 };
 document.querySelectorAll('[data-view]').forEach(button=>button.onclick=()=>{settingsOpen=false;$('knx-settings').hidden=true;$('data-panel').hidden=false;$('knx-settings-tab').classList.remove('selected');view=button.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('selected',b===button));render();refresh();});
 $('search').oninput=render;$('open-only').onchange=render;
-refresh();setInterval(refresh,5000);
+document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
+refresh();
 

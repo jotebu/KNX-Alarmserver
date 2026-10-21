@@ -63,13 +63,26 @@ def create_app(config, store):
         return response
 
     @app.get("/health/live")
-    def live():
+    async def live():
         # No user or building information; used by installer and systemd checks.
         return {"status": "ok", "version": __version__}
 
     @app.get("/api/status")
     def status(username=Depends(user)):
         return {"version": __version__, "user": username, "knx": monitor.status(), "started_at": store.started_at}
+
+    @app.get("/api/dashboard")
+    def dashboard(view: str = "alarms", username=Depends(user)):
+        if view not in {"alarms", "history", "telegrams"}:
+            raise HTTPException(status_code=400, detail="Unbekannte Dashboard-Ansicht")
+        result = {"status": {"version": __version__, "user": username,
+                             "knx": monitor.status(), "started_at": store.started_at},
+                  "alarms": store.snapshot()}
+        if view == "history":
+            result["history"] = store.history()
+        elif view == "telegrams":
+            result["telegrams"] = list(monitor.telegrams)
+        return result
 
     @app.get("/api/ready")
     def ready(username=Depends(user)):
