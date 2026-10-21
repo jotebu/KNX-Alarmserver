@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.7 – 22.10.2026
+
+- Wertspalte in „Status“ umbenennen. Gruppenadresse und DPT unter Meldung/Bereich anzeigen; Operator, Grenzwert und Hysterese dort entfernen (weiterhin in der Alarmmatrix verfügbar).
+- Status, Zeitstempel und Quittierung mit festen kompakten Spaltenbreiten am rechten Tabellenrand gruppieren; Meldung/Bereich erhält die übrige Breite.
+
 ## 0.12.6 – 22.10.2026
 
 - Zusatzhinweis „Wert vor Neustart“ aus der Meldungsliste entfernen.

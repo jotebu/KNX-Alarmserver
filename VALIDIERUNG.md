@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.6, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.7, Inbetriebnahmeversion.
+
+## Kompakte Detailspalten
+
+- Rechte Detailspalten mit festen Breiten; Meldung/Bereich erhält Restbreite. DOM-Prüfung für drei Rollen: Statusüberschrift, GA/DPT in Meldungszelle und keine Operatoranzeige. 19 JavaScript-Prüfungen erfolgreich; visuelle Abnahme auf Raspberry steht aus.
 
 ## Meldungsauswahl und Sortierung
 

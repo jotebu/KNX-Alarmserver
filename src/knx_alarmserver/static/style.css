@@ -20,7 +20,7 @@
 #knx-read-feedback{color:#b7c7db;font-size:13px}
 
 /* Meldung und Bereich erhalten den freien Platz; kompakte Details rechts. */
-.alarm-list-table{min-width:900px}.alarm-list-table th:first-child,.alarm-list-table td:first-child{width:1%;min-width:150px}.alarm-list-table th:nth-child(2),.alarm-list-table td:nth-child(2){width:100%;min-width:260px;overflow-wrap:anywhere}.alarm-list-table th:nth-child(n+3),.alarm-list-table td:nth-child(n+3){width:1%;text-align:right;white-space:nowrap}
+.alarm-list-table{min-width:900px;table-layout:fixed}.alarm-list-table th:first-child,.alarm-list-table td:first-child{width:160px}.alarm-list-table th:nth-child(2),.alarm-list-table td:nth-child(2){width:auto;overflow-wrap:anywhere}.alarm-list-table th:nth-child(n+3),.alarm-list-table td:nth-child(n+3){text-align:right;padding-left:8px;padding-right:8px}.alarm-list-table th:nth-child(3),.alarm-list-table td:nth-child(3){width:80px;overflow-wrap:anywhere}.alarm-list-table th:nth-child(4),.alarm-list-table td:nth-child(4){width:170px;white-space:nowrap}.alarm-list-table th:nth-child(5),.alarm-list-table td:nth-child(5){width:150px;overflow-wrap:anywhere}
 
 [hidden]{display:none!important}
 body.scroll-list-page{height:100dvh;overflow:hidden}
