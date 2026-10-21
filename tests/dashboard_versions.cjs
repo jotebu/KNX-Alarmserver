@@ -56,3 +56,36 @@ test('manual status check gives progress and result; update box is visible only 
   if(!newer)assert.match(get('versions-feedback').textContent,/Installierte Version ist aktuell/);
  }
 });
+
+test('old update success stays silent; observed completion is shown only until page reload',async()=>{
+ function openPage(){
+  const nodes=new Map();let state;
+  const get=id=>{if(!nodes.has(id))nodes.set(id,{});return nodes.get(id);};
+  const ctx=vm.createContext({newerVersionKnown:false,renderVersionCheck(){},$:get,api:async()=>state,setTimeout:()=>0,clearTimeout(){},date:()=>''});
+  vm.runInContext(source.slice(source.indexOf('let updatePoll=null;'),source.indexOf("$('update-start').onclick=")),ctx);
+  return {get,async load(next){state={available:true,check_ok:true,update_available:false,...next};await vm.runInContext('loadUpdate()',ctx);}};
+ }
+ const success={state:'success',message:'Update erfolgreich abgeschlossen.'};
+ const page=openPage();await page.load(success);
+ assert.equal(page.get('update-feedback').textContent,'');assert.equal(page.get('update-refresh').hidden,true);
+ await page.load({state:'installing',message:'Installation läuft.'});await page.load(success);
+ assert.equal(page.get('update-feedback').textContent,success.message);assert.equal(page.get('update-refresh').hidden,false);
+ const reopened=openPage();await reopened.load(success);
+ assert.equal(reopened.get('update-feedback').textContent,'');assert.equal(reopened.get('update-refresh').hidden,true);
+});
+
+test('update polling replaces outdated version notice after the new server starts',async()=>{
+ const nodes=new Map();const get=id=>{if(!nodes.has(id))nodes.set(id,{classList:{toggle(){}}});return nodes.get(id);};
+ let state={available:true,state:'installing',check_ok:true,update_available:true,current_version:'0.10.13',latest_version:'0.10.14'};
+ const ctx=vm.createContext({page:'/versions',access:{configure:true},newerVersionKnown:false,$:get,api:async()=>state,setTimeout:()=>0,clearTimeout(){},date:()=>''});
+ vm.runInContext(source.slice(source.indexOf('function renderVersionCheck('),source.indexOf('async function checkVersion(')),ctx);
+ vm.runInContext(source.slice(source.indexOf('let updatePoll=null;'),source.indexOf("$('update-start').onclick=")),ctx);
+ await vm.runInContext('loadUpdate()',ctx);
+ assert.equal(get('versions-feedback').textContent,'Neue Version 0.10.14 verfügbar.');
+ state={...state,state:'success',current_version:'0.10.14',update_available:false,message:'Update erfolgreich abgeschlossen.'};
+ await vm.runInContext('loadUpdate()',ctx);
+ assert.equal(get('versions-feedback').textContent,'Installierte Version ist aktuell.');
+ assert.equal(get('version-link').textContent,'Version 0.10.14');
+ assert.equal(get('update-panel').hidden,true);
+ assert.equal(get('update-start').disabled,true);
+});

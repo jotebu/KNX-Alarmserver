@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.10.15 – 21.10.2026
+
+- Versionshinweis beim Abruf des Update-Fortschritts ebenfalls aktualisieren: Nach bestätigtem aktuellem Installationsstand ersetzt „Installierte Version ist aktuell.“ den bisherigen Hinweis auf eine neue Version, ohne manuelles Neuladen.
+
+- Update-Erfolgsmeldung und anschließenden Neuladen-Button nur anzeigen, wenn die geöffnete Seite das Update gestartet oder dessen laufenden Fortschritt beobachtet hat. Gespeicherte Erfolge früherer Updates bleiben beim erneuten Öffnen oder Neuladen ausgeblendet.
+
 ## 0.10.14 – 21.10.2026
 
 - „Kennwort ändern“ und „Abmelden“ im Benutzermenü einheitlich darstellen; abweichende ältere Button-Formatierung entfernt.

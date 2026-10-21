@@ -1,6 +1,11 @@
 # Prüfstand
 
-Stand: 21.10.2026. Projektversion 0.10.14, Inbetriebnahmeversion.
+Stand: 21.10.2026. Projektversion 0.10.15, Inbetriebnahmeversion.
+
+## Update-Erfolgsmeldung
+
+- Dashboard-Test prüft: gespeicherter früherer Erfolg bleibt ausgeblendet; beobachteter Installationsabschluss wird angezeigt; erneutes Öffnen blendet die Meldung und den Neuladen-Button wieder aus. Alle dreizehn Dashboard-Tests erfolgreich.
+- Update-Polling mit altem und anschließend neuem Serverstand geprüft: Versionshinweis wechselt ohne Seitenneuladen auf „Installierte Version ist aktuell.“; Versionslink und Update-Kasten werden gleichzeitig angepasst.
 
 ## Manuelle Versionsprüfung und Update-Kasten
 

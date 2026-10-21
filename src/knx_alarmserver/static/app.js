@@ -296,6 +296,9 @@ $('password-form').onsubmit=async event=>{
 };
 function renderVersionCheck(result){
   newerVersionKnown=Boolean(result.check_ok&&result.update_available);
+  if(page==='/versions'&&result.check_ok){
+    $('versions-feedback').textContent=result.update_available?'Neue Version '+result.latest_version+' verfügbar.':'Installierte Version ist aktuell.';
+  }
   $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
   const link=$('version-link');link.textContent='Version '+result.current_version;
   link.classList.toggle('update-available',result.check_ok&&result.update_available);
@@ -343,16 +346,19 @@ async function checkVersionStatus(){
   }
 }
 let updatePoll=null;
+let updateObserved=false;
 async function loadUpdate(){
   clearTimeout(updatePoll);
   try{
     const state=await api('/api/update');
     const active=['queued','fetching','installing'].includes(state.state);
+    if(active)updateObserved=true;
+    const showSuccess=state.state==='success'&&updateObserved;
     renderVersionCheck(state);
     $('update-version').textContent=state.current_version;
     $('update-start').disabled=!state.available||active||!state.check_ok||!state.update_available;
-    $('update-refresh').hidden=state.state!=='success';
-    $('update-feedback').textContent=state.message||((newerVersionKnown&&!state.available)?'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.':'');
+    $('update-refresh').hidden=!showSuccess;
+    $('update-feedback').textContent=(state.state==='success'&&!showSuccess?'':state.message)||((newerVersionKnown&&!state.available)?'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.':'');
     $('update-detail').textContent=state.target_version?'Zielversion: '+state.target_version+(state.updated_at?' · '+date(state.updated_at):''):'';
     if(active)updatePoll=setTimeout(loadUpdate,3000);
   }catch(error){$('update-start').disabled=true;$('update-feedback').textContent='Verbindung unterbrochen. Der Status wird nach dem Neustart erneut geprüft.';updatePoll=setTimeout(loadUpdate,5000);}
@@ -363,6 +369,7 @@ $('update-start').onclick=async()=>{
   $('update-start').disabled=true;
   try{
     const result=await api('/api/update',{method:'POST',headers:{'X-Alarmserver-Action':'update-server'}});
+    updateObserved=true;
     $('update-feedback').textContent=result.message;await loadUpdate();
   }catch(error){$('update-feedback').textContent=error.message+' Bitte den Status prüfen, bevor du erneut startest.';await loadUpdate();}
 };
