@@ -2,6 +2,11 @@
 # Install the checked-out source, preserving config and persistent data.
 set -Eeuo pipefail
 [[ $EUID -eq 0 ]] || { echo 'Bitte mit sudo bash scripts/install.sh starten.' >&2; exit 1; }
+enable_lan=false
+if [[ $# -gt 0 ]]; then
+  [[ $# -eq 1 && $1 == --lan ]] || { echo 'Aufruf: sudo bash scripts/install.sh [--lan]' >&2; exit 1; }
+  enable_lan=true
+fi
 exec 9>/run/lock/knx-alarmserver-install.lock
 flock -n 9 || { echo 'Eine Installation laeuft bereits.' >&2; exit 1; }
 source_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -25,6 +30,9 @@ tar -C "$source_dir" --exclude=.git --exclude=.venv --exclude=.test-deps --exclu
 python3 -m venv "$stage/venv"
 "$stage/venv/bin/pip" install --disable-pip-version-check "$stage/source"
 "$stage/venv/bin/pip" check
+if $enable_lan; then
+  python3 "$stage/source/scripts/enable_lan.py" "$settings/config.toml"
+fi
 runuser -u knx-alarmserver -- "$stage/venv/bin/knx-alarmserver" -c "$settings/config.toml" check
 # Consistent backup, including WAL pages, before starting new code.
 db_path=$(python3 -c 'import sys,tomllib,pathlib; p=pathlib.Path(sys.argv[1]); c=tomllib.loads(p.read_text()); print((p.parent / c["server"]["database"]).resolve())' "$settings/config.toml")
@@ -79,7 +87,9 @@ ln -s "$stage" "$base/current.new"
 mv -Tf "$base/current.new" "$base/current"
 install -m 0644 "$stage/source/systemd/knx-alarmserver.service" /etc/systemd/system/knx-alarmserver.service
 systemctl daemon-reload
-systemctl reset-failed knx-alarmserver || true
+if systemctl cat knx-alarmserver.service >/dev/null 2>&1; then
+  systemctl reset-failed knx-alarmserver || true
+fi
 systemctl enable knx-alarmserver
 systemctl restart knx-alarmserver
 # Liveness only: KNX is deliberately disabled on first install.
@@ -105,5 +115,5 @@ if [[ -n $previous ]]; then
   ln -s "$previous" "$base/previous.new"
   mv -Tf "$base/previous.new" "$base/previous"
 fi
-echo 'Installation erfolgreich. Weboberflaeche standardmaessig: http://127.0.0.1:8080'
+echo 'Installation erfolgreich. Webadresse gemaess host/port in /etc/knx-alarmserver/config.toml; LAN-Vorgabe: http://RASPBERRY-IP:8080'
 echo 'Konfiguration: /etc/knx-alarmserver/config.toml | Protokoll: journalctl -u knx-alarmserver -f'

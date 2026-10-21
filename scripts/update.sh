@@ -3,6 +3,8 @@
 set -Eeuo pipefail
 [[ $EUID -eq 0 ]] || { echo 'Bitte mit sudo starten.' >&2; exit 1; }
 version=${1:-}
+[[ $# -ge 1 && $# -le 2 ]] || { echo 'Aufruf: sudo bash update.sh v0.10.02 [--lan]' >&2; exit 1; }
+[[ $# -eq 1 || $2 == --lan ]] || { echo 'Unbekannte Option' >&2; exit 1; }
 [[ $version =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Aufruf: sudo bash update.sh v0.10.02' >&2; exit 1; }
 work_dir=$(mktemp -d /tmp/knx-alarmserver-update-XXXXXXXX)
 trap 'rm -rf -- "$work_dir"' EXIT
@@ -12,4 +14,5 @@ import sys,tomllib
 with open(sys.argv[1],'rb') as handle: version=tomllib.load(handle)['project']['version']
 if version!=sys.argv[2]: raise SystemExit('Tag und Paketversion stimmen nicht ueberein')
 PY
-bash "$work_dir/source/scripts/install.sh"
+shift
+bash "$work_dir/source/scripts/install.sh" "$@"

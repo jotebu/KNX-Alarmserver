@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.01 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.10.02 – Inbetriebnahmeversion**. Der Abnahmetest mit einem echten MDT-IP-Router und einem Raspberry Pi steht noch aus.
 
 ## Funktionen
 
@@ -31,15 +31,21 @@ sudo bash scripts/install.sh
 
 Beim ersten Durchlauf wird das Passwort für den Webbenutzer `admin` interaktiv angelegt (mindestens 12 Zeichen). Es gibt kein Standardpasswort. Bestehende Konfigurationen werden erhalten. Die erste Installation verwendet den aktuellen Stand des ausgecheckten Repositorys. Für spätere freigegebene Versionen vor der Installation einen geprüften Tag auschecken.
 
-Standardmäßig lauscht der Dienst auf **127.0.0.1:8080**, KNX ist deaktiviert und die Alarmmatrix leer. Das verhindert erfundene Alarmadressen. Bestehende nginx-/Zabbix-Dienste auf Port 80 werden nicht verändert.
+Standardmäßig lauscht der Dienst auf **0.0.0.0:8080**. Die Weboberfläche ist direkt unter `http://RASPBERRY-IP:8080` erreichbar; SSH-Tunnel sind nicht erforderlich. KNX ist zunächst deaktiviert und die Alarmmatrix leer. nginx auf Port 80 wird nicht verändert.
 
-Zugriff zunächst über SSH-Tunnel vom eigenen Rechner:
+HTTP-Basic-Anmeldung ist bei HTTP unverschlüsselt. Diesen Zugriff nur im vertrauenswürdigen LAN oder über VPN verwenden, ohne Internet-Portfreigabe. Für verschlüsselten Webzugriff einen HTTPS-Reverse-Proxy einrichten und bei Bedarf `host = "127.0.0.1"` setzen. Alle Benutzer können sämtliche Daten sehen und quittieren; Rollen sind noch nicht enthalten.
+
+### Bestehende Installation auf LAN-Zugriff umstellen
+
+Bestehende Konfigurationen werden beim Update erhalten. Mit `--lan` wird gezielt nur `server.host` auf `0.0.0.0` gesetzt; Benutzer, Datenbank, Alarmmatrix und andere Einstellungen bleiben erhalten:
 
 ```bash
-ssh -L 8080:127.0.0.1:8080 BENUTZER@RASPBERRY-IP
+sudo bash scripts/install.sh --lan
 ```
 
-Dann `http://127.0.0.1:8080` öffnen. Für dauerhaften LAN-Zugriff einen HTTPS-Reverse-Proxy einrichten. Bei direktem Zugriff über `host = "0.0.0.0"` erfolgt HTTP-Basic-Anmeldung ohne Transportverschlüsselung; nur über ein vertrauenswürdiges Netz/VPN verwenden, keine Portfreigabe ins Internet. Ein Reverse-Proxy sollte zusätzlich Anmeldeversuche begrenzen. Alle Benutzer dieser Version können sämtliche Daten sehen und quittieren; eine Rollenverwaltung ist noch nicht enthalten.
+Die Option ist idempotent und auch dann verwendbar, wenn LAN-Zugriff bereits manuell aktiviert wurde. Sie ist eine ausdrückliche Konfigurationsänderung; ein Programm-Rückwechsel stellt diese Einstellung nicht automatisch zurück.
+
+Änderungen je Version stehen in [CHANGELOG.md](CHANGELOG.md).
 
 ## Konfiguration
 
@@ -99,7 +105,7 @@ Verfügbare DPT auflisten:
 sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver dpt-list
 ```
 
-Es ist in Version 0.10.01 ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Werden Gruppenadresse, DPT oder Regel eines bereits gespeicherten Alarms geändert, eine neue ID verwenden; vorhandene Zustände werden nicht stillschweigend umgedeutet.
+Es ist in Version 0.10.02 ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Werden Gruppenadresse, DPT oder Regel eines bereits gespeicherten Alarms geändert, eine neue ID verwenden; vorhandene Zustände werden nicht stillschweigend umgedeutet.
 
 ## Zustände und Quittierung
 
@@ -137,8 +143,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.10.01
-git push origin v0.10.01
+git tag v0.10.02
+git push origin v0.10.02
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
