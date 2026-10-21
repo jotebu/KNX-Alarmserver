@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.11 – 22.10.2026
+
+- Überschrift und Zurück-Link der Alarmmatrix wieder mit dem normalen Seitencontainer und denselben Abständen wie auf den anderen Verwaltungsseiten ausrichten.
+- Nur den Matrixbereich verbreitern, zentrieren und auf 1760 Pixel begrenzen. Dadurch bei FullHD etwas schmaler als zuvor, mit unveränderter kompakter Spaltenaufteilung.
+
 ## 0.12.10 – 22.10.2026
 
 - Alarmmatrix über die verfügbare Bildschirmbreite anzeigen und die bisherigen pauschalen Mindestbreiten der Eingabefelder entfernen.

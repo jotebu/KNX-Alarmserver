@@ -1,10 +1,14 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.10, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.11, Inbetriebnahmeversion.
+
+## Matrixabstände
+
+- Überschrift nutzt wieder die unveränderte globale main-Breite von 1500 Pixeln und globale Seitenabstände. Nur Matrixpanel zentriert und maximal 1760 Pixel breit; DOM/CSS-Prüfung erfolgreich. Sichtprüfung weiterhin auf dem Raspberry erforderlich.
 
 ## Alarmmatrix bei FullHD
 
-- Nur die Matrixseite nutzt die volle Breite mit 24 Pixel Seitenabstand. Feste Tabellenaufteilung (100 Prozent insgesamt), 11 Spalten und aufgehobene Feld-Mindestbreiten per DOM/CSS geprüft; 19 JavaScript-Prüfungen erfolgreich. Chromium-Download in dieser Umgebung fehlgeschlagen; visuelle Browserabnahme bei 1920×1080 auf dem Raspberry steht aus.
+- Der Matrixbereich nutzt bis zu 1760 Pixel Breite, bei kleineren Fenstern mit 24 Pixel Seitenabstand. Die Überschrift nutzt den normalen Seitencontainer. Feste Tabellenaufteilung (100 Prozent insgesamt), 11 Spalten und aufgehobene Feld-Mindestbreiten per DOM/CSS geprüft; 19 JavaScript-Prüfungen erfolgreich. Chromium-Download in dieser Umgebung fehlgeschlagen; visuelle Browserabnahme bei 1920×1080 auf dem Raspberry steht aus.
 
 ## Unbekannt-Filter
 
