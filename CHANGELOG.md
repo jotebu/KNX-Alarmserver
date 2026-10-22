@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.11 – 23.10.2026
+
+- KNX-Icon nach dem schlechtesten Verbindungsstatus im Menü einfärben: Rot vor Gelb vor Grün. Ohne konfigurierte Verbindung gelb anzeigen; Speicherfehler bleiben rot.
+
 ## 0.15.10 – 23.10.2026
 
 - Überschrift im KNX-Statusmenü bei mehreren Verbindungen automatisch auf „KNX-Verbindungen“ ändern; bei null oder einer Verbindung bleibt die Einzahl.

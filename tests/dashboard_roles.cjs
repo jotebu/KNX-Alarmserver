@@ -30,9 +30,20 @@ test('role in profile menu; admin gear and acknowledgement controls respect role
   assert.equal(all(nodes.get('table-body')).filter(n=>n.tagName==='button').length,role==='viewer'?0:1);
  }
 });
-test('KNX icon shows yellow when disabled, green when ready, red for fault or storage failure',async()=>{
- for(const [knx,color] of [[{enabled:false},'yellow'],[{enabled:true,ready:true},'green'],[{enabled:true,ready:false},'red'],[{enabled:true,ready:true,storage_error:true},'red']]){
-  const {nodes}=await setup('admin',{connections:[],...knx});
+test('KNX icon uses worst menu connection: red before yellow before green',async()=>{
+ const on={name:'On',state:'CONNECTED'},off={name:'Off',state:'DISABLED'},error={name:'Error',state:'ERROR'};
+ for(const [knx,color] of [
+  [{enabled:true,connections:[on]},'green'],
+  [{enabled:true,ready:true,connections:[on,off]},'yellow'],
+  [{enabled:true,connections:[on,off,error]},'red'],
+  [{enabled:true,connections:[error,off,on]},'red'],
+  [{enabled:true,connections:[off,on]},'yellow'],
+  [{enabled:false,connections:[on,error]},'yellow'],
+  [{enabled:true,connections:[]},'yellow'],
+  [{enabled:false,connections:[]},'yellow'],
+  [{enabled:true,storage_error:true,connections:[on]},'red']
+ ]){
+  const {nodes}=await setup('admin',knx);
   assert.equal(nodes.get('knx-status-icon').className,'icon-button status-'+color);
   assert.ok(nodes.get('knx-status-icon').attrs['aria-label']);
  }

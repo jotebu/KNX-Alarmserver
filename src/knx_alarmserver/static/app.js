@@ -159,10 +159,12 @@ function render(){
 }
 function renderKnxStatus(knx){
   const connections=knx.connections||[],list=document.createDocumentFragment();
+  let worstColor=connections.length?'green':'yellow';
   $('knx-status-heading').textContent=connections.length>1?'KNX-Verbindungen':'KNX-Verbindung';
   for(const connection of connections){
     const disabled=!knx.enabled||connection.enabled===false||connection.state==='DISABLED';
     const color=disabled?'yellow':connection.state==='CONNECTED'?'green':'red';
+    if(color==='red'||color==='yellow'&&worstColor==='green')worstColor=color;
     const label=disabled?'Deaktiviert':color==='green'?'Aktiv':'Fehler';
     const row=text('div','','knx-connection-row');row.append(text('span',connection.name));
     const dot=text('span','','knx-connection-dot dot-'+color);dot.title=label;dot.setAttribute('role','img');dot.setAttribute('aria-label',label);row.append(dot);list.append(row);
@@ -176,8 +178,8 @@ function renderKnxStatus(knx){
   $('connection-last-received').textContent='Letzter Empfang '+date(received);
   $('connection-error').hidden=!knx.storage_error;
   $('connection-error').textContent=knx.storage_error?'Fehler beim Speichern; Dienstprotokoll prüfen.':'';
-  const label=!knx.enabled?'KNX deaktiviert':knx.ready?'KNX aktiv':'KNX-Verbindung fehlerhaft';
-  const color=knx.storage_error?'red':!knx.enabled?'yellow':knx.ready?'green':'red';
+  const color=knx.storage_error?'red':worstColor;
+  const label=color==='red'?'KNX-Verbindung fehlerhaft':color==='yellow'?'KNX nicht konfiguriert oder deaktiviert':'KNX aktiv';
   setKnxIndicator(color,label);
 }
 async function refresh(){

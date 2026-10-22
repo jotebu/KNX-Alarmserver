@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 23.10.2026. Projektversion 0.15.10, Inbetriebnahmeversion.
+Stand: 23.10.2026. Projektversion 0.15.11, Inbetriebnahmeversion.
+
+## KNX-Gesamtstatus
+
+- Gemischte Verbindungszustände in beiden Reihenfolgen geprüft: Rot übersteuert Gelb und Grün, Gelb übersteuert Grün. Ohne Verbindungen bzw. bei deaktiviertem KNX gelb; Speicherfehler weiterhin rot.
 
 ## Kompaktes KNX-Statusmenü
 
