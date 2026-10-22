@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.6 – 22.10.2026
+
+- Kleine Sortierpfeile neben den Spaltenüberschriften entfernen. Sortierung per Klick und zugänglicher Sortierstatus bleiben erhalten.
+
 ## 0.15.5 – 22.10.2026
 
 - Bestätigte neue Version beim Abruf des Update-Dienststatus erhalten: eine fehlgeschlagene zweite Versionsprüfung darf den Update-Kasten und dessen Button nicht ausblenden, während die Versionsinfo weiterhin eine neue Version meldet.

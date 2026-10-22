@@ -1,6 +1,6 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.15.5, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.15.6, Inbetriebnahmeversion.
 
 ## Update-Kasten nach bestätigter neuer Version
 
@@ -11,7 +11,7 @@ Stand: 22.10.2026. Projektversion 0.15.5, Inbetriebnahmeversion.
 
 - Zahlen-/Prioritätssortierung, drei chronologische Zeitspalten, fehlende Werte in beiden Richtungen am Ende, natürliche deutsche Namenssortierung, Zustand/Aktion und unbekannte Vorgänge geprüft.
 - Klickwechsel erhält Status-/Datumsfilter. Ausgewählte Reihenfolge bleibt nach neuer Dashboard-Antwort erhalten, ohne Quelldaten beim Sortieren zu verändern. JavaScript-Regressionssuite erfolgreich.
-- Native Überschriftenbuttons mit aria-sort und sichtbarem Richtungspfeil; Fokus bei Neuaufbau der Überschrift erhalten. Sortierung wirkt auf die geladenen Zeilen; historisches 500er-Limit unverändert.
+- Native Überschriftenbuttons mit aria-sort ohne sichtbare Richtungspfeile; Fokus bei Neuaufbau der Überschrift erhalten. Sortierung wirkt auf die geladenen Zeilen; historisches 500er-Limit unverändert.
 
 ## Kompakter Matrix-Einzeltest
 
