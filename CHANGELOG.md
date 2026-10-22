@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.13.3 – 22.10.2026
+
+- Statusfilter rechts neben „Meldungen“ mit Punkt als Trennzeichen anzeigen: „Meldungen · Aktiv“, „Meldungen · Abgeschlossen“ usw.
+
 ## 0.13.2 – 22.10.2026
 
 - Zusätzlichen Statuszähler „Abgeschlossen“ zwischen „Gegangen · offen“ und „Unbekannt“ einfügen. Klick filtert abgeschlossene Vorgänge; erneuter Klick setzt den Filter zurück.

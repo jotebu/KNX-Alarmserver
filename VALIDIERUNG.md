@@ -1,11 +1,11 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.13.2, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.13.3, Inbetriebnahmeversion.
 
 ## Zähler für abgeschlossene Vorgänge
 
 - Zähler umfasst gegangene/beendete und quittierte Vorgänge. Wiederauftreten mit älterer Quittierung bleibt getrennt gezählt; Backend- und Dashboard-Regressionstests sowie DOM-Prüfung für alle drei Rollen durchgeführt.
-- Statusfilter als Präfix der Meldungsüberschrift, Standard „Aktiv · Meldungen“ sowie Umschalten auf „Abgeschlossen · Meldungen“ und zurück geprüft.
+- Statusfilter rechts neben der Meldungsüberschrift, Standard „Meldungen · Aktiv“ sowie Umschalten auf „Meldungen · Abgeschlossen“ und zurück geprüft.
 - Reihenfolge, Filter auf Abgeschlossen und erneuter Klick zum Zurücksetzen geprüft. Breite auf großen Bildschirmen im Verhältnis 2:2:2:1:1; bestehende Zweispaltenansicht auf kleinen Bildschirmen erhalten. Sichtprüfung vor Ort steht aus.
 
 ## Kompakte Vorgangsliste

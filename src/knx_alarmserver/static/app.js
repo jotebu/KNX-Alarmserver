@@ -53,7 +53,7 @@ function render(){
   $('list-summary').textContent=listing?`Vorgänge: ${listing.total}`:'';
 
   const filterTitles={'':'Aktiv',active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen',closed:'Abgeschlossen',all:'Alle',unknown:'Unbekannt'};
-  const titles={alarms:`${filterTitles[alarmStatusFilter]||'Aktiv'} · Meldungen`,history:'Historie',telegrams:'Telegramme'};
+  const titles={alarms:`Meldungen · ${filterTitles[alarmStatusFilter]||'Aktiv'}`,history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
   const heads={alarms:['Priorität','Meldung / Bereich','Zustand','Gekommen','Quittiert','Gegangen','Aktion'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
   $('message-table').className=view==='alarms'?'alarm-list-table':'';
