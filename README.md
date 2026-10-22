@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.14.5 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.14.6 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -274,7 +274,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.14.5
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.14.6
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -284,8 +284,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.14.5
-git push origin v0.14.5
+git tag v0.14.6
+git push origin v0.14.6
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -296,7 +296,7 @@ Die Hauptseite zeigt Zähler, Meldungen und Historie. Die Kopfzeile bleibt auf a
 
 - **KNX-Symbol:** grün, wenn alle aktiven Verbindungen bereit sind; rot bei Verbindungs- oder Speicherfehlern; gelb bei deaktiviertem bzw. noch nicht konfiguriertem Empfang. Beim Aufklappen erscheinen Einzelzustände und letzter Empfang. Ohne aktuelle Serverantwort wird der Status rot als unbekannt markiert.
 - **Zahnrad:** Admins und User können die Alarmmatrix (`/matrix`) verwalten. Die folgenden weiteren Funktionen sind ausschließlich für Admins sichtbar: Telegramme (`/telegrams`), KNX Verbindungen (`/knx`), ETS-Import (`/ets`), Prioritäten (`/priorities`), Benutzerverwaltung (`/users`). Jede Funktion hat eine eigene URL mit direkter serverseitiger Rechteprüfung.
-- **Benutzersymbol mit Rang:** Aufklappen zeigt den Benutzernamen, Kennwort ändern (`/account/password`) und Abmelden. Alle Rollen können ausschließlich ihr eigenes Kennwort mit Prüfung des bisherigen Kennworts ändern. Danach erneut anmelden; sämtliche bisherigen Sitzungen dieses Kontos werden beendet.
+- **Benutzersymbol:** Aufklappen zeigt den Benutzernamen und darunter den Rang (Admin, User oder Viewer), Kennwort ändern (`/account/password`) und Abmelden. Alle Rollen können ausschließlich ihr eigenes Kennwort mit Prüfung des bisherigen Kennworts ändern. Danach erneut anmelden; sämtliche bisherigen Sitzungen dieses Kontos werden beendet.
 
 Über den kompakten Schiebeschalter **im Benutzermenü unter Darstellung** können alle Rollen **Dark** (Mond), **Light** (Sonne) oder **Automatisch** (Bildschirm mit A) wählen. Der Schieber markiert die gewählte Stellung; die Namen werden als Tooltip angezeigt. Die Auswahl ist auch per Tastatur bedienbar. Dark erhält das bisherige Farbdesign und ist die Voreinstellung. Automatisch folgt der Hell-/Dunkel-Einstellung des Betriebssystems, auch bei Änderungen während der Nutzung. Die Auswahl gilt auf allen Seiten einschließlich Anmeldung und wird im jeweiligen Browser für diese Serveradresse gespeichert; andere geöffnete Tabs übernehmen sie ebenfalls. Bei gesperrtem Browserspeicher bleibt der Wechsel für die laufende Seite möglich.
 

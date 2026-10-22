@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.14.5, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.14.6, Inbetriebnahmeversion.
+
+## Rang im Benutzermenü
+
+- Benutzer-Icon ohne Rang in der Kopfzeile; Benutzername und Rang getrennt im Menü. Bestehende Anzeige und Berechtigungen für Admin, User und Viewer über 32 JavaScript-Tests geprüft; DOM-Position und eindeutige IDs zusätzlich geprüft.
 
 ## Darstellungsschalter in der Kopfzeile
 

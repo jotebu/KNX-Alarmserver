@@ -20,7 +20,7 @@ async function setup(role,knx={enabled:false,ready:false,connections:[]},page='/
  return {nodes,context,redirects};
 }
 function all(node){return [node,...node.children.flatMap(all)];}
-test('role only beside profile icon; admin gear and acknowledgement controls respect roles',async()=>{
+test('role in profile menu; admin gear and acknowledgement controls respect roles',async()=>{
  for(const role of ['viewer','user','admin']){
   const {nodes}=await setup(role);
   assert.equal(nodes.get('settings-menu').hidden,role==='viewer');

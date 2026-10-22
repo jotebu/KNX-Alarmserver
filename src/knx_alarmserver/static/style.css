@@ -60,3 +60,5 @@ body.scroll-list-page{height:100dvh;overflow:hidden}
 @media(prefers-reduced-motion:reduce){.theme-switch-thumb{transition:none}}
 
 .theme-menu-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;color:var(--muted);font-size:13px}
+
+.menu-user p{margin:0}.menu-role{display:block;margin-top:6px;color:var(--muted);font-size:12px}

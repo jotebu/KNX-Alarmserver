@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.6 – 22.10.2026
+
+- Rang aus der Kopfzeile ins aufgeklappte Benutzermenü unter den Benutzernamen verschieben. In der Kopfzeile ausschließlich das Benutzer-Icon anzeigen; Rollen und Berechtigungen beibehalten.
+
 ## 0.14.5 – 22.10.2026
 
 - Dreistufigen Darstellungsschalter ins Benutzermenü unter den Benutzernamen verschieben. Mit 108 × 32 Pixeln und kleineren Symbolen an die Menübuttons anpassen; Dark, Light und Automatisch sowie gespeicherte Auswahl beibehalten.
