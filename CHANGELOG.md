@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.2 – 22.10.2026
+
+- Untertitel „Aktuelle Meldungen, Quittierungen und Ereignisverlauf.“ auf dem Dashboard entfernen und dessen Platz einschließlich des zusätzlichen Überschriftenabstands freigeben. Zähler und Meldeliste rücken nach oben; Beschreibungen der Verwaltungsseiten bleiben erhalten.
+
 ## 0.15.1 – 22.10.2026
 
 - Matrix-Einzeltest als kompakten Dialog mit Schnittstelle und einem Button „Alarm auslösen“ anzeigen. Umfangreiche Vorschau und getrennte Aktionen bleiben dem globalen Testmodus vorbehalten.

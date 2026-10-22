@@ -423,6 +423,8 @@ function layoutPage(){
   document.body.classList.toggle('scroll-list-page',!settingsOpen);
   document.body.classList.toggle('matrix-page',page==='/matrix');
   const separate=page!=='/';
+  $('page-description').hidden=!separate;
+  document.body.classList.toggle('dashboard-page',!separate);
   $('counters').hidden=separate;$('main-nav').hidden=true;$('back-dashboard').hidden=!separate;
   if(names[page]){$('page-title').textContent=names[page][0];$('page-description').textContent=names[page][1];document.title=names[page][0]+' · KNX Alarmserver';}
   $('data-panel').hidden=settingsOpen;
