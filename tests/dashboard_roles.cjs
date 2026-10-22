@@ -111,6 +111,7 @@ test('compact KNX menu lists colored connections and one latest receive timestam
   {name:'Reserve',state:'DISABLED',last_received:null}
  ]});
  const rows=nodes.get('connection-detail').children[0].children;
+ assert.equal(nodes.get('knx-status-heading').textContent,'KNX-Verbindungen');
  assert.deepEqual(rows.map(r=>r.children[0].textContent),['Hauptlinie','Nebenlinie','Reserve']);
  assert.deepEqual(rows.map(r=>r.children[1].className),['knx-connection-dot dot-green','knx-connection-dot dot-red','knx-connection-dot dot-yellow']);
  assert.deepEqual(rows.map(r=>r.children[1].attrs['aria-label']),['Aktiv','Fehler','Deaktiviert']);
@@ -119,10 +120,12 @@ test('compact KNX menu lists colored connections and one latest receive timestam
 });
 test('KNX disabled and unconfigured menu remains yellow with no reception; storage errors remain visible',async()=>{
  const empty=await setup('admin',{enabled:false,ready:false,connections:[]});
+ assert.equal(empty.nodes.get('knx-status-heading').textContent,'KNX-Verbindung');
  assert.equal(empty.nodes.get('connection-last-received').textContent,'Letzter Empfang —');
  assert.equal(empty.nodes.get('connection-detail').children[0].children[0].children[1].className,'knx-connection-dot dot-yellow');
  const disabled=await setup('admin',{enabled:false,storage_error:true,connections:[{name:'Hauptlinie',state:'CONNECTED',last_received:'invalid'}]});
  assert.equal(disabled.nodes.get('connection-detail').children[0].children[0].children[1].className,'knx-connection-dot dot-yellow');
+ assert.equal(disabled.nodes.get('knx-status-heading').textContent,'KNX-Verbindung');
  assert.equal(disabled.nodes.get('connection-error').hidden,false);
  assert.equal(disabled.nodes.get('connection-last-received').textContent,'Letzter Empfang —');
 });

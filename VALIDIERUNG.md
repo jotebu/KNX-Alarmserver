@@ -1,6 +1,6 @@
 # Prüfstand
 
-Stand: 23.10.2026. Projektversion 0.15.9, Inbetriebnahmeversion.
+Stand: 23.10.2026. Projektversion 0.15.10, Inbetriebnahmeversion.
 
 ## Kompaktes KNX-Statusmenü
 

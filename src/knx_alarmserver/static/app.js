@@ -159,6 +159,7 @@ function render(){
 }
 function renderKnxStatus(knx){
   const connections=knx.connections||[],list=document.createDocumentFragment();
+  $('knx-status-heading').textContent=connections.length>1?'KNX-Verbindungen':'KNX-Verbindung';
   for(const connection of connections){
     const disabled=!knx.enabled||connection.enabled===false||connection.state==='DISABLED';
     const color=disabled?'yellow':connection.state==='CONNECTED'?'green':'red';
