@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.10 – 22.10.2026
+
+- Quittieren-Button in der Meldetabelle mit kleinerer Schrift und geringerem Innenabstand gestalten; Beschriftung ohne Zeilenumbruch vollständig in der kompakten Aktionsspalte darstellen.
+
 ## 0.14.9 – 22.10.2026
 
 - Erläuterung unter der Meldeliste und Hinweistext im Zeitraumkalender entfernen. Zeitraum weiterhin mit dem gewählten Statusfilter kombinieren.

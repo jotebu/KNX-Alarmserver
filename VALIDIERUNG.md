@@ -1,6 +1,6 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.14.9, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.14.10, Inbetriebnahmeversion.
 
 ## Kompakte Meldetabelle und Zeitraum
 
