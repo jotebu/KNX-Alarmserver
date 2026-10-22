@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.8 – 22.10.2026
+
+- Darstellungsschalter im Benutzermenü links mit demselben Innenabstand wie die übrigen Menüeinträge ausrichten.
+
 ## 0.14.7 – 22.10.2026
 
 - Sichtbare Beschriftung „Darstellung“ aus dem Benutzermenü entfernen. Position, zugänglicher Name und Funktion des dreistufigen Schalters bleiben erhalten.
