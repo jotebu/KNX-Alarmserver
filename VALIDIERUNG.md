@@ -1,6 +1,11 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.14.8, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.14.9, Inbetriebnahmeversion.
+
+## Kompakte Meldetabelle und Zeitraum
+
+- 32 JavaScript-Tests sowie bestehende Profil-/Kalender-DOM-Prüfungen für Admin, User und Viewer erfolgreich. Entfernte Hinweise, zentrierte Toolbar, Spaltenbreiten, kompakter Zeitraum-Button und erzwungenes vertikales Scrollen im DOM/CSS geprüft.
+- Zeitraum und Statusfilter werden gemeinsam abgefragt; Zurücksetzen des Zeitraums erhält den Statusfilter. Backend-Filterlogik unverändert. Sichtprüfung vollständiger Zeitstempel und nativer Scrollleisten mit dem verwendeten Browser/Betriebssystem auf dem Raspberry noch erforderlich.
 
 ## Rang im Benutzermenü
 

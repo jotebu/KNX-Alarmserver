@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.9 – 22.10.2026
+
+- Erläuterung unter der Meldeliste und Hinweistext im Zeitraumkalender entfernen. Zeitraum weiterhin mit dem gewählten Statusfilter kombinieren.
+- Zeitraum-Button kompakter und unabhängig von Überschrift/Vorgangszähler mittig anordnen; auf schmalen Bildschirmen eine eigene zentrierte Zeile nutzen.
+- Gekommen, Quittiert und Gegangen auf 148 Pixel sowie Aktion auf 96 Pixel verschmälern; Zeitstempel kompakt und vollständig darstellen. Vertikale Scrollleiste der Meldetabelle dauerhaft mit reserviertem Platz vorsehen.
+
 ## 0.14.8 – 22.10.2026
 
 - Darstellungsschalter im Benutzermenü links mit demselben Innenabstand wie die übrigen Menüeinträge ausrichten.

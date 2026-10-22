@@ -49,6 +49,7 @@ function render(){
   if(settingsOpen)return;
   for(const card of document.querySelectorAll('[data-status-filter]')){const selected=view==='alarms'&&card.dataset.statusFilter===alarmStatusFilter;card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));}
   $('date-range-wrap').hidden=view!=='alarms';
+  $('data-panel').classList.toggle('alarm-view',view==='alarms');
   $('telegram-search-wrap').hidden=view!=='telegrams';
   $('telegram-rates').hidden=view!=='telegrams';
   $('list-summary').textContent=listing?`Vorgänge: ${listing.total}`:'';
@@ -90,7 +91,8 @@ function render(){
   }
   $('table-body').replaceChildren(body);$('empty').hidden=rows.length>0;
   $('empty').textContent=view==='alarms'&&!data.alarms.length?'Keine passenden Alarmvorgänge.':view==='alarms'?(alarmStatusFilter==='unknown'?'Keine unbekannten Meldungen.':'Keine aktiven oder noch zu quittierenden Meldungen.'):'Keine passenden Einträge.';
-  $('hint').textContent={alarms:'Eine Zeile je Auftreten. Quittieren bestätigt die Kenntnisnahme; Gehen bestätigt das Ende der Alarmbedingung. Sortierung: Priorität, danach Gekommen.',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
+  $('hint').textContent={alarms:'',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
+  $('hint').hidden=view==='alarms';
 }
 async function refresh(){
   if(busy)return;
