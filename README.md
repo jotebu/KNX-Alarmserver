@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.14.0 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.14.1 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -194,6 +194,23 @@ Gespeicherte aktuelle Zustände, IDs, Werte, Empfangs-/Wechselzeiten, Quittieren
 
 Admins öffnen **Verwaltung → Mail-Konfiguration** (`/mail`). Unterstützt werden SMTP über STARTTLS (typisch 587), direktes TLS (typisch 465) und ein unverschlüsselter lokaler Relay. Server, Port, optionale SMTP-Anmeldung, Absenderadresse/-name und Serverbezeichnung eintragen. Die optionale Dashboard-Adresse steht als Platzhalter zur Verfügung. Es sind keine zusätzlichen Python-Pakete erforderlich.
 
+Über den **Info-Button „i“** neben „Mail-Konfiguration“ öffnet sich eine Hilfe mit zehn Anbieterbeispielen. Die Auswahl zeigt exakt die Feldnamen des Alarmservers und offizielle Quellen (Prüfstand 22.10.2026). Öffnen/Schließen verändert keine Konfiguration und löst keinen Versand aus. SMTP-Benutzer und Absender sind durch die eigene zum Postfach gehörende Adresse zu ersetzen.
+
+| Anbieter | SMTP-Beispiel | Port / Auswahl im Alarmserver | Anmeldung / Besonderheit |
+| --- | --- | --- | --- |
+| [Zoho Mail](https://www.zoho.com/de/mail/help/zoho-smtp.html) | smtp.zoho.com (US-Privatkonto) | 465 / TLS | Eigene Serverdetails nach Kontotyp/Rechenzentrum verwenden; App-Passwort bei 2FA |
+| [1&1 Hosting / IONOS](https://www.ionos.de/hilfe/e-mail/allgemeine-themen/serverinformationen-fuer-imap-pop3-und-smtp/) | smtp.ionos.de | 465 / TLS | Vollständige Postfachadresse und Postfachpasswort; andere 1&1-Produkte können abweichen |
+| [GMX Deutschland](https://hilfe.gmx.net/pop-imap/imap/imap-serverdaten.html) | mail.gmx.net | 587 / STARTTLS | Vollständige Adresse und App-Passwort |
+| [Gmail](https://knowledge.workspace.google.com/admin/gmail/send-email-from-a-printer-scanner-or-app?hl=de) | smtp.gmail.com | 587 / STARTTLS | Vollständige Adresse und verfügbares Google-App-Passwort; 2FA erforderlich |
+| [WEB.DE](https://hilfe.web.de/pop-imap/imap/imap-serverdaten.html) | smtp.web.de | 587 / STARTTLS | Vollständige Adresse und App-Passwort |
+| [Telekom / T-Online](https://www.telekom.de/hilfe/apps-dienste/e-mail/posteingang-postausgang-server) | securesmtp.t-online.de | 465 / TLS | Vollständige Adresse und separates Passwort für E-Mail-Programme |
+| [STRATO](https://www.strato.de/faq/mail/e-mailserver-adressen-ports-ssl-tls/) | smtp.strato.de | 465 / TLS | Vollständige Postfachadresse und Postfachpasswort |
+| [Yahoo Mail](https://help.yahoo.com/kb/new-yahoo-mail/imap-server-settings-yahoo-mail-sln4075.html) | smtp.mail.yahoo.com | 465 / TLS | Vollständige Adresse und Yahoo-App-Passwort |
+| [mailbox.org](https://kb.mailbox.org/en/business/e-mail/e-mail-configuration/) | smtp.mailbox.org | 465 / TLS | Haupt-E-Mail-Adresse und Postfachpasswort bzw. Mail-App-Passwort mit SMTP-Berechtigung |
+| [iCloud Mail](https://support.apple.com/de-li/102525) | smtp.mail.me.com | 587 / STARTTLS | Vollständige iCloud-Adresse und App-spezifisches Passwort |
+
+Die Beispiele ersetzen keine kontospezifische Freigabe. Das Modul unterstützt aktuell SMTP mit Benutzername/Passwort, einschließlich nutzbarer App-Passwörter, aber keine OAuth2-Anmeldung. Ein Konto, dessen Richtlinien App-Passwörter ausschließen und OAuth2 erzwingen, lässt sich nicht durch Eingeben eines normalen Kennworts anbinden.
+
 1. SMTP-Konfiguration und Vorlagen speichern. Ein leeres Passwortfeld erhält das gespeicherte SMTP-Passwort; „Gespeichertes SMTP-Passwort entfernen“ löscht es. Das Passwort wird nie zurück an den Browser übertragen. Es liegt im Klartext in der lokalen SQLite-Datenbank, die einschließlich ihrer Backups entsprechend geschützt werden muss; der Dienst verwendet `UMask=0077`.
 2. Über **Testmail senden** eine Nachricht mit der gespeicherten Konfiguration prüfen. Das funktioniert auch bei ausgeschaltetem automatischem Versand. Die Testmail wird ausschließlich durch den Admin-Klick ausgelöst. Eine Annahme durch SMTP ist noch keine Bestätigung des Eingangs im Postfach.
 3. In **Benutzerverwaltung → Bearbeiten** bei den gewünschten Empfängern **Mails bei neuen Störungen erhalten** aktivieren. Empfängeradresse ist die E-Mail-Adresse des Kontos. Neue und bestehende Konten sind zunächst nicht für Mail aktiviert; auch Viewer können Empfänger sein. Nur Admins ändern diese Einstellung.
@@ -257,7 +274,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.14.0
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.14.1
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -267,8 +284,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.14.0
-git push origin v0.14.0
+git tag v0.14.1
+git push origin v0.14.1
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.

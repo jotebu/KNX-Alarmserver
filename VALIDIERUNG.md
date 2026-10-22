@@ -1,6 +1,12 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.14.0, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.14.1, Inbetriebnahmeversion.
+
+## SMTP-Anbieterhilfe
+
+- Info-Button, modale Hilfe, zehn eindeutige Anbieter, Zuordnung zu sechs konkreten Eingabefeldern und gemeinsame weitere Felder geprüft. Anbieterauswahl zeigt jeweils genau ein Beispiel; Schließen setzt den Buttonzustand zurück und erhält ungespeicherte SMTP-Daten.
+- Öffnen/Auswahl/Schließen lösen weder Speichern noch Testmail aus. Externe Quellen ausschließlich HTTPS mit noopener/noreferrer; mailbox.org-App-Passwort, Zoho-Kontotyp/Rechenzentrum und 1&1-/IONOS-Produktabgrenzung explizit dargestellt.
+- Anbieterwerte am 22.10.2026 anhand der verlinkten offiziellen Dokumentation geprüft; keine echte SMTP-Verbindung oder Zustellung getestet. Bestehende Mail-, Profil- und Kalender-DOM-Prüfungen sowie Dashboard-Regressionstests erfolgreich. Pixelgenaue Sichtprüfung vor Ort steht aus.
 
 ## Mailmodul
 

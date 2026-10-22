@@ -422,6 +422,12 @@ function layoutPage(){
   $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
 }
 let mailRevision=null,mailDirty=false,mailBusy=false,mailFailedCount=0;
+$('mail-help-open').onclick=()=>{
+  $('mail-help-dialog').showModal();$('mail-help-open').setAttribute('aria-expanded','true');
+};
+$('mail-help-close').onclick=()=>$('mail-help-dialog').close();
+$('mail-help-dialog').onclose=()=>{$('mail-help-open').setAttribute('aria-expanded','false');$('mail-help-open').focus();};
+$('mail-help-provider').onchange=()=>{const selected=$('mail-help-provider').value;for(const section of document.querySelectorAll('[data-mail-provider]'))section.hidden=section.dataset.mailProvider!==selected;};
 const mailFields=['host','port','security','username','password','from_email','from_name','server_name','server_url'];
 function renderMailStatus(result){
   const c=result.counts||{};mailFailedCount=c.failed||0;$('mail-counts').textContent=`Wartend: ${c.pending||0} · Versand läuft: ${c.sending||0} · Angenommen: ${c.sent||0} · Fehlgeschlagen: ${c.failed||0} · Abgebrochen: ${c.cancelled||0}`;

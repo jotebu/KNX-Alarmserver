@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.1 – 22.10.2026
+
+- Info-Button „i“ bei der Mail-Konfiguration mit zehn recherchierten Anbieterbeispielen: Zoho, 1&1 Hosting/IONOS, GMX, Gmail, WEB.DE, Telekom, STRATO, Yahoo, iCloud und mailbox.org.
+- Beispiele den tatsächlichen Eingabefeldern zuordnen: SMTP-Host, Port, Verbindung, Benutzername, Passwortart und Absender. Allgemeine Felder, App-Passwörter und Kontotyp-/Rechenzentrumsunterschiede erläutern; offizielle Anbieterquellen und Prüfdatum anzeigen.
+- Hilfe bleibt rein informativ und verändert keine SMTP-Daten; modal mit Anbieterauswahl und Schließen/Escape. Nur SMTP-Beispiele mit nutzbarer Passwort-/App-Passwort-Anmeldung aufnehmen.
+
 ## 0.14.0 – 22.10.2026
 
 - Mail-Konfiguration unter Verwaltung: eigener/externer SMTP-Server, STARTTLS/direktes TLS/lokaler Relay, optionale Anmeldung, Absender und Serverbezeichnung. SMTP-Passwort nur schreibend entgegennehmen, bei leerem Feld erhalten und nie über die API zurückgeben.

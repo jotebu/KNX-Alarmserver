@@ -1,11 +1,15 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../src/knx_alarmserver/static/app.js'),'utf8');
 class Node{
- constructor(tag='div'){this.tagName=tag;this.children=[];this.dataset={};this.value='';this.checked=false;this.disabled=false;this.textContent='';}
+ constructor(tag='div'){this.attrs={};this.tagName=tag;this.children=[];this.dataset={};this.value='';this.checked=false;this.disabled=false;this.textContent='';}
  append(...items){for(const item of items)this.children.push(...(item.tagName==='fragment'?item.children:[item]));}
  replaceChildren(...items){this.children=[];this.append(...items);}
  querySelector(selector){const field=/template-field="(\w+)"/.exec(selector)?.[1];return this.children.flatMap(all).find(n=>n.dataset.templateField===field);}
  querySelectorAll(){return [];}
+ setAttribute(key,value){this.attrs[key]=value;}
+ showModal(){this.open=true;}
+ close(){this.open=false;if(this.onclose)this.onclose();}
+ focus(){this.focused=true;}
  reportValidity(){return this.value.includes('@');}
 }
 const all=node=>[node,...node.children.flatMap(all)];
@@ -27,4 +31,8 @@ test('test mail requires a valid recipient and saved edits; it is never sent aut
 });
 test('retry updates the status and disables retry when no failures remain',async()=>{
  const s=await setup();assert.equal(s.get('mail-retry').disabled,false);await s.get('mail-retry').onclick();assert.equal(s.get('mail-retry').disabled,true);assert.match(s.get('mail-feedback').textContent,/1 fehlgeschlagene/);
+});
+
+test('provider help opens and closes without saving edits or sending mail',async()=>{
+ const s=await setup();const before=s.requests.length;s.get('mail-password').value='unsaved-secret';s.get('mail-form').oninput();s.get('mail-help-open').onclick();assert.equal(s.get('mail-help-dialog').open,true);assert.equal(s.get('mail-help-open').attrs['aria-expanded'],'true');s.get('mail-help-close').onclick();assert.equal(s.get('mail-help-dialog').open,false);assert.equal(s.get('mail-help-open').attrs['aria-expanded'],'false');assert.equal(s.get('mail-help-open').focused,true);assert.equal(s.get('mail-password').value,'unsaved-secret');assert.equal(s.requests.length,before);await s.get('mail-test').onclick();assert.match(s.get('mail-feedback').textContent,/zuerst/);assert.equal(s.requests.length,before);
 });
