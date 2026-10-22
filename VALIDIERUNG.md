@@ -1,6 +1,6 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.15.2, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.15.3, Inbetriebnahmeversion.
 
 ## Kompakter Matrix-Einzeltest
 

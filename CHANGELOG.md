@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.3 – 22.10.2026
+
+- Spaltenüberschrift „#“ in der Meldeliste mittig ausrichten.
+
 ## 0.15.2 – 22.10.2026
 
 - Untertitel „Aktuelle Meldungen, Quittierungen und Ereignisverlauf.“ auf dem Dashboard entfernen und dessen Platz einschließlich des zusätzlichen Überschriftenabstands freigeben. Zähler und Meldeliste rücken nach oben; Beschreibungen der Verwaltungsseiten bleiben erhalten.
