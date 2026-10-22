@@ -78,7 +78,7 @@ def run():
                 write_status('current', 'Keine neuere Version verfuegbar.', previous_version=previous, target_version=target)
                 return
             commit = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], env=ENV, text=True).strip()
-            write_status('installing', 'Installation laeuft. Der Webdienst wird kurz neu gestartet.',
+            write_status('installing', 'Installation läuft. Der Webdienst wird danach neu gestartet.',
                          previous_version=previous, target_version=target, commit=commit)
             # No user-supplied URL, branch, command, port or filename is accepted.
             subprocess.run(['/bin/bash', str(source / 'scripts/install.sh')],

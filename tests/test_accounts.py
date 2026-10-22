@@ -107,7 +107,7 @@ class Accounts(unittest.TestCase):
         self.assertEqual(self.client.delete('/api/users/new@example.org',headers=ACTION).status_code,200)
         self.assertIsNone(self.store.session_user(token))
         listing=self.client.get('/api/users').json()
-        self.assertTrue(all(set(r)=={'username','role','first_name','last_name'} for r in listing))
+        self.assertTrue(all(set(r)=={'username','role','first_name','last_name','mail_enabled'} for r in listing))
         self.assertEqual(self.client.delete('/api/users/missing',headers=ACTION).status_code,404)
 
     def test_last_admin_and_invalid_changes(self):

@@ -1,6 +1,14 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.13.5, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.14.0, Inbetriebnahmeversion.
+
+## Mailmodul
+
+- Neue Vorgänge statt wiederholter Telegramme, Quittierungen oder Migration als Versandtrigger; Standard-Opt-out, je Empfänger ein Auftrag, Prioritätsvorlagen/Platzhalter und unveränderte Nachrichtensnapshots geprüft.
+- Dauerhafte Warteschlange, transaktionaler Rollback bei Schreibfehler, Wiederanlauf unterbrochener Aufträge, Fehler-Wiederholungen/Maximum und manueller Neustart geprüft. Deaktivierung/gelöschte Empfänger sowie weiter responsive Alarmdatenbank bei langsamem SMTP geprüft.
+- SMTP über STARTTLS, direktes TLS und lokalen Relay mit simulierten Transporten geprüft; kein stiller Rückfall ohne TLS. Passwort-Redaktion, Beibehalten/Löschen, Revisionen, ungültige Templates/Header und Admin-/CSRF-Schutz geprüft.
+- UI-Prüfung: Verwaltungsseite, Vorlagen je Priorität, Platzhalterhilfe, Passwortfeld, Testmail nur mit gespeicherten Angaben und gültigem Empfänger, Versandstatus/erneute Versuche sowie Benutzer-Schalter. Bestehende Profil-, Meldungs- und Kalenderprüfungen weiterhin erfolgreich.
+- Keine realen E-Mails versendet. Verbindung/Zustellung mit dem vorgesehenen SMTP-Server muss nach Konfiguration auf dem Raspberry über die Testmail abgenommen werden.
 
 ## Benutzerprofile und kompakte Vorgangsnummer
 

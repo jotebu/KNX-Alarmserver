@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.13.5 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.14.0 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -190,6 +190,31 @@ Gespeicherte aktuelle Zustände, IDs, Werte, Empfangs-/Wechselzeiten, Quittieren
 
 Änderung von Adresse/DPT/Regel oder Entfernen eines Alarms beendet die bisherige Auswertung mit einer ausdrücklichen Kennzeichnung. Dafür wird **kein fiktiver Gegangen-Zeitpunkt** erzeugt. Nicht quittierte alte Vorgänge bleiben bearbeitbar. Die Aufbewahrungsdauer (`retention_days`, standardmäßig 365 Tage) entfernt ausschließlich abgeschlossene Vorgänge, deren Ende und Quittierung lange genug zurückliegen. Aktive oder unquittierte Vorgänge bleiben erhalten. Das technische Ereignisprotokoll bleibt zusätzlich gespeichert und über `/api/history` erreichbar, erscheint aber nicht mehr als separate Bedienliste. Der Telegrammmonitor behält seinen bisherigen Ringpuffer.
 
+## Mailversand bei neuen Störungen
+
+Admins öffnen **Verwaltung → Mail-Konfiguration** (`/mail`). Unterstützt werden SMTP über STARTTLS (typisch 587), direktes TLS (typisch 465) und ein unverschlüsselter lokaler Relay. Server, Port, optionale SMTP-Anmeldung, Absenderadresse/-name und Serverbezeichnung eintragen. Die optionale Dashboard-Adresse steht als Platzhalter zur Verfügung. Es sind keine zusätzlichen Python-Pakete erforderlich.
+
+1. SMTP-Konfiguration und Vorlagen speichern. Ein leeres Passwortfeld erhält das gespeicherte SMTP-Passwort; „Gespeichertes SMTP-Passwort entfernen“ löscht es. Das Passwort wird nie zurück an den Browser übertragen. Es liegt im Klartext in der lokalen SQLite-Datenbank, die einschließlich ihrer Backups entsprechend geschützt werden muss; der Dienst verwendet `UMask=0077`.
+2. Über **Testmail senden** eine Nachricht mit der gespeicherten Konfiguration prüfen. Das funktioniert auch bei ausgeschaltetem automatischem Versand. Die Testmail wird ausschließlich durch den Admin-Klick ausgelöst. Eine Annahme durch SMTP ist noch keine Bestätigung des Eingangs im Postfach.
+3. In **Benutzerverwaltung → Bearbeiten** bei den gewünschten Empfängern **Mails bei neuen Störungen erhalten** aktivieren. Empfängeradresse ist die E-Mail-Adresse des Kontos. Neue und bestehende Konten sind zunächst nicht für Mail aktiviert; auch Viewer können Empfänger sein. Nur Admins ändern diese Einstellung.
+4. Automatischen Mailversand aktivieren und speichern. Ab diesem Zeitpunkt entsteht je neuem Alarmvorgang und aktiviertem Empfänger ein eigener Versandauftrag. Wiederholte Telegramme/Leseantworten, Quittierung, Gehen und Neustart erzeugen keine neue Benachrichtigung. Bereits vorhandene Vorgänge werden nicht nachversendet; erneut gegangen/aktiv gewordene Alarme erhalten eine neue Vorgangsnummer und damit einen neuen Auftrag.
+
+Je Priorität lassen sich **Betreff und Text** frei bearbeiten. Fehlende Vorlagen neuer Prioritäten erhalten die Standardvorlage. Beispiel-Betreff: `[{prioritaetsname}] {meldung} · Vorgang #{vorgangsnummer}`. Verfügbare Platzhalter zeigt die Oberfläche; wörtliche Klammern mit `{{` und `}}` schreiben. Es werden reine Textmails gesendet.
+
+| Bereich | Platzhalter |
+| --- | --- |
+| Meldung | `{vorgangsnummer}`, `{alarm_id}`, `{meldung}`, `{bereich}`, `{status}` |
+| Priorität/KNX | `{prioritaet}`, `{prioritaetsname}`, `{gruppenadresse}`, `{dpt}`, `{quelle}` |
+| Zeit/Wert/Regel | `{gekommen}`, `{gekommen_iso}`, `{wert}`, `{einheit}`, `{operator}`, `{schwellwert}`, `{hysterese}`, `{feld}` |
+| Server | `{server_name}`, `{server_url}` |
+| Empfänger | `{empfaenger_vorname}`, `{empfaenger_nachname}`, `{empfaenger_name}`, `{empfaenger_email}` |
+
+`{gekommen}` verwendet die Zeitzone des Raspberry; `{gekommen_iso}` enthält den ursprünglichen ISO-Zeitpunkt mit Zeitzone. Daten, Empfänger und gerenderter Text werden bei Entstehen des Vorgangs festgehalten. Nachrichten gehen einzeln an jeden Empfänger. Benutzer, die vor dem tatsächlichen Versand deaktiviert oder gelöscht wurden, erhalten ausstehende Nachrichten nicht mehr. Globales Deaktivieren pausiert die Warteschlange.
+
+Der Hintergrundversand hält während der SMTP-Verbindung keine Datenbanksperre. Versandaufträge überleben Neustarts. Nach Fehlern wird bis zu fünfmal versucht (Wartezeiten 30 Sekunden, 2, 8 und 32 Minuten). Danach steht der Auftrag unter **Fehlgeschlagen**; nach Korrektur der Serverdaten **Fehlgeschlagene erneut versuchen** wählen. Die Übersicht zeigt Statussummen und die letzten 20 Aufträge; erfolgreiche/abgebrochene Aufträge unterliegen der konfigurierten Aufbewahrungsdauer. Das SMTP-Passwort und rohe SMTP-Fehlerantworten werden nicht in dieser Übersicht ausgegeben.
+
+SMTP bietet keine transaktionale Zustellbestätigung: Wird eine Nachricht angenommen und der Prozess vor dem Speichern dieses Ergebnisses unterbrochen, kann beim Wiederholen eine doppelte Mail entstehen. Eine stabile Message-ID bleibt bei Wiederholungen erhalten. Dies gilt auch nach einer Zeitüberschreitung mit unklarem Serverergebnis; die Warteschlange verhindert dagegen doppelte Aufträge durch wiederholte KNX-Telegramme.
+
 ## KNX-Status manuell abfragen
 
 Admins können in **Telegramme → Status abfragen** die unbekannten Werte oder alle Gruppenadressen der Alarmmatrix lesen. Bei mehreren Verbindungen die passende Linie wählen; ohne Auswahl wird die erste aktive Verbindung verwendet. Nicht die gesamte ETS-Adressliste wird abgefragt. Die Abfrage läuft unabhängig von der ausgewählten Meldungsseite und ihren Filtern im Hintergrund mit höchstens zwei Leseanfragen pro Sekunde. Fortschritt nennt gesendete Anfragen und gültige Antworten; das Senden einer Anfrage allein ist kein bestätigter Messwert. Gleichzeitige Abfragen werden abgewiesen. Dienstende oder KNX-Konfigurationswechsel beendet eine laufende Abfrage.
@@ -232,7 +257,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.13.5
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.14.0
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -242,8 +267,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.13.5
-git push origin v0.13.5
+git tag v0.14.0
+git push origin v0.14.0
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -325,7 +350,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 pip install -e '.[test]'
 python -m unittest discover -s tests -v
-node --test tests/dashboard_polling.cjs
+node --test tests/dashboard_*.cjs
 bash -n scripts/install.sh scripts/update.sh
 ```
 
@@ -336,6 +361,6 @@ GitHub CI prüft Python 3.11 und 3.13, die echten Decoder von xknx, Alarmregeln 
 1. Routermodell, KNX-Secure-Nutzung, Filtertabellen und tatsächlichen Telegrammempfang prüfen.
 2. Echte Alarmmatrix importieren und mit Testalarmen abnehmen.
 3. Alarmmatrix anhand realer Telegramme und quittierpflichtiger Testalarme abnehmen.
-4. Push/E-Mail, Zeitprogramme, Eskalation und zyklische Erreichbarkeitsüberwachung.
+4. Push, Zeitprogramme, Eskalation und zyklische Erreichbarkeitsüberwachung.
 5. Debian-Paket/APT-Verteilung, vollständige Dependency-Lockdatei und weitere Hardwaretests.
 

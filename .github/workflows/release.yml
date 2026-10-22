@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/dashboard_polling.cjs
+      - run: node --test tests/dashboard_*.cjs
       - run: bash -n scripts/install.sh scripts/update.sh
       - name: Check version
         run: python -c 'import os,tomllib; p=tomllib.load(open("pyproject.toml","rb")); assert os.environ["GITHUB_REF_NAME"] == "v"+p["project"]["version"]'

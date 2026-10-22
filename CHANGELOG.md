@@ -2,6 +2,14 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.0 – 22.10.2026
+
+- Mail-Konfiguration unter Verwaltung: eigener/externer SMTP-Server, STARTTLS/direktes TLS/lokaler Relay, optionale Anmeldung, Absender und Serverbezeichnung. SMTP-Passwort nur schreibend entgegennehmen, bei leerem Feld erhalten und nie über die API zurückgeben.
+- Betreff-/Textvorlage je Priorität mit dokumentierten Platzhaltern für Meldung, Bereich, GA/DPT, Vorgangsnummer, Beginn, Priorität, Wert/Regel, Quelle, Server und Empfänger. Neue Prioritäten erhalten eine Standardvorlage; ungültige Platzhalter/Formatierungen ablehnen.
+- Mail-Empfang je Benutzer in der Benutzerverwaltung aktivieren/deaktivieren (standardmäßig aus). Nur bei neuem Auftreten mit neuer Vorgangsnummer automatische Mails erzeugen; keine nachträgliche Benachrichtigung bestehender Vorgänge.
+- Dauerhafte, transaktionale Warteschlange je Empfänger mit Hintergrundversand, fünf automatischen Versuchen, Wiederanlauf und Statusübersicht. Deaktivierte/gelöschte Empfänger vor Versand berücksichtigen; fehlgeschlagene Mails manuell erneut versuchen. Testmail mit gespeicherter SMTP-Konfiguration.
+- Update-Meldung auf „Installation läuft. Der Webdienst wird danach neu gestartet.“ ändern.
+
 ## 0.13.5 – 22.10.2026
 
 - Neue Benutzer mit E-Mail-Adresse als Benutzername sowie verpflichtendem Vor- und Nachnamen anlegen; serverseitig validieren. Benutzerverwaltung, CLI und Erstinstallation entsprechend ergänzen. Bestehende Konten, Kennwörter, Rollen und Logins erhalten.

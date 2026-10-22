@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const labels = {unknown:'Unbekannt',active:'Störung aktiv',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · unquittiert',normal:'Normal',closed:'Abgeschlossen'};
 const page=window.location.pathname;
-const managementPages=['/knx','/ets','/users','/priorities'];
+const managementPages=['/knx','/ets','/users','/priorities','/mail'];
 let pageInitialized=false, newerVersionKnown=false, checkingVersionStatus=false;
 let access = {role:null,configure:false,acknowledge:false};
 let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
@@ -382,7 +382,7 @@ $('knx-read-start').onclick=async()=>{
 function applyAccess(){
   $('settings-menu').hidden=!access.configure&&!access.matrix;
   $('matrix-link').hidden=!access.matrix;
-  for(const id of ['telegrams-link','knx-settings-tab','ets-tab','users-tab','priorities-link'])$(id).hidden=!access.configure;
+  for(const id of ['telegrams-link','knx-settings-tab','ets-tab','users-tab','priorities-link','mail-link'])$(id).hidden=!access.configure;
   if(page==='/matrix'&&!access.matrix)window.location.replace('/');
   $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
   if(!access.configure && (managementPages.includes(page)||page==='/telegrams'))window.location.replace('/');
@@ -395,11 +395,12 @@ async function initializePage(){
   else if(page==='/knx')await loadKnx();
   else if(page==='/ets')await loadEts();
   else if(page==='/users')await loadUsers();
+  else if(page==='/mail')await loadMail();
   else if(page==='/priorities')await loadPriorities();
   else if(page==='/versions'){await loadVersions();if(access.configure)await loadUpdate();}
 }
 function layoutPage(){
-  const names={'/priorities':['Prioritäten','Rangfolge und Bezeichnungen der Alarmprioritäten festlegen.'],
+  const names={'/mail':['Mail-Konfiguration','SMTP-Server, Vorlagen und Versandstatus verwalten.'],'/priorities':['Prioritäten','Rangfolge und Bezeichnungen der Alarmprioritäten festlegen.'],
     '/matrix':['Alarmmatrix','Alarmregeln manuell bearbeiten oder als CSV ergänzen.'],
     '/telegrams':['Telegramme','Empfangene KNX-Gruppentelegramme und decodierte Werte.'],
     '/knx':['KNX Verbindungen','Verbindungen zum KNX-Netz verwalten.'],
@@ -414,11 +415,62 @@ function layoutPage(){
   if(names[page]){$('page-title').textContent=names[page][0];$('page-description').textContent=names[page][1];document.title=names[page][0]+' · KNX Alarmserver';}
   $('data-panel').hidden=settingsOpen;
   $('knx-settings').hidden=page!=='/knx';$('ets-panel').hidden=page!=='/ets';$('users-panel').hidden=page!=='/users';
+  $('mail-panel').hidden=page!=='/mail';
   $('priorities-panel').hidden=page!=='/priorities';
   $('matrix-panel').hidden=page!=='/matrix';
   $('password-panel').hidden=page!=='/account/password';$('versions-panel').hidden=page!=='/versions';
   $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
 }
+let mailRevision=null,mailDirty=false,mailBusy=false,mailFailedCount=0;
+const mailFields=['host','port','security','username','password','from_email','from_name','server_name','server_url'];
+function renderMailStatus(result){
+  const c=result.counts||{};mailFailedCount=c.failed||0;$('mail-counts').textContent=`Wartend: ${c.pending||0} · Versand läuft: ${c.sending||0} · Angenommen: ${c.sent||0} · Fehlgeschlagen: ${c.failed||0} · Abgebrochen: ${c.cancelled||0}`;
+  const rows=document.createDocumentFragment();
+  for(const job of result.jobs||[]){const tr=document.createElement('tr');for(const value of [job.occurrence_id,job.recipient,job.subject,({pending:'Wartend',sending:'Versand läuft',sent:'Vom SMTP-Server angenommen',failed:'Fehlgeschlagen',cancelled:'Abgebrochen'})[job.status]||job.status,job.attempts,job.last_error||(job.sent_at?date(job.sent_at):'—')])tr.append(text('td',value));rows.append(tr);}
+  $('mail-jobs').replaceChildren(rows);$('mail-retry').disabled=mailBusy||!(c.failed>0);
+}
+function fillMail(result){
+  mailRevision=result.revision;const config=result.config;$('mail-enabled').checked=config.enabled;
+  for(const key of mailFields)$('mail-'+key.replaceAll('_','-')).value=key==='password'?'':config[key];
+  $('mail-clear-password').checked=false;$('mail-password-state').textContent=config.password_set?'Passwort gespeichert.':'Kein Passwort gespeichert.';
+  const templates=document.createDocumentFragment();
+  for(const priority of result.priorities){
+    const section=document.createElement('section');section.className='mail-template';section.dataset.priority=String(priority.priority);
+    const template=config.templates[String(priority.priority)],heading=text('h4',`${priority.priority} · ${priority.name}`);
+    const subjectLabel=text('label','Betreff'),subject=document.createElement('input');subject.dataset.templateField='subject';subject.value=template.subject;subject.maxLength=200;subject.required=true;subjectLabel.append(subject);
+    const bodyLabel=text('label','Text'),body=document.createElement('textarea');body.dataset.templateField='body';body.value=template.body;body.maxLength=20000;body.required=true;body.rows=9;bodyLabel.append(body);
+    section.append(heading,subjectLabel,bodyLabel);templates.append(section);
+  }
+  $('mail-templates').replaceChildren(templates);
+  const placeholders=document.createDocumentFragment();for(const [key,description] of Object.entries(result.placeholders)){const item=text('p','');item.append(text('code','{'+key+'}'),document.createTextNode(' · '+description));placeholders.append(item);}$('mail-placeholders').replaceChildren(placeholders);
+  if(!$('mail-test-recipient').value)$('mail-test-recipient').value=$('profile-user').textContent;
+  mailDirty=false;renderMailStatus(result);
+}
+async function mailOperation(operation){
+  if(mailBusy)return;mailBusy=true;const controls=[...$('mail-panel').querySelectorAll('button,input,select,textarea')],disabled=controls.map(c=>c.disabled);controls.forEach(c=>c.disabled=true);
+  try{await operation();}catch(error){$('mail-feedback').textContent=error.message;}finally{controls.forEach((c,i)=>c.disabled=disabled[i]);mailBusy=false;$('mail-retry').disabled=mailFailedCount===0;}
+}
+async function loadMail(){await mailOperation(async()=>{fillMail(await api('/api/mail'));$('mail-feedback').textContent='Mail-Konfiguration geladen.';});}
+$('mail-form').oninput=()=>{mailDirty=true;};
+$('mail-reload').onclick=loadMail;
+$('mail-form').onsubmit=event=>{event.preventDefault();mailOperation(async()=>{
+  const config={enabled:$('mail-enabled').checked,templates:{}};
+  for(const key of mailFields)config[key]=key==='port'?Number($('mail-port').value):$('mail-'+key.replaceAll('_','-')).value;
+  for(const section of $('mail-templates').children)config.templates[section.dataset.priority]={subject:section.querySelector('[data-template-field="subject"]').value,body:section.querySelector('[data-template-field="body"]').value};
+  const result=await api('/api/mail',{method:'PUT',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'manage-mail'},body:JSON.stringify({config,revision:mailRevision,clear_password:$('mail-clear-password').checked})});fillMail(result);$('mail-feedback').textContent='Mail-Konfiguration und Vorlagen gespeichert.';
+});};
+$('mail-test').onclick=()=>{
+  const recipient=$('mail-test-recipient');
+  if(mailDirty){$('mail-feedback').textContent='Bitte zuerst Änderungen an der Mail-Konfiguration speichern.';return;}
+  if(!recipient.value||!recipient.reportValidity()){$('mail-feedback').textContent='Gültigen Testempfänger eingeben.';return;}
+  return mailOperation(async()=>{
+    $('mail-feedback').textContent='Testmail wird gesendet …';
+    const result=await api('/api/mail/test',{method:'POST',headers:{'Content-Type':'application/json','X-Alarmserver-Action':'manage-mail'},body:JSON.stringify({recipient:recipient.value})});$('mail-feedback').textContent=result.message;
+  });
+};
+$('mail-status-refresh').onclick=()=>mailOperation(async()=>{renderMailStatus(await api('/api/mail'));$('mail-feedback').textContent='Versandstatus aktualisiert.';});
+$('mail-retry').onclick=()=>mailOperation(async()=>{const result=await api('/api/mail/retry',{method:'POST',headers:{'X-Alarmserver-Action':'manage-mail'}});renderMailStatus(await api('/api/mail'));$('mail-feedback').textContent=`${result.retried} fehlgeschlagene Mails erneut eingereiht.`;});
+
 let editingUser=null, usersBusy=false;
 function openUser(account=null){
   editingUser=account?account.username:null;
@@ -427,6 +479,7 @@ function openUser(account=null){
   $('users-first-name').value=account?account.first_name||'':'';
   $('users-last-name').value=account?account.last_name||'':'';
   $('users-role').value=account?account.role:'viewer';
+  $('users-mail-enabled').checked=Boolean(account&&account.mail_enabled);
   for(const id of ['users-password','users-confirm']){$(id).value='';$(id).required=!account;}
   $('users-form').hidden=false;
 }
@@ -434,7 +487,7 @@ async function loadUsers(){
   try{
     const accounts=await api('/api/users'),rows=document.createDocumentFragment();
     for(const account of accounts){
-      const tr=document.createElement('tr');tr.append(text('td',account.username),text('td',[account.first_name,account.last_name].filter(Boolean).join(' ')||'Name nicht hinterlegt'),text('td',{admin:'Admin',user:'User',viewer:'Viewer'}[account.role]));
+      const tr=document.createElement('tr');tr.append(text('td',account.username),text('td',[account.first_name,account.last_name].filter(Boolean).join(' ')||'Name nicht hinterlegt'),text('td',{admin:'Admin',user:'User',viewer:'Viewer'}[account.role]),text('td',account.mail_enabled?'Aktiv':'—'));
       const td=document.createElement('td'),edit=text('button','Bearbeiten'),remove=text('button','Löschen');
       edit.type=remove.type='button';edit.onclick=()=>openUser(account);
       remove.onclick=async()=>{
@@ -463,7 +516,7 @@ $('users-cancel').onclick=()=>{$('users-form').hidden=true;$('users-password').v
 $('users-form').onsubmit=event=>{
   event.preventDefault();const password=$('users-password').value;
   if(password!==$('users-confirm').value){$('users-feedback').textContent='Passwörter stimmen nicht überein.';return;}
-  const payload={role:$('users-role').value,first_name:$('users-first-name').value.trim(),last_name:$('users-last-name').value.trim()};
+  const payload={role:$('users-role').value,mail_enabled:$('users-mail-enabled').checked,first_name:$('users-first-name').value.trim(),last_name:$('users-last-name').value.trim()};
   if(editingUser===null){payload.username=$('users-name').value;payload.password=password;}else if(password)payload.password=password;
   saveUser('/api/users'+(editingUser===null?'':'/'+encodeURIComponent(editingUser)),editingUser===null?'POST':'PUT',payload);
 };

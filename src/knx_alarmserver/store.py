@@ -13,6 +13,7 @@ import json
 import time
 
 from .rules import evaluate, normalized
+from .mail import MailStore
 
 
 def now():
@@ -22,7 +23,7 @@ def now():
 from .occurrences import OccurrenceStore
 
 
-class Store(OccurrenceStore):
+class Store(MailStore, OccurrenceStore):
     def __init__(self, path, alarms, retention_days=365):
         self.alarms = {a.id: a for a in alarms}
         self.by_address = {a.group_address: a for a in alarms}
@@ -43,6 +44,7 @@ class Store(OccurrenceStore):
                     self.by_address = {a.group_address: a for a in alarms}
             self._initialize(alarms)
             self._initialize_occurrences()
+            self._initialize_mail()
             row = self.db.execute("SELECT value FROM settings WHERE name='ets'").fetchone()
             self._ets = json.loads(row['value']) if row else {}
         except Exception:
@@ -223,6 +225,7 @@ class Store(OccurrenceStore):
                             (active, pending, ack_by, ack_at, timestamp, timestamp, source, occurrence_id, alarm.id))
             if alarm.operator != "monitor":
                 self._event(alarm, "active" if active else "clear", timestamp, source=source, occurrence_id=occurrence_id)
+                if active:self.queue_occurrence_mail(occurrence_id,value,display,unit,source)
         return True
 
     def decode_failed(self, address, message):
@@ -291,6 +294,7 @@ class Store(OccurrenceStore):
         cutoff = (datetime.now(timezone.utc) - timedelta(days=self.retention_days)).isoformat()
         with self.transaction():
             self.db.execute("DELETE FROM events WHERE timestamp < ?", (cutoff,))
+            self.db.execute("DELETE FROM mail_outbox WHERE status IN ('sent','cancelled') AND COALESCE(sent_at,created_at) < ?", (cutoff,))
             self.db.execute("DELETE FROM occurrences WHERE acknowledged=1 AND max(COALESCE(went_at,ended_at),COALESCE(acknowledged_at,went_at,ended_at)) < ?", (cutoff,))
 
     @staticmethod
@@ -342,7 +346,7 @@ class Store(OccurrenceStore):
 
     def users(self):
         with self.lock:
-            return [dict(r) for r in self.db.execute('SELECT username,role,first_name,last_name FROM users ORDER BY username')]
+            return [dict(r,mail_enabled=bool(r['mail_enabled'])) for r in self.db.execute('SELECT username,role,first_name,last_name,mail_enabled FROM users ORDER BY username')]
 
     def _guard_last_admin(self, username, role):
         row = self.db.execute('SELECT role FROM users WHERE username=?', (username,)).fetchone()
@@ -367,9 +371,10 @@ class Store(OccurrenceStore):
                 password_hash=excluded.password_hash,role=excluded.role""", (username,salt,hashed,selected))
             self.db.execute('DELETE FROM sessions WHERE username=?', (username,))
 
-    def create_user(self, username, password, role, first_name=None, last_name=None):
+    def create_user(self, username, password, role, first_name=None, last_name=None, mail_enabled=False):
         self._validate_account(username, password, role)
         self._validate_profile(username, first_name, last_name)
+        if type(mail_enabled) is not bool:raise ValueError('Mail-Aktivierung muss wahr oder falsch sein')
         if role is None:
             raise ValueError('Rolle erforderlich')
         with self.transaction():
@@ -378,8 +383,9 @@ class Store(OccurrenceStore):
                 raise ValueError('Benutzername bereits vergeben')
             self.set_password(username, password, role)
             self.set_profile(username, first_name, last_name)
+            self.set_mail_enabled(username,mail_enabled)
 
-    def update_user(self, username, role, password=None, first_name=None, last_name=None):
+    def update_user(self, username, role, password=None, first_name=None, last_name=None, mail_enabled=None):
         self._validate_account(username, password, role)
         if first_name is not None or last_name is not None:
             self._validate_names(first_name, last_name)
@@ -390,6 +396,7 @@ class Store(OccurrenceStore):
             if not self.account(username):
                 raise KeyError(username)
             self._guard_last_admin(username, role)
+            if mail_enabled is not None:self.set_mail_enabled(username,mail_enabled)
             if first_name is not None:
                 self.set_profile(username, first_name, last_name)
             if password is not None:

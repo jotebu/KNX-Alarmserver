@@ -30,6 +30,8 @@ def create_app(config, store, update_manager=None, version_checker=None):
     validate_knx(initial)
     monitor = Monitor(initial, store)
     settings_lock = asyncio.Lock()
+    from .mail import MailWorker, send_smtp, mail_error, validate_address
+    mail_worker = MailWorker(store)
 
     async def housekeeping():
         while True:
@@ -41,6 +43,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
         if not store.has_users():
             raise RuntimeError("Zuerst mit knx-alarmserver user-add einen Benutzer anlegen")
         await monitor.start()
+        await mail_worker.start()
         task = asyncio.create_task(housekeeping())
         try:
             yield
@@ -48,6 +51,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
             task.cancel()
             with suppress(asyncio.CancelledError):
                 await task
+            await mail_worker.stop()
             await monitor.stop()
 
     app = FastAPI(title="KNX Alarmserver", version=__version__, lifespan=lifespan,
@@ -106,7 +110,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
 
     @app.exception_handler(HTTPException)
     async def auth_page(request, error):
-        if error.status_code == 401 and request.url.path in {'/', '/telegrams', '/knx', '/ets', '/users', '/versions', '/account/password', '/matrix', '/priorities'}:
+        if error.status_code == 401 and request.url.path in {'/', '/telegrams', '/knx', '/ets', '/users', '/versions', '/account/password', '/matrix', '/priorities', '/mail'}:
             return FileResponse(STATIC / 'login.html', status_code=401)
         return await http_exception_handler(request, error)
 
@@ -190,6 +194,39 @@ def create_app(config, store, update_manager=None, version_checker=None):
         logging.getLogger(__name__).info('Dashboard-Update angefordert durch %s', username)
         return JSONResponse(result, status_code=202)
 
+    @app.get('/api/mail')
+    def mail_settings(username=Depends(admin)):
+        return store.mail_settings()
+
+    @app.put('/api/mail')
+    async def save_mail_settings(request: Request, username=Depends(admin)):
+        action(request,'manage-mail')
+        payload=await json_body(request,max_bytes=262144)
+        if set(payload)-{'config','revision','clear_password'} or not {'config','revision'}<=set(payload):
+            raise HTTPException(status_code=422,detail='Konfiguration und Revision erforderlich')
+        try:return store.save_mail_settings(payload['config'],payload['revision'],payload.get('clear_password',False))
+        except RuntimeError as error:raise HTTPException(status_code=409,detail=str(error)) from None
+        except ValueError as error:raise HTTPException(status_code=422,detail=str(error)) from None
+
+    @app.post('/api/mail/test')
+    async def test_mail(request: Request, username=Depends(admin)):
+        action(request,'manage-mail')
+        payload=await json_body(request)
+        if set(payload)!={'recipient'}:raise HTTPException(status_code=422,detail='Testempfänger erforderlich')
+        try:validate_address(payload['recipient'])
+        except ValueError as error:raise HTTPException(status_code=422,detail=str(error)) from None
+        with store.lock:settings=store._mail_settings()['config']
+        if not settings['host'] or not settings['from_email']:raise HTTPException(status_code=422,detail='Zuerst SMTP-Konfiguration speichern')
+        from email.utils import make_msgid
+        try:await asyncio.to_thread(send_smtp,settings,{'recipient':payload['recipient'],'subject':'Testmail · KNX Alarmserver','body':'Der Mailversand wurde erfolgreich vom Alarmserver ausgelöst.','message_id':make_msgid(domain='knx-alarmserver.local')})
+        except Exception as error:raise HTTPException(status_code=502,detail=mail_error(error)) from None
+        return {'ok':True,'message':'Testmail vom SMTP-Server angenommen.'}
+
+    @app.post('/api/mail/retry')
+    def retry_mail(request: Request, username=Depends(admin)):
+        action(request,'manage-mail')
+        return {'retried':store.retry_failed_mail()}
+
     @app.get('/api/users')
     def users(username=Depends(admin)):
         return store.users()
@@ -198,10 +235,10 @@ def create_app(config, store, update_manager=None, version_checker=None):
     async def create_user(request: Request, username=Depends(admin)):
         action(request, 'manage-users')
         payload = await json_body(request)
-        if set(payload) != {'username', 'password', 'role', 'first_name', 'last_name'}:
+        if not {'username', 'password', 'role', 'first_name', 'last_name'} <= set(payload) or set(payload)-{'username', 'password', 'role', 'first_name', 'last_name','mail_enabled'}:
             raise HTTPException(status_code=422, detail='E-Mail-Adresse, Vorname, Nachname, Passwort und Rolle erforderlich')
         try:
-            await asyncio.to_thread(store.create_user, payload['username'], payload['password'], payload['role'], payload['first_name'], payload['last_name'])
+            await asyncio.to_thread(store.create_user, payload['username'], payload['password'], payload['role'], payload['first_name'], payload['last_name'], payload.get('mail_enabled',False))
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from None
         return {'ok': True}
@@ -210,10 +247,12 @@ def create_app(config, store, update_manager=None, version_checker=None):
     async def update_user(target: str, request: Request, username=Depends(admin)):
         action(request, 'manage-users')
         payload = await json_body(request)
-        if 'role' not in payload or set(payload) - {'role', 'password', 'first_name', 'last_name'}:
+        if 'role' not in payload or set(payload) - {'role', 'password', 'first_name', 'last_name','mail_enabled'}:
             raise HTTPException(status_code=422, detail='Rolle und optional Passwort erforderlich')
+        if 'mail_enabled' in payload and type(payload['mail_enabled']) is not bool:
+            raise HTTPException(status_code=422,detail='Mail-Aktivierung muss wahr oder falsch sein')
         try:
-            await asyncio.to_thread(store.update_user, target, payload['role'], payload.get('password'), payload.get('first_name'), payload.get('last_name'))
+            await asyncio.to_thread(store.update_user, target, payload['role'], payload.get('password'), payload.get('first_name'), payload.get('last_name'),payload.get('mail_enabled'))
         except KeyError:
             raise HTTPException(status_code=404, detail='Benutzer nicht gefunden') from None
         except ValueError as error:
@@ -544,6 +583,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
     @app.get('/knx')
     @app.get('/ets')
     @app.get('/users')
+    @app.get('/mail')
     def admin_page(username=Depends(admin)):
         return FileResponse(STATIC / 'index.html')
 
