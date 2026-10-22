@@ -1,6 +1,12 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.15.3, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.15.4, Inbetriebnahmeversion.
+
+## Sortierbare Meldeliste
+
+- Zahlen-/Prioritätssortierung, drei chronologische Zeitspalten, fehlende Werte in beiden Richtungen am Ende, natürliche deutsche Namenssortierung, Zustand/Aktion und unbekannte Vorgänge geprüft.
+- Klickwechsel erhält Status-/Datumsfilter. Ausgewählte Reihenfolge bleibt nach neuer Dashboard-Antwort erhalten, ohne Quelldaten beim Sortieren zu verändern. JavaScript-Regressionssuite erfolgreich.
+- Native Überschriftenbuttons mit aria-sort und sichtbarem Richtungspfeil; Fokus bei Neuaufbau der Überschrift erhalten. Sortierung wirkt auf die geladenen Zeilen; historisches 500er-Limit unverändert.
 
 ## Kompakter Matrix-Einzeltest
 

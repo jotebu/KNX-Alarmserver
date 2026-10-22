@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.4 – 22.10.2026
+
+- Alle Spalten der Meldeliste per Überschrift auf-/absteigend sortieren: Priorität, Vorgangsnummer, Meldung/Bereich, Zustand, Gekommen, Quittiert, Gegangen und verfügbare Aktion. Aktuelle Richtung mit Pfeil und zugänglichem Sortierstatus kennzeichnen.
+- Zahlen numerisch und Zeitstempel chronologisch vergleichen; fehlende Werte unabhängig von der Richtung am Ende anzeigen. Namenssortierung berücksichtigt Bereich/GA/DPT, Quittierungszeit bei Gleichstand den Namen.
+- Sortierung während automatischer Aktualisierung sowie Status-/Datumsfilterung erhalten; ursprüngliche Grundsortierung Priorität/Gekommen bis zur ersten Auswahl verwenden. Tastaturbedienung und Fokus auf der gewählten Überschrift erhalten.
+
 ## 0.15.3 – 22.10.2026
 
 - Spaltenüberschrift „#“ in der Meldeliste mittig ausrichten.

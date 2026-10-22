@@ -80,3 +80,5 @@ body.scroll-list-page{height:100dvh;overflow:hidden}
 .dashboard-page .heading h1{margin-bottom:0}
 
 .alarm-list-table th:nth-child(2){text-align:center}
+
+#data-panel .alarm-list-table th button{display:inline-flex;align-items:center;justify-content:flex-start;gap:4px;width:100%;border:0;border-radius:2px;background:none;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;text-align:inherit;padding:0;white-space:nowrap}#data-panel .alarm-list-table th:nth-child(2) button,#data-panel .alarm-list-table th:nth-child(8) button{justify-content:center}#data-panel .alarm-list-table th button::after{content:"↕";opacity:.5;font-size:11px}#data-panel .alarm-list-table th button[data-sort-direction=ascending]::after{content:"↑";opacity:1;color:var(--accent)}#data-panel .alarm-list-table th button[data-sort-direction=descending]::after{content:"↓";opacity:1;color:var(--accent)}#data-panel .alarm-list-table th button:hover{color:var(--accent)}

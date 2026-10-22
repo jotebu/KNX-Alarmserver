@@ -6,6 +6,38 @@ const managementPages=['/knx','/ets','/users','/priorities','/mail'];
 let pageInitialized=false, newerVersionKnown=false, checkingVersionStatus=false;
 let access = {role:null,configure:false,acknowledge:false};
 let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[],telegrams:[]}, busy = false;
+let alarmSort=null;
+const alarmSortKeys=['priority','number','name','status','came','acknowledged','went','action'];
+const alarmCollator=new Intl.Collator('de',{numeric:true,sensitivity:'base'});
+function alarmSortValue(row,key){
+  const stamp=value=>value&&Number.isFinite(Date.parse(value))?Date.parse(value):null;
+  switch(key){
+    case 'priority':return row.priority!=null&&Number.isFinite(Number(row.priority))?Number(row.priority):null;
+    case 'number':return row.occurrence_id??null;
+    case 'name':return [row.name,row.area,row.group_address,row.dpt].filter(Boolean).join(' · ');
+    case 'status':return row.end_reason?(row.pending?'Beendet · offen':'Beendet · quittiert'):labels[row.status]||row.status;
+    case 'came':return stamp(row.came_at===undefined?row.changed_at:row.came_at);
+    case 'acknowledged':return stamp(row.acknowledged_at);
+    case 'went':return stamp(row.went_at);
+    case 'action':return row.pending&&access.acknowledge?1:0;
+  }
+}
+function compareAlarmRows(a,b){
+  function compare(left,right,direction=1){
+    if(left==null||right==null)return left==null?(right==null?0:1):-1;
+    return direction*(typeof left==='number'&&typeof right==='number'?left-right:alarmCollator.compare(String(left),String(right)));
+  }
+  const fallback=()=>compare(alarmSortValue(a,'priority'),alarmSortValue(b,'priority'))||compare(alarmSortValue(a,'came'),alarmSortValue(b,'came'),-1)||compare(a.occurrence_id??a.id,b.occurrence_id??b.id);
+  if(!alarmSort)return fallback();
+  return compare(alarmSortValue(a,alarmSort.key),alarmSortValue(b,alarmSort.key),alarmSort.direction)||
+    (alarmSort.key==='acknowledged'?compare(a.acknowledged_name||'',b.acknowledged_name||'',alarmSort.direction):0)||fallback();
+}
+function sortAlarmColumn(key){
+  if(!alarmSortKeys.includes(key))return;
+  alarmSort=alarmSort?.key===key?{key,direction:-alarmSort.direction}:{key,direction:['came','acknowledged','went','action'].includes(key)?-1:1};
+  render();
+  $('table-head').querySelector?.('[data-sort-key="'+key+'"]')?.focus();
+}
 let listing=null, listGeneration=0, alarmStatusFilter='';
 let listFilters={search:'',from:'',until:''};
 function listQuery(selected){
@@ -60,10 +92,24 @@ function render(){
   $('view-title').textContent=titles[view];
   const heads={alarms:['Priorität','#','Meldung / Bereich','Zustand','Gekommen','Quittiert','Gegangen','Aktion'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
   $('message-table').className=view==='alarms'?'alarm-list-table':'';
-  const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
+  const focusedSort=document.activeElement?.getAttribute?.('data-sort-key');
+  const head=document.createElement('tr');
+  heads[view].forEach((label,index)=>{
+    const th=document.createElement('th');
+    if(view==='alarms'){
+      const key=alarmSortKeys[index],direction=alarmSort?.key===key?alarmSort.direction:0;
+      th.setAttribute('aria-sort',direction===1?'ascending':direction===-1?'descending':'none');
+      const button=text('button',label);button.type='button';button.setAttribute('data-sort-key',key);
+      button.setAttribute('data-sort-direction',direction===1?'ascending':direction===-1?'descending':'none');
+      button.setAttribute('aria-label',label+' sortieren');button.title=label+' sortieren; erneut klicken für umgekehrte Reihenfolge';
+      button.onclick=()=>sortAlarmColumn(key);th.append(button);
+    }else th.textContent=label;
+    head.append(th);
+  });$('table-head').replaceChildren(head);
+  if(focusedSort)$('table-head').querySelector?.('[data-sort-key="'+focusedSort+'"]')?.focus();
   const query=$('search').value.toLocaleLowerCase('de');
-  const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||(alarmStatusFilter?r.status===alarmStatusFilter:['active','active_ack','clear_pending'].includes(r.status)));
-  if(view==='alarms'&&!listing)rows.sort((a,b)=>Number(a.priority)-Number(b.priority)||(Date.parse(b.changed_at)||0)-(Date.parse(a.changed_at)||0)||String(a.id).localeCompare(String(b.id)));
+  let rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||(alarmStatusFilter?r.status===alarmStatusFilter:['active','active_ack','clear_pending'].includes(r.status)));
+  if(view==='alarms')rows=[...rows].sort(compareAlarmRows);
   const body=document.createDocumentFragment();
   for(const row of rows){
     const tr=document.createElement('tr');

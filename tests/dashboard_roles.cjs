@@ -68,3 +68,11 @@ test('telegram counters show unfiltered rolling totals and update to zero',async
  assert.equal(nodes.get('telegram-hour').textContent,'0');
  const dashboard=await setup('admin');assert.equal(dashboard.nodes.get('telegram-rates').hidden,true);
 });
+
+test('selected table order survives refreshed dashboard snapshots',async()=>{
+ const {nodes,context}=await setup('admin');
+ await vm.runInContext("snapshot.alarms=[{...snapshot.alarms[0],id:'a',name:'Pumpe 10',occurrence_id:10},{...snapshot.alarms[0],id:'b',name:'Pumpe 2',occurrence_id:2}];alarmSort={key:'number',direction:1};refresh()",context);
+ const names=()=>nodes.get('table-body').children[0].children.map(tr=>tr.children[2].textContent);
+ assert.deepEqual(names(),['Pumpe 2','Pumpe 10']);
+ await vm.runInContext('snapshot.alarms.reverse();refresh()',context);assert.deepEqual(names(),['Pumpe 2','Pumpe 10']);
+});

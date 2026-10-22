@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.15.3 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.15.4 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -274,7 +274,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.15.3
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.15.4
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -284,8 +284,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.15.3
-git push origin v0.15.3
+git tag v0.15.4
+git push origin v0.15.4
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -303,6 +303,8 @@ Die Hauptseite zeigt Zähler, Meldungen und Historie. Die Kopfzeile bleibt auf a
 Die Seite **Telegramme** zeigt außerdem **Letzte Minute** und **Letzte Stunde**: die empfangenen Gruppentelegramme aller Verbindungen der letzten 60 Sekunden bzw. 60 Minuten, mit sekundengenauen Zeitfenstern. Auch Leseanfragen, unbekannte DPT und Decodierfehler werden gezählt; ausgehende Telegramme nicht. Die Zähler sind unabhängig von Suche und dem Tabellenlimit von 250 Einträgen und werden mit jeder regulären Datenabfrage aktualisiert. Nach Dienstneustart beginnen sie bei null; sie sind keine Hochrechnung.
 
 Menüs lassen sich per Maus, Tastatur und Touch bedienen, außerhalb anklicken oder mit Escape schließen. Ein Link führt von jeder Unterseite zum Dashboard zurück.
+
+Die Spalten der Meldeliste lassen sich durch Klick auf die jeweilige Überschrift sortieren; erneutes Klicken kehrt die Reihenfolge um. Ein Pfeil zeigt die Richtung. Priorität und Vorgangsnummer werden numerisch, die drei Zeitspalten chronologisch sortiert; fehlende Angaben stehen in beiden Richtungen am Ende. Die Spalte **Aktion** ordnet nach verfügbarer Quittieraktion. Die Auswahl gilt für die aktuell angezeigten Zeilen und bleibt bei automatischer Aktualisierung und Filterwechsel erhalten. Der Zeitraum und Statusfilter werden weiterhin kombiniert; bei historischen Ansichten gilt das bestehende Limit der neuesten 500 passenden Vorgänge. Nach Neuladen gilt zunächst wieder Priorität, danach Gekommen.
 
 ## KNX-Testmodus zur Ersteinrichtung
 
