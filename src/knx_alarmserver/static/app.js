@@ -52,7 +52,8 @@ function render(){
   $('filter-toggle').setAttribute('aria-expanded',String(filtersOpen));
   $('list-summary').textContent=listing?`Vorgänge: ${listing.total}`:'';
 
-  const titles={alarms:'Meldungen',history:'Historie',telegrams:'Telegramme'};
+  const filterTitles={'':'Aktiv',active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen',closed:'Abgeschlossen',all:'Alle',unknown:'Unbekannt'};
+  const titles={alarms:`${filterTitles[alarmStatusFilter]||'Aktiv'} · Meldungen`,history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
   const heads={alarms:['Priorität','Meldung / Bereich','Zustand','Gekommen','Quittiert','Gegangen','Aktion'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
   $('message-table').className=view==='alarms'?'alarm-list-table':'';
@@ -112,6 +113,7 @@ async function refresh(){
     $('active').textContent=snapshot.counts?snapshot.counts.active:data.alarms.filter(r=>r.status==='active').length;
     $('acked').textContent=snapshot.counts?snapshot.counts.acked:data.alarms.filter(r=>r.status==='active_ack').length;
     $('pending').textContent=snapshot.counts?snapshot.counts.pending:data.alarms.filter(r=>r.status==='clear_pending').length;
+    $('closed').textContent=snapshot.counts?.closed??data.alarms.filter(r=>r.status==='closed').length;
     $('unknown').textContent=snapshot.counts?snapshot.counts.unknown:data.alarms.filter(r=>r.status==='unknown').length;
     $('connection-status').textContent=!status.knx.enabled?'KNX deaktiviert':status.knx.ready?'Verbindungen bereit':'Verbindung gestört / wird aufgebaut';
     $('connection-detail').textContent=status.knx.connections.map(c=>`${c.name}: ${c.state} · letzter Empfang ${date(c.last_received)}`).join(' | ')||'KNX-Empfang in der Konfiguration noch nicht aktiviert.';

@@ -42,6 +42,7 @@ class OccurrenceTests(unittest.TestCase):
         self.assertEqual(final['acknowledged_by'], 'andy')
         self.assertEqual(final['went_at'], '2026-10-21T10:10:00+00:00')
         self.assertEqual(final['status'], 'closed')
+        self.assertEqual(self.store.occurrence_counts()['closed'], 1)
         self.assertEqual(len([e for e in self.store.history() if e['occurrence_id'] == identifier]), 3)
 
     def test_repeat_after_clear_creates_new_cycle_and_ack_does_not_cross_cycles(self):
@@ -51,8 +52,9 @@ class OccurrenceTests(unittest.TestCase):
         self.ingest(1, '2026-10-21T11:00:00+00:00')
         second = self.store.occurrence_list('active')['rows'][0]['occurrence_id']
         self.assertNotEqual(first, second)
-        self.assertEqual(self.store.occurrence_counts(), {'active': 1, 'acked': 0, 'pending': 1, 'unknown': 0})
+        self.assertEqual(self.store.occurrence_counts(), {'active': 1, 'acked': 0, 'pending': 1, 'closed': 0, 'unknown': 0})
         self.ack(first, 'andy', '2026-10-21T11:01:00+00:00')
+        self.assertEqual(self.store.occurrence_counts()['closed'], 1)
         self.assertEqual(self.store.snapshot()[0]['status'], 'active')
         self.assertIsNone(self.store.snapshot()[0]['acknowledged_by'])
         self.assertEqual(self.store.occurrence_list('active')['rows'][0]['occurrence_id'], second)
@@ -143,7 +145,7 @@ class MigrationTests(unittest.TestCase):
                 self.assertEqual(store.session_user(self.legacy_token),{'username':'legacy-admin','role':'admin'})
                 self.assertEqual(store.matrix()['rows'][0]['id'],ALARM.id)
                 self.assertEqual(len(rows), 2)
-                self.assertEqual(store.occurrence_counts(), {'active':0,'acked':1,'pending':1,'unknown':0})
+                self.assertEqual(store.occurrence_counts(), {'active':0,'acked':1,'pending':1,'closed':0,'unknown':0})
                 self.assertEqual(store.snapshot()[0]['changed_at'], '2026-10-21T11:00:00+00:00')
                 self.assertEqual(store.snapshot()[0]['last_seen'], '2026-10-21T12:00:00+00:00')
                 self.assertEqual(store.snapshot()[0]['acknowledged_by'], 'andy')

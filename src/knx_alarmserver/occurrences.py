@@ -199,6 +199,7 @@ class OccurrenceStore:
             counts = self.db.execute(f'''SELECT
                 COALESCE(sum(({active}) AND acknowledged=0),0) AS active,
                 COALESCE(sum(({active}) AND acknowledged=1),0) AS acked,
-                COALESCE(sum(NOT ({active}) AND acknowledged=0),0) AS pending
+                COALESCE(sum(NOT ({active}) AND acknowledged=0),0) AS pending,
+                COALESCE(sum(NOT ({active}) AND acknowledged=1),0) AS closed
                 FROM occurrences''').fetchone()
             return {**dict(counts), 'unknown': sum(row['status'] == 'unknown' for row in self.snapshot())}

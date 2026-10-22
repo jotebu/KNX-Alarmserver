@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.13.2 – 22.10.2026
+
+- Zusätzlichen Statuszähler „Abgeschlossen“ zwischen „Gegangen · offen“ und „Unbekannt“ einfügen. Klick filtert abgeschlossene Vorgänge; erneuter Klick setzt den Filter zurück.
+- Gewählten Statusfilter links vor „Meldungen“ mit Punkt als Trennzeichen anzeigen; Standardansicht „Aktiv · Meldungen“.
+- Abgeschlossen und Unbekannt teilen sich auf breiten Bildschirmen den bisherigen Platz des Unbekannt-Zählers. Anzahl abgeschlossener Vorgänge unabhängig von Such-/Datumsfiltern und der 500er-Anzeigegrenze berechnen.
+
 ## 0.13.1 – 22.10.2026
 
 - Zeitspalten Gekommen, Quittiert und Gegangen kompakter und linksbündig ausrichten; vollständige Zeitstempel ohne Zeilenumbruch, Aktion mittig.
