@@ -596,6 +596,10 @@ def create_app(config, store, update_manager=None, version_checker=None):
     def index(username=Depends(user)):
         return FileResponse(STATIC / "index.html")
 
+    @app.get('/static/theme.js')
+    async def theme_script():
+        return FileResponse(STATIC / 'theme.js')
+
     @app.get('/static/login.js')
     async def login_script():
         return FileResponse(STATIC / 'login.js')

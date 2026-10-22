@@ -1,6 +1,13 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.14.1, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.14.2, Inbetriebnahmeversion.
+
+## Dark und Light Mode
+
+- Alle bisherigen Dark-Farben nach Rückauflösung der CSS-Variablen exakt mit dem veröffentlichten Stylesheet verglichen; beide Paletten vollständig. Zehn zentrale Text-/Hintergrundkombinationen des Light Mode mit mindestens 4,5:1 Kontrast geprüft.
+- Fünf neue JavaScript-Prüfungen: Dark-Voreinstellung vor DOM-Aufbau, Speichern/Neuladen, Automatisch mit beiden Systemwechseln, gesperrter Speicher/fehlende Systemerkennung/ungültige Werte sowie Tab-Synchronisierung und Anmeldung ohne Auswahlfeld. Insgesamt 31 Dashboard-JavaScript-Tests erfolgreich.
+- Sieben Webtests einschließlich öffentlichem Theme-Script und Laden vor dem Stylesheet erfolgreich. Bestehende DOM-Prüfungen für Mail, Profile und Kalender sowie Theme-Auswahl mit Admin/User/Viewer erfolgreich.
+- Pixelgenaue Sichtprüfung in einem echten Browser und Abnahme auf dem Raspberry stehen aus.
 
 ## SMTP-Anbieterhilfe
 

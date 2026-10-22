@@ -34,6 +34,10 @@ class WebTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Störungen", response.text)
         self.assertIn("/static/date-range.js", response.text)
+        self.assertLess(response.text.index("/static/theme.js"),response.text.index("/static/style.css"))
+        self.assertEqual(self.client.get("/static/theme.js").status_code,200)
+        login=self.client.get("/login").text
+        self.assertLess(login.index("/static/theme.js"),login.index("/static/style.css"))
         calendar = self.client.get("/static/date-range.js", auth=self.auth)
         self.assertEqual(calendar.status_code, 200)
         self.assertIn("window.AlarmDateRange", calendar.text)

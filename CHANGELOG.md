@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.2 – 22.10.2026
+
+- Bisheriges Farbdesign unverändert als Dark Mode erhalten und vollständigen Light Mode für Dashboard, Verwaltungsseiten, Formulare, Tabellen, Kalender, Dialoge und Anmeldung ergänzen.
+- Auswahl „Dark“, „Light“ oder „Automatisch“ im Benutzermenü für alle Rollen. Automatisch folgt der Systemeinstellung auch bei laufender Nutzung; Dark bleibt die Voreinstellung.
+- Auswahl im Browser speichern, zwischen Tabs synchronisieren und vor dem Laden der Styles anwenden. Bei gesperrtem Browserspeicher bleibt die aktuelle Seite umschaltbar.
+
 ## 0.14.1 – 22.10.2026
 
 - Info-Button „i“ bei der Mail-Konfiguration mit zehn recherchierten Anbieterbeispielen: Zoho, 1&1 Hosting/IONOS, GMX, Gmail, WEB.DE, Telekom, STRATO, Yahoo, iCloud und mailbox.org.

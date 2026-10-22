@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="de">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>KNX · Alarmserver</title><link rel="stylesheet" href="/static/style.css"><script src="/static/date-range.js" defer></script><script src="/static/app.js" defer></script></head>
+<title>KNX · Alarmserver</title><script src="/static/theme.js"></script><link rel="stylesheet" href="/static/style.css"><script src="/static/date-range.js" defer></script><script src="/static/app.js" defer></script></head>
 <body>
 <header>
 <a class="brand" href="/" aria-label="Zum Dashboard">KNX<span>ALARM SERVER</span></a>
@@ -9,7 +9,7 @@
 <a id="version-link" href="/versions" title="Versionshistorie öffnen">Version …</a>
 <details id="knx-status-menu" class="header-menu"><summary id="knx-status-icon" class="icon-button status-yellow" title="KNX-Status wird geprüft" aria-label="KNX-Status wird geprüft"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v5M5 17v-4h14v4M12 13v4"/><rect x="8" y="2" width="8" height="6" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="9" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/></svg></summary><div class="dropdown status-dropdown"><b>KNX-Verbindung</b><p id="connection-status">Wird geprüft …</p><p id="connection-detail"></p></div></details>
 <details id="settings-menu" class="header-menu" hidden><summary class="icon-button" title="Einstellungen" aria-label="Einstellungen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3 1-2h4l1 2 3 2 2-.1 2 3.5-1 2v3l1 2-2 3.5-2-.1-3 2-1 2h-4l-1-2-3-2-2 .1-2-3.5 1-2v-3l-1-2L4 4.9l2 .1z" transform="translate(0 0) scale(.95)"/><circle cx="11.4" cy="11.4" r="3"/></svg></summary><div class="dropdown"><p class="menu-caption">Verwaltung</p><a id="matrix-link" href="/matrix">Alarmmatrix</a><a id="telegrams-link" href="/telegrams">Telegramme</a><a id="knx-settings-tab" href="/knx">KNX Verbindungen</a><a id="ets-tab" href="/ets">ETS-Import</a><a id="priorities-link" href="/priorities">Prioritäten</a><a id="mail-link" href="/mail">Mail-Konfiguration</a><a id="users-tab" href="/users">Benutzerverwaltung</a></div></details>
-<details id="profile-menu" class="header-menu"><summary class="profile-summary" aria-label="Benutzermenü"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span id="identity">…</span></summary><div class="dropdown"><p id="profile-user" class="menu-user">…</p><a href="/account/password">Kennwort ändern</a><button id="logout" type="button">Abmelden</button></div></details>
+<details id="profile-menu" class="header-menu"><summary class="profile-summary" aria-label="Benutzermenü"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 22v-3a8 8 0 0 1 16 0v3"/></svg><span id="identity">…</span></summary><div class="dropdown"><p id="profile-user" class="menu-user">…</p><label class="theme-choice-label" for="theme-choice">Darstellung<select id="theme-choice"><option value="dark">Dark</option><option value="light">Light</option><option value="auto">Automatisch</option></select></label><a href="/account/password">Kennwort ändern</a><button id="logout" type="button">Abmelden</button></div></details>
 </div></header>
 <main>
 <a id="back-dashboard" href="/" hidden>← Dashboard</a>
