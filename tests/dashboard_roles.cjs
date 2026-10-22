@@ -76,3 +76,30 @@ test('selected table order survives refreshed dashboard snapshots',async()=>{
  assert.deepEqual(names(),['Pumpe 2','Pumpe 10']);
  await vm.runInContext('snapshot.alarms.reverse();refresh()',context);assert.deepEqual(names(),['Pumpe 2','Pumpe 10']);
 });
+
+test('alarm list reveals 100 rows at a time near the scroll end without changing totals',async()=>{
+ const {nodes,context}=await setup('user');
+ await vm.runInContext("snapshot.alarms=Array.from({length:250},(_,i)=>({...snapshot.alarms[0],id:String(i),occurrence_id:i+1,priority:1}));snapshot.list_info={total:250};snapshot.counts={active:250,acked:0,pending:0,closed:0,unknown:0};refresh()",context);
+ const count=()=>nodes.get('table-body').children[0].children.length;
+ const scroll=nodes.get('message-list-scroll');scroll.clientHeight=600;scroll.scrollHeight=6000;scroll.scrollTop=0;
+ assert.equal(count(),100);assert.equal(nodes.get('active').textContent,250);assert.equal(nodes.get('list-summary').textContent,'Vorgänge: 250');
+ scroll.onscroll();assert.equal(count(),100);
+ scroll.scrollTop=5200;scroll.onscroll();assert.equal(count(),200);assert.equal(scroll.scrollTop,5200);
+ scroll.scrollHeight=12000;scroll.scrollTop=11200;scroll.onscroll();assert.equal(count(),250);
+ scroll.onscroll();assert.equal(count(),250);
+ await vm.runInContext('refresh()',context);assert.equal(count(),250);
+ assert.equal(nodes.get('active').textContent,250);assert.equal(nodes.get('list-summary').textContent,'Vorgänge: 250');
+});
+test('sorting and filter changes restart display at 100 rows, sorting the full result first',async()=>{
+ const {nodes,context}=await setup('viewer');
+ await vm.runInContext("snapshot.alarms=Array.from({length:240},(_,i)=>({...snapshot.alarms[0],id:String(i),occurrence_id:i+1}));snapshot.list_info={total:240};refresh();alarmVisibleCount=200;render();alarmSort={key:'number',direction:-1};render()",context);
+ const rows=()=>nodes.get('table-body').children[0].children;
+ assert.equal(rows().length,100);assert.equal(rows()[0].children[1].children[0].textContent,240);
+ assert.equal(nodes.get('message-list-scroll').scrollTop,0);
+ await vm.runInContext("alarmVisibleCount=200;render();listFilters.from='2026-10-01';listGeneration++;render()",context);assert.equal(rows().length,100);
+});
+test('telegram rows are not limited by the alarm display window',async()=>{
+ const {nodes,context}=await setup('admin',undefined,'/telegrams');
+ await vm.runInContext("snapshot.telegrams=Array.from({length:250},()=>({connection:'KNX',source:'1.1.1',destination:'1/2/3',service:'GroupValueWrite'}));refresh()",context);
+ assert.equal(nodes.get('table-body').children[0].children.length,250);
+});

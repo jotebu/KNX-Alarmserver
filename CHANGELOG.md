@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.8 – 22.10.2026
+
+- Meldeliste beim Öffnen mit 100 Zeilen darstellen und nahe dem Scrollende jeweils 100 weitere einblenden. Summenzähler, Filterergebnisse und Sortierung bleiben unabhängig von der sichtbaren Teilmenge; Filter- und Sortierwechsel beginnen wieder am Listenanfang.
+
 ## 0.15.7 – 22.10.2026
 
 - Gesamte Vorgangsnummernspalte „#“ einschließlich Zahlen, Platzhalter und begrenztem Nummerntext mittig ausrichten.

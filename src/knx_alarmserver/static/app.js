@@ -47,6 +47,22 @@ function listQuery(selected){
   if(listFilters.until)query+='&until_time='+encodeURIComponent(listFilters.until);
   return query;
 }
+let alarmVisibleCount=100, alarmDisplayKey='';
+function visibleAlarmRows(rows){
+  const key=JSON.stringify([listGeneration,alarmStatusFilter,listFilters,alarmSort]);
+  if(key!==alarmDisplayKey){
+    alarmDisplayKey=key;alarmVisibleCount=100;
+    const scroll=$('message-list-scroll');if(scroll)scroll.scrollTop=0;
+  }
+  return rows.slice(0,alarmVisibleCount);
+}
+function loadMoreAlarmRows(){
+  const scroll=$('message-list-scroll');
+  if(settingsOpen||view!=='alarms'||!scroll||scroll.clientHeight<=0||
+     scroll.scrollHeight-scroll.scrollTop-scroll.clientHeight>240||alarmVisibleCount>=data.alarms.length)return;
+  const top=scroll.scrollTop;
+  alarmVisibleCount+=100;render();scroll.scrollTop=top;
+}
 const date = value => value ? new Date(value).toLocaleString('de-DE') : '—';
 const text = (tag, value, cls) => {const node=document.createElement(tag);node.textContent=value;if(cls)node.className=cls;return node;};
 function dateRangeBounds(from,until){
@@ -109,7 +125,7 @@ function render(){
   if(focusedSort)$('table-head').querySelector?.('[data-sort-key="'+focusedSort+'"]')?.focus();
   const query=$('search').value.toLocaleLowerCase('de');
   let rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||(alarmStatusFilter?r.status===alarmStatusFilter:['active','active_ack','clear_pending'].includes(r.status)));
-  if(view==='alarms')rows=[...rows].sort(compareAlarmRows);
+  if(view==='alarms'){rows=visibleAlarmRows([...rows].sort(compareAlarmRows));$('message-list-scroll').onscroll=loadMoreAlarmRows;}
   const body=document.createDocumentFragment();
   for(const row of rows){
     const tr=document.createElement('tr');

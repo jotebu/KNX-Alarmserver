@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.15.7, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.15.8, Inbetriebnahmeversion.
+
+## Schrittweise Darstellung der Meldeliste
+
+- Anzeige in 100er-Schritten, Nachladen nahe dem Scrollende, unveränderte Gesamtzähler und Sortierung vor der Teilmengenauswahl geprüft. Automatische Aktualisierung erhält die sichtbare Anzahl; Filter- und Sortierwechsel setzen die Anzeige zurück.
 
 ## Zentrierte Vorgangsnummern
 
