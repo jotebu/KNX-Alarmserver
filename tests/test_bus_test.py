@@ -118,6 +118,24 @@ class BusTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(self.store.claim_mail())
         self.store.end_bus_test();self.assertFalse(self.store.mail_settings()['config']['enabled'])
 
+    async def test_single_pulse_sends_alarm_then_normal_after_one_second(self):
+        from time import monotonic
+        from knx_alarmserver.dpt import decode
+        sent=[]
+        async def send(telegram):sent.append((monotonic(),decode(ALARM.dpt,telegram.payload.value)[0]))
+        self.sender.side_effect=send
+        self.start('pulse',['pump']);await self.test.task
+        self.assertEqual(len(sent),2)
+        self.assertTrue(evaluate(ALARM,sent[0][1],False))
+        self.assertFalse(evaluate(ALARM,sent[1][1],True))
+        self.assertGreaterEqual(sent[1][0]-sent[0][0],.95)
+        self.assertEqual(self.test.state['phase'],'normal')
+        self.assertEqual(self.test.state['group_address'],ALARM.group_address)
+        self.assertEqual(self.test.state['sent'],2)
+        self.assertEqual(self.store.snapshot()[0]['status'],'clear_pending')
+        self.assertFalse(self.store.mail_settings()['config']['enabled'])
+        with self.assertRaises(ValueError):self.start('pulse',['pump','other'])
+
     async def test_default_interval_is_one_second(self):
         from time import monotonic
         times=[]

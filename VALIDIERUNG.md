@@ -1,6 +1,12 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.15.0, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.15.1, Inbetriebnahmeversion.
+
+## Kompakter Matrix-Einzeltest
+
+- Serverseitiger Einzeltest mit genau einem Eintrag: Alarm- und Normaltelegramm mit mindestens einer Sekunde Abstand, regelkonforme Werte, lokale Rückkehr in den gegangenen Zustand sowie GA/Phasenanzeige geprüft. Mehrfachauswahl für diesen Modus zurückgewiesen.
+- DOM-Prüfung des kompakten Dialogs: nur „Alarm auslösen“ als Testaktion, große Vorschau ausgeblendet, eine Schnittstelle gesperrt/mehrere wählbar, GA/Werteanzeige und serverseitiger Pulse-Aufruf. Globale Testbedienung bleibt erhalten.
+- Kein echter Busversand ausgeführt; Abnahme auf dem Raspberry steht aus.
 
 ## KNX-Testmodus zur Ersteinrichtung
 

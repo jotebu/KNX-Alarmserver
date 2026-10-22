@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.1 – 22.10.2026
+
+- Matrix-Einzeltest als kompakten Dialog mit Schnittstelle und einem Button „Alarm auslösen“ anzeigen. Umfangreiche Vorschau und getrennte Aktionen bleiben dem globalen Testmodus vorbehalten.
+- Einzeltest serverseitig als festes Paar aus Alarmwert und Normalwert mit einer Sekunde Abstand ausführen; Ablauf läuft auch nach Schließen des Dialogs weiter. GA und jeweils zuletzt gesendeten Wert mit Phase anzeigen.
+- Schnittstellenwahl bei nur einer verfügbaren Verbindung sperren. Mailabschaltung, DPT-/Regelprüfung, Rechte und Abbruch bei Fehlern erhalten.
+
 ## 0.15.0 – 22.10.2026
 
 - KNX-Testmodus zur Ersteinrichtung unter Telegramme: Vorschau mit Alarm-/Normalwerten, Auswahl je Alarm-GA und aktiver Verbindung, getrennte Durchläufe für Alarm und Normal, Fortschritt und Stoppen. Ausschließlich Admins dürfen Bus-Schreibtelegramme auslösen.

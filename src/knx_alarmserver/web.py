@@ -386,6 +386,10 @@ def create_app(config, store, update_manager=None, version_checker=None):
         logging.getLogger(__name__).info('Prioritaeten durch %s aktualisiert', username)
         return result
 
+    @app.get('/api/knx/test/status')
+    def bus_test_status(username=Depends(admin)):
+        return dict(monitor.bus_test.state)
+
     @app.get('/api/knx/test/plan')
     async def bus_test_plan(alarm_id: str = '', username=Depends(admin)):
         try:

@@ -94,8 +94,10 @@ class BusTest:
             raise ValueError('Keine aktive KNX-Verbindung')
         if connection not in ready:
             raise ValueError('Aktive Verbindung auswählen')
-        if mode not in {'alarm', 'normal'} or not isinstance(ids, list) or not ids or len(ids) > 5000 or any(not isinstance(i, str) for i in ids) or len(set(ids)) != len(ids):
+        if mode not in {'alarm', 'normal', 'pulse'} or not isinstance(ids, list) or not ids or len(ids) > 5000 or any(not isinstance(i, str) for i in ids) or len(set(ids)) != len(ids):
             raise ValueError('Eindeutige Alarme und Testmodus erforderlich')
+        if mode == 'pulse' and len(ids) != 1:
+            raise ValueError('Einzeltest benötigt genau einen Eintrag')
         with self.store.lock:
             if expected != revision(self.store):
                 raise RuntimeError('Matrix wurde geändert; Testvorschau neu laden')
@@ -104,10 +106,14 @@ class BusTest:
                 raise ValueError('Alarm nicht mehr vorhanden')
             if len({a.group_address for a in alarms}) != len(alarms):
                 raise ValueError('Mehrere Einträge derselben Gruppenadresse: Auswahl einzeln klären')
-            writes = [(a, test_values(a)[mode]) for a in alarms]
+            if mode == 'pulse':
+                values = test_values(alarms[0])
+                writes = [(alarms[0], values['alarm']), (alarms[0], values['normal'])]
+            else:
+                writes = [(a, test_values(a)[mode]) for a in alarms]
         self.stop_event = asyncio.Event()
         self.state = {'state': 'preparing', 'sent': 0, 'total': len(writes), 'mode': mode,
-                      'connection': connection, 'user': username, 'started_at': now(),
+                      'connection': connection, 'user': username, 'started_at': now(), 'alarm_ids': ids,
                       'message': 'Mailversand wird deaktiviert; laufenden Mailversand abwarten.'}
         self.task = asyncio.create_task(self._run(writes, expected, connection))
         return dict(self.state)
@@ -137,6 +143,8 @@ class BusTest:
                 await asyncio.wait_for(client.telegram_queue.process_telegram_outgoing(
                     Telegram(destination_address=GroupAddress(alarm.group_address), payload=GroupValueWrite(payload))), timeout=10)
                 self.state['sent'] += 1
+                self.state.update(group_address=alarm.group_address, value=display,
+                                  phase=('alarm' if self.state['sent'] == 1 else 'normal') if self.state['mode'] == 'pulse' else self.state['mode'])
                 # Outgoing telegrams are otherwise deliberately not ingested. Record
                 # this commissioning value, not a fabricated incoming bus response.
                 with self.store.lock:
