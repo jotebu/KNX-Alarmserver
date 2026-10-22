@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.15.13 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.15.14 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -29,7 +29,7 @@ cd KNX-Alarmserver
 sudo bash scripts/install.sh
 ```
 
-Beim ersten Durchlauf wird das Passwort für den Webbenutzer `admin` interaktiv angelegt (mindestens 12 Zeichen). Es gibt kein Standardpasswort. Bestehende Konfigurationen werden erhalten. Die erste Installation verwendet den aktuellen Stand des ausgecheckten Repositorys. Für spätere freigegebene Versionen vor der Installation einen geprüften Tag auschecken.
+Beim ersten Durchlauf wird das Passwort für den Webbenutzer `admin` interaktiv angelegt (mindestens 10 Zeichen). Es gibt kein Standardpasswort. Bestehende Konfigurationen werden erhalten. Die erste Installation verwendet den aktuellen Stand des ausgecheckten Repositorys. Für spätere freigegebene Versionen vor der Installation einen geprüften Tag auschecken.
 
 Standardmäßig lauscht der Dienst direkt auf **0.0.0.0:80**. Die Weboberfläche ist unter `http://RASPBERRY-IP/` erreichbar, ohne Portangabe und ohne nginx. Port 80 muss frei sein. KNX ist zunächst deaktiviert und die Alarmmatrix leer. Der Dienst läuft weiterhin als Benutzer `knx-alarmserver`; systemd gewährt ausschließlich `CAP_NET_BIND_SERVICE` zum Binden niedriger Ports. nginx wird vom Installer weder installiert noch automatisch entfernt.
 
@@ -274,7 +274,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.15.13
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.15.14
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -284,8 +284,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.15.13
-git push origin v0.15.13
+git tag v0.15.14
+git push origin v0.15.14
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.

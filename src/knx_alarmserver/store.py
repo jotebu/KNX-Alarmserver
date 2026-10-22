@@ -305,8 +305,8 @@ class Store(MailStore, OccurrenceStore):
                 or username != username.strip() or ':' in username
                 or any(ord(c) < 32 or ord(c) == 127 for c in username)):
             raise ValueError("Ungueltiger Benutzername")
-        if password is not None and (not isinstance(password, str) or not 12 <= len(password) <= 1024):
-            raise ValueError("Passwort muss 12 bis 1024 Zeichen haben")
+        if password is not None and (not isinstance(password, str) or not 10 <= len(password) <= 1024):
+            raise ValueError("Passwort muss 10 bis 1024 Zeichen haben")
         if role is not None and (not isinstance(role, str) or role not in {'admin', 'user', 'viewer'}):
             raise ValueError("Unbekannte Rolle")
 

@@ -101,6 +101,10 @@ class StateTests(unittest.TestCase):
         self.assertFalse(self.store.authenticate("unknown", "test-password-123"))
         with self.assertRaises(ValueError):
             self.store.set_password("andy", "short")
+        with self.assertRaises(ValueError):
+            self.store.set_password("andy", "123456789")
+        self.store.set_password("andy", "1234567890")
+        self.assertTrue(self.store.authenticate("andy", "1234567890"))
 
     def test_definition_change_cannot_reinterpret_existing_state(self):
         changed = Alarm("pump", "Pumpe", "1/2/4", "1.005", "eq", 1, 0, "", "Technik", "critical")

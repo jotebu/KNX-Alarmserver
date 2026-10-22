@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 23.10.2026. Projektversion 0.15.13, Inbetriebnahmeversion.
+Stand: 23.10.2026. Projektversion 0.15.14, Inbetriebnahmeversion.
+
+## Kennwortlänge
+
+- Zehn Zeichen akzeptiert, neun Zeichen abgewiesen; maximale Länge weiterhin 1024 Zeichen. Benutzer-/Anmeldeprüfungen erfolgreich. Browserfelder und CLI-Hinweis auf zehn Zeichen angepasst.
 
 ## Logo an der Menübandkante
 

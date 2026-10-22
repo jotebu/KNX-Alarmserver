@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.14 – 23.10.2026
+
+- Kennwort-Mindestlänge für Alarmserver-Benutzer auf zehn Zeichen reduzieren; Benutzerverwaltung, persönliche Kennwortänderung, CLI und Eingabehinweise einheitlich anpassen.
+
 ## 0.15.13 – 23.10.2026
 
 - Logo tiefer am Menüband ausrichten: Trennlinie liegt zwischen KNX-Zeichen und Alarmserver-Schriftzug. Überstand und Inhaltsabstand für Desktop und schmale Ansichten anpassen.

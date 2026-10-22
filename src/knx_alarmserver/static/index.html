@@ -100,9 +100,9 @@
 <label>Nachname<input id="users-last-name" required maxlength="64" autocomplete="family-name"></label>
 <label><input id="users-mail-enabled" type="checkbox"> Mails bei neuen Störungen erhalten</label>
 <label>Rolle<select id="users-role"><option value="viewer">Viewer</option><option value="user">User</option><option value="admin">Admin</option></select></label>
-<label>Neues Passwort<input id="users-password" type="password" minlength="12" maxlength="1024" autocomplete="new-password"></label>
-<label>Passwort wiederholen<input id="users-confirm" type="password" minlength="12" maxlength="1024" autocomplete="new-password"></label></div>
-<p>Mindestens 12 Zeichen. Beim Bearbeiten beide Passwortfelder leer lassen, um das Kennwort beizubehalten. Änderungen melden den betroffenen Benutzer ab.</p>
+<label>Neues Passwort<input id="users-password" type="password" minlength="10" maxlength="1024" autocomplete="new-password"></label>
+<label>Passwort wiederholen<input id="users-confirm" type="password" minlength="10" maxlength="1024" autocomplete="new-password"></label></div>
+<p>Mindestens 10 Zeichen. Beim Bearbeiten beide Passwortfelder leer lassen, um das Kennwort beizubehalten. Änderungen melden den betroffenen Benutzer ab.</p>
 <div class="toolbar"><button id="users-save" type="submit">Speichern</button><button id="users-cancel" type="button">Abbrechen</button></div></form>
 </section>
 <section id="priorities-panel" class="panel narrow-panel" hidden aria-labelledby="priorities-title"><h2 id="priorities-title">Prioritäten</h2>
@@ -127,9 +127,9 @@
 <section id="password-panel" class="panel narrow-panel" hidden aria-labelledby="password-title"><h2 id="password-title">Kennwort ändern</h2>
 <form id="password-form"><div class="knx-fields single-column">
 <label>Bisheriges Kennwort<input id="password-current" type="password" autocomplete="current-password" required maxlength="1024"></label>
-<label>Neues Kennwort<input id="password-new" type="password" autocomplete="new-password" required minlength="12" maxlength="1024"></label>
-<label>Neues Kennwort wiederholen<input id="password-confirm" type="password" autocomplete="new-password" required minlength="12" maxlength="1024"></label></div>
-<p>Mindestens 12 Zeichen. Nach dem Speichern bitte mit dem neuen Kennwort anmelden.</p><p id="password-feedback" role="status" aria-live="polite"></p><button id="password-save" type="submit">Kennwort speichern</button></form></section>
+<label>Neues Kennwort<input id="password-new" type="password" autocomplete="new-password" required minlength="10" maxlength="1024"></label>
+<label>Neues Kennwort wiederholen<input id="password-confirm" type="password" autocomplete="new-password" required minlength="10" maxlength="1024"></label></div>
+<p>Mindestens 10 Zeichen. Nach dem Speichern bitte mit dem neuen Kennwort anmelden.</p><p id="password-feedback" role="status" aria-live="polite"></p><button id="password-save" type="submit">Kennwort speichern</button></form></section>
 <section id="versions-panel" class="panel" hidden aria-labelledby="versions-title"><h2 id="versions-title">Versionshistorie</h2><div class="toolbar version-status"><p id="versions-feedback" role="status" aria-live="polite"></p><button id="update-reload" type="button">Status prüfen</button><button id="update-refresh" type="button" hidden>Oberfläche neu laden</button></div><p id="update-feedback" role="status" aria-live="polite"></p><div id="update-panel" hidden><h3 id="update-title">Alarmserver aktualisieren</h3>
 <p>Installierte Version: <strong id="update-version">—</strong></p><p>Installiert den aktuellen Stand aus dem GitHub-Repository. Einstellungen und Daten bleiben erhalten. Während des Dienstneustarts sind Weboberfläche und KNX-Empfang kurz unterbrochen.</p>
 <div class="toolbar"><button id="update-start" type="button" disabled>Update installieren</button></div><p id="update-detail" class="muted"></p></div><div id="versions-history" class="version-history"></div></section>

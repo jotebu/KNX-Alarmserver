@@ -55,7 +55,7 @@ def main():
                 store._validate_profile(args.username, first_name, last_name)
             elif first_name is not None or last_name is not None:
                 store._validate_names(first_name, last_name)
-            password = getpass.getpass("Passwort (mindestens 12 Zeichen): ")
+            password = getpass.getpass("Passwort (mindestens 10 Zeichen): ")
             if password != getpass.getpass("Passwort wiederholen: "):
                 raise ValueError("Passwoerter stimmen nicht ueberein")
             with store.transaction():
