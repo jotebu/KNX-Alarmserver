@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.13.1 – 22.10.2026
+
+- Zeitspalten Gekommen, Quittiert und Gegangen kompakter und linksbündig ausrichten; vollständige Zeitstempel ohne Zeilenumbruch, Aktion mittig.
+- Prioritäten als Bezeichnung anzeigen, Nummer im Tooltip. Übernahmehinweise aus den Zeilen entfernen; gespeicherte Vorgangsdaten beibehalten.
+- Vorgangszähler auf „Vorgänge: Anzahl“ vereinfachen und rechts anordnen. Ansichtsauswahl in den einklappbaren Filterbereich verschieben.
+
 ## 0.13.0 – 22.10.2026
 
 - Gemeinsame Vorgangsliste statt getrennter aktueller Meldungen und Ereignishistorie: eine Zeile pro Auftreten mit Gekommen, Quittiert/Benutzer und Gegangen. Wiederholte Telegramme verändern diese Zeiten nicht.

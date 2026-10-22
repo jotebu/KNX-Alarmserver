@@ -50,8 +50,7 @@ function render(){
   const active=Boolean(listFilters.search||listFilters.from||listFilters.until||(view==='alarms'&&alarmStatusFilter));
   $('filter-toggle').textContent=(filtersOpen?'Filter ausblenden':'Filter anzeigen')+(active?' · aktiv':'');
   $('filter-toggle').setAttribute('aria-expanded',String(filtersOpen));
-  const selectedTitle={'':'Offen',active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen',unknown:'Unbekannt',closed:'Abgeschlossen',all:'Alle'}[alarmStatusFilter];
-  $('list-summary').textContent=listing?`${listing.shown} von ${listing.total} Vorgängen · ${selectedTitle}${listing.limit?' · höchstens '+listing.limit+' neueste Treffer':''}`:'';
+  $('list-summary').textContent=listing?`Vorgänge: ${listing.total}`:'';
 
   const titles={alarms:'Meldungen',history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
@@ -66,16 +65,16 @@ function render(){
     const tr=document.createElement('tr');
     const cell=(value)=>{const td=text('td',value);tr.append(td);return td;};
     if(view==='alarms'){
-      cell(row.priority===null?'—':String(row.priority)+(row.priority_name?' · '+row.priority_name:''));
+      const priority=cell(row.priority_name||(row.priority==null?'—':'Ohne Bezeichnung'));
+      if(row.priority!=null)priority.title='Priorität '+row.priority;
       const name=cell(row.name);name.append(text('small',row.area||''));
       name.append(text('small',[row.group_address,row.dpt?'DPT '+row.dpt:''].filter(Boolean).join(' · ')));
       if(row.occurrence_id)name.append(text('small','Vorgang #'+row.occurrence_id));
-      if(row.migration_note){const note=text('small',!row.came_at||row.end_reason==='historical_gap'?'Übernommen · Verlauf unvollständig':'Übernommener Vorgang');note.title=row.migration_note;name.append(note);}
       const state=cell('');state.append(text('span',row.end_reason?(row.pending?'Beendet · offen':'Beendet · quittiert'):labels[row.status],'badge '+row.status));
       if(row.end_reason)state.append(text('small',({configuration_changed:'Konfiguration geändert',configuration_removed:'Alarm aus Matrix entfernt',historical_gap:'Historischer Verlauf unvollständig'})[row.end_reason]||row.end_reason));
       if(row.decode_error)state.append(text('small','DPT-/Regelfehler: '+row.decode_error));
       cell(date(row.came_at===undefined?row.changed_at:row.came_at));
-      const ack=cell(row.acknowledged_at?date(row.acknowledged_at):row.acknowledged?'Quittiert · Zeitpunkt unbekannt':'—');
+      const ack=cell('');ack.append(text('span',row.acknowledged_at?date(row.acknowledged_at):row.acknowledged?'Quittiert · Zeitpunkt unbekannt':'—',row.acknowledged_at?'alarm-timestamp':''));
       if(row.acknowledged_by)ack.append(text('small',row.acknowledged_by));else if(row.acknowledged)ack.append(text('small','Benutzer unbekannt'));
       cell(date(row.went_at));
       const action=cell('');

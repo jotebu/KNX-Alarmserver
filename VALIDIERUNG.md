@@ -1,6 +1,11 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.13.0, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.13.1, Inbetriebnahmeversion.
+
+## Kompakte Vorgangsliste
+
+- Dashboard-Regressionstests und DOM-Prüfung für Admin, User und Viewer: Ansichtsauswahl innerhalb des zunächst verborgenen Filterbereichs, vereinfachter Zähler, Prioritätsbezeichnung mit Nummern-Tooltip und keine Übernahmehinweise in den Zeilen.
+- Drei Zeitspalten mit je 160 Pixeln, linksbündige Überschriften, Zeitstempel ohne Zeilenumbruch und mittige Aktionsspalte anhand der CSS-Regeln geprüft. Sichtprüfung auf dem Raspberry steht aus.
 
 ## Gemeinsame Alarmvorgänge
 

@@ -20,14 +20,14 @@
 #knx-read-feedback{color:#b7c7db;font-size:13px}
 
 /* Meldung und Bereich erhalten den freien Platz; kompakte Details rechts. */
-.alarm-list-table{min-width:1200px;table-layout:fixed}.alarm-list-table th,.alarm-list-table td{padding-left:8px;padding-right:8px;overflow-wrap:anywhere}.alarm-list-table th:first-child{width:85px}.alarm-list-table th:nth-child(2){width:auto}.alarm-list-table th:nth-child(3){width:155px}.alarm-list-table th:nth-child(4),.alarm-list-table th:nth-child(6){width:165px}.alarm-list-table th:nth-child(5){width:195px}.alarm-list-table th:nth-child(7){width:110px}.alarm-list-table th:nth-child(n+4),.alarm-list-table td:nth-child(n+4){text-align:right}.badge.closed{color:#89e3cb;background:#193c37}
+.alarm-list-table{min-width:1200px;table-layout:fixed}.alarm-list-table th,.alarm-list-table td{padding-left:8px;padding-right:8px;overflow-wrap:anywhere}.alarm-list-table th:first-child{width:85px}.alarm-list-table th:nth-child(2){width:auto}.alarm-list-table th:nth-child(3){width:155px}.alarm-list-table th:nth-child(4),.alarm-list-table th:nth-child(6){width:160px}.alarm-list-table th:nth-child(5){width:160px}.alarm-list-table th:nth-child(7){width:110px}.alarm-list-table th:nth-child(n+4),.alarm-list-table td:nth-child(n+4){text-align:left}.alarm-list-table td:nth-child(4),.alarm-list-table td:nth-child(6),.alarm-timestamp{white-space:nowrap}.alarm-list-table th:nth-child(7),.alarm-list-table td:nth-child(7){text-align:center}.badge.closed{color:#89e3cb;background:#193c37}
 
 [hidden]{display:none!important}
 body.scroll-list-page{height:100dvh;overflow:hidden}
 .scroll-list-page main{height:calc(100dvh - var(--header-height));width:100%;display:flex;flex-direction:column;min-height:0;padding-top:20px;padding-bottom:16px}
 .scroll-list-page .heading{flex-shrink:0;margin-bottom:12px}.scroll-list-page .heading h1{font-size:27px}.scroll-list-page .heading p{margin:4px 0}.scroll-list-page .cards{flex-shrink:0}.scroll-list-page .cards > *{padding:12px 18px}.scroll-list-page .cards strong{font-size:28px;margin-top:5px}.scroll-list-page nav{flex-shrink:0}
 .scroll-list-page #data-panel{display:flex;flex-direction:column;flex:1;min-height:0;margin-top:12px;padding:12px 18px}.scroll-list-page #data-panel>.toolbar{flex-shrink:0;gap:12px}.scroll-list-page #data-panel h2{margin:4px auto 4px 0}
-.scroll-list-page #list-filters{flex-shrink:0;max-height:30dvh;overflow:auto;padding:8px 0}.scroll-list-page #list-summary{font-size:11px}.scroll-list-page #data-panel>.table-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;margin-top:8px}
+.scroll-list-page #list-filters{flex-shrink:0;max-height:30dvh;overflow:auto;padding:8px 0}.scroll-list-page #list-summary{font-size:11px;margin-left:auto;white-space:nowrap}.scroll-list-page #data-panel>.table-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;margin-top:8px}
 .scroll-list-page #message-table{margin-top:0}.scroll-list-page #message-table th{position:sticky;top:0;z-index:1;background:#111e2e}.scroll-list-page #hint{margin:8px 0 0;flex-shrink:0}.scroll-list-page #empty{padding:10px}
 @media(max-height:600px){.scroll-list-page .heading{display:none}.scroll-list-page .cards > *{padding:6px 10px}.scroll-list-page .cards strong{font-size:22px}.scroll-list-page #hint{display:none}}
 
