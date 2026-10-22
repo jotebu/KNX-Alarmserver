@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 23.10.2026. Projektversion 0.15.12, Inbetriebnahmeversion.
+Stand: 23.10.2026. Projektversion 0.15.13, Inbetriebnahmeversion.
+
+## Logo an der Menübandkante
+
+- Vertikale Position anhand der SVG-Geometrie geprüft: Menübandkante liegt zwischen KNX-Unterkante und Schriftzug bei 200 px und 140 px Logobreite. Inhaltsabstand einschließlich scrollbarer Meldeliste angepasst; Menüelemente bleiben rechts ausgerichtet.
 
 ## Logo im Menüband
 
