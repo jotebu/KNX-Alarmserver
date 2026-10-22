@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import secrets
+import re
 import sqlite3
 import threading
 from contextlib import contextmanager, closing
@@ -74,6 +75,9 @@ class Store(OccurrenceStore):
             # Existing accounts had unrestricted access: preserve that as admin.
             if 'role' not in columns:
                 self.db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'admin'")
+            for field in ('first_name', 'last_name'):
+                if field not in columns:
+                    self.db.execute(f"ALTER TABLE users ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
             self.db.execute("""CREATE TABLE IF NOT EXISTS sessions (
                 token_hash TEXT PRIMARY KEY, username TEXT NOT NULL, expires REAL NOT NULL)""")
             for alarm in alarms:
@@ -291,7 +295,7 @@ class Store(OccurrenceStore):
 
     @staticmethod
     def _validate_account(username, password=None, role=None):
-        if (not isinstance(username, str) or not username or len(username) > 64
+        if (not isinstance(username, str) or not username or len(username) > 254
                 or username != username.strip() or ':' in username
                 or any(ord(c) < 32 or ord(c) == 127 for c in username)):
             raise ValueError("Ungueltiger Benutzername")
@@ -300,6 +304,37 @@ class Store(OccurrenceStore):
         if role is not None and (not isinstance(role, str) or role not in {'admin', 'user', 'viewer'}):
             raise ValueError("Unbekannte Rolle")
 
+    @staticmethod
+    def _validate_profile(username, first_name, last_name):
+        # Match ordinary mailbox addresses also accepted by HTML email inputs.
+        if (not isinstance(username, str) or len(username) > 254 or
+                not re.fullmatch(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+", username) or
+                username.startswith('.') or '..' in username.split('@')[0] or username.split('@')[0].endswith('.') or len(username.split('@')[0]) > 64 or any(len(label) > 63 for label in username.split('@')[-1].split('.'))):
+            raise ValueError('Benutzername muss eine gültige E-Mail-Adresse sein')
+        Store._validate_names(first_name, last_name)
+
+    @staticmethod
+    def _validate_names(first_name, last_name):
+        for value in (first_name, last_name):
+            if (not isinstance(value, str) or not value.strip() or len(value.strip()) > 64
+                    or any(ord(c) < 32 or ord(c) == 127 for c in value)):
+                raise ValueError('Vor- und Nachname sind erforderlich (je höchstens 64 Zeichen)')
+
+    def display_name(self, username):
+        with self.lock:
+            row = self.db.execute('SELECT first_name,last_name FROM users WHERE username=?', (username,)).fetchone()
+            return ' '.join((row['first_name'], row['last_name'])).strip() if row and row['first_name'] and row['last_name'] else None
+
+    def set_profile(self, username, first_name, last_name):
+        self._validate_names(first_name, last_name)
+        first_name, last_name = first_name.strip(), last_name.strip()
+        with self.transaction():
+            if not self.account(username):
+                raise KeyError(username)
+            self.db.execute('UPDATE users SET first_name=?,last_name=? WHERE username=?', (first_name, last_name, username))
+            # Fill missing historical names once; existing acknowledgement snapshots stay stable.
+            self.db.execute("UPDATE occurrences SET acknowledged_name=? WHERE acknowledged_by=? AND (acknowledged_name IS NULL OR acknowledged_name='')", (first_name+' '+last_name, username))
+
     def account(self, username):
         with self.lock:
             row = self.db.execute('SELECT username,role FROM users WHERE username=?', (username,)).fetchone()
@@ -307,7 +342,7 @@ class Store(OccurrenceStore):
 
     def users(self):
         with self.lock:
-            return [dict(r) for r in self.db.execute('SELECT username,role FROM users ORDER BY username')]
+            return [dict(r) for r in self.db.execute('SELECT username,role,first_name,last_name FROM users ORDER BY username')]
 
     def _guard_last_admin(self, username, role):
         row = self.db.execute('SELECT role FROM users WHERE username=?', (username,)).fetchone()
@@ -332,18 +367,22 @@ class Store(OccurrenceStore):
                 password_hash=excluded.password_hash,role=excluded.role""", (username,salt,hashed,selected))
             self.db.execute('DELETE FROM sessions WHERE username=?', (username,))
 
-    def create_user(self, username, password, role):
+    def create_user(self, username, password, role, first_name=None, last_name=None):
         self._validate_account(username, password, role)
+        self._validate_profile(username, first_name, last_name)
         if role is None:
             raise ValueError('Rolle erforderlich')
         with self.transaction():
             self.db.execute('UPDATE users SET role=role WHERE username=?', (username,))
-            if self.account(username):
+            if self.db.execute('SELECT 1 FROM users WHERE username=? COLLATE NOCASE', (username,)).fetchone():
                 raise ValueError('Benutzername bereits vergeben')
             self.set_password(username, password, role)
+            self.set_profile(username, first_name, last_name)
 
-    def update_user(self, username, role, password=None):
+    def update_user(self, username, role, password=None, first_name=None, last_name=None):
         self._validate_account(username, password, role)
+        if first_name is not None or last_name is not None:
+            self._validate_names(first_name, last_name)
         if role is None:
             raise ValueError('Rolle erforderlich')
         with self.transaction():
@@ -351,6 +390,8 @@ class Store(OccurrenceStore):
             if not self.account(username):
                 raise KeyError(username)
             self._guard_last_admin(username, role)
+            if first_name is not None:
+                self.set_profile(username, first_name, last_name)
             if password is not None:
                 self.set_password(username, password, role)
             else:

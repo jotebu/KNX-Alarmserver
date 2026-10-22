@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.13.4 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.13.5 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -176,7 +176,7 @@ Es ist in dieser Version ein Datenpunkt je Gruppenadresse vorgesehen. Für mehre
 
 Die Oberfläche führt aktuelle und abgeschlossene Alarmvorgänge in **einer Tabelle**. Jede Zeile gehört zu einem konkreten Auftreten und erhält eine automatische Vorgangsnummer. Die Alarmdefinition in der Matrix behält ihre eigene ID. Ein erneutes Kommen nach dem Gehen erzeugt einen neuen Vorgang, auch wenn der vorherige noch unquittiert ist.
 
-Spalten: **Priorität · Meldung/Bereich · Zustand · Gekommen · Quittiert · Gegangen · Aktion**. Die Quittierung enthält Datum/Uhrzeit und Benutzer. Wiederholte Telegramme oder Leseantworten mit gleicher Alarmbedingung verändern keinen dieser drei Zeitpunkte. Quittieren ist eine Kenntnisnahme und verändert nicht den KNX-Wert. Es ist vor oder nach dem Gehen möglich und gilt ausschließlich für die ausgewählte Vorgangsnummer. Ein älterer Vorgang lässt sich unabhängig vom neueren Auftreten derselben Störung quittieren.
+Spalten: **Priorität · # · Meldung/Bereich · Zustand · Gekommen · Quittiert · Gegangen · Aktion**. Die Quittierung enthält Datum/Uhrzeit und den vollständigen Namen. Bereich, GA und DPT stehen gemeinsam unter dem Meldungstext; die Vorgangsnummer steht in der schmalen Spalte **#**. Nummern mit mehr als vier Ziffern werden platzsparend gekürzt und im Tooltip vollständig angezeigt. Wiederholte Telegramme oder Leseantworten mit gleicher Alarmbedingung verändern keinen dieser drei Zeitpunkte. Quittieren ist eine Kenntnisnahme und verändert nicht den KNX-Wert. Es ist vor oder nach dem Gehen möglich und gilt ausschließlich für die ausgewählte Vorgangsnummer. Ein älterer Vorgang lässt sich unabhängig vom neueren Auftreten derselben Störung quittieren.
 
 Die fünf Statuszähler wählen direkt Aktiv/offen, Aktiv/quittiert, Gegangen/offen, Abgeschlossen oder Unbekannt; ein erneuter Klick kehrt zur Standardansicht zurück (aktiv ODER unquittiert). Rechts neben „Meldungen“ steht der ausgewählte Filter, im Standard „Aktiv“. Unbekannt zeigt separat konfigurierte Punkte ohne bekannten Zustand; diese sind noch keine Alarmvorgänge. Die Zähler beziehen sich auf alle gespeicherten Vorgänge, unabhängig vom Zeitraum. Dadurch können mehrere gegangene offene Vorgänge derselben Alarmdefinition gezählt werden.
 
@@ -211,11 +211,17 @@ Gespeicherte Zustände bleiben nach einem Neustart erhalten und werden nicht als
 ```bash
 systemctl status knx-alarmserver --no-pager
 journalctl -u knx-alarmserver -f
-sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver user-add andy
+sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver user-add admin@example.org --first-name Beispiel --last-name Admin
 sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver backup /var/lib/knx-alarmserver/backups/manuell.sqlite3
 ```
 
-Bei `user-add` wird ein vorhandenes Benutzerpasswort ersetzt. Kennwörter werden mit PBKDF2 und individuellem Salt gespeichert. Das Backup-Ziel darf noch nicht existieren. Die SQLite-Backup-API berücksichtigt WAL-Daten; eine einzelne aktive `.sqlite3`-Datei nicht einfach kopieren. Zusätzlich `/etc/knx-alarmserver` sichern. Im Betrieb erfolgt keine automatische NAS-Sicherung; ein vorhandenes Backupkonzept muss gesondert angebunden werden.
+Bei `user-add` wird ein vorhandenes Benutzerpasswort ersetzt; vorhandene Namen bleiben erhalten. Neue Konten benötigen eine E-Mail-Adresse und Vor-/Nachnamen, die bei fehlenden Optionen interaktiv abgefragt werden. Um ausschließlich Namen eines vorhandenen Kontos nachzutragen, ohne Passwort, Rolle oder Sitzungen zu ändern:
+
+```bash
+sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver user-profile admin@example.org Beispiel Admin
+```
+
+ Kennwörter werden mit PBKDF2 und individuellem Salt gespeichert. Das Backup-Ziel darf noch nicht existieren. Die SQLite-Backup-API berücksichtigt WAL-Daten; eine einzelne aktive `.sqlite3`-Datei nicht einfach kopieren. Zusätzlich `/etc/knx-alarmserver` sichern. Im Betrieb erfolgt keine automatische NAS-Sicherung; ein vorhandenes Backupkonzept muss gesondert angebunden werden.
 
 Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`retention_days`). Der Telegrammmonitor enthält nur die letzten 250 Telegramme im RAM. Der aktuelle Wert wird gespeichert, aber es gibt keine vollständige Messwert-Zeitreihe. Update-Sicherungen und alte Programmverzeichnisse werden nicht automatisch entfernt.
 
@@ -226,7 +232,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.13.4
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.13.5
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -236,8 +242,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.13.4
-git push origin v0.13.4
+git tag v0.13.5
+git push origin v0.13.5
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -281,7 +287,7 @@ Die Update-Funktion ist nur mit dem über den Installer eingerichteten systemd-D
 | User | Ja | Ja | Ja | Nein |
 | Viewer | Ja | Nein | Nein | Nein |
 
-Nach dem Update im Browser die Serveradresse öffnen und mit dem bisherigen Konto anmelden. Bestehende Konten erhalten bei der Migration die Rolle **Admin**, ihre Kennwörter bleiben gültig. Neue Konten legt ein Admin im Zahnradmenü unter **Benutzerverwaltung** an; die vorausgewählte Rolle ist Viewer. Dort können Admins auch Rollen ändern, Kennwörter setzen und Konten löschen. Der Benutzername bleibt beim Bearbeiten unverändert. Der letzte Admin kann nicht gelöscht oder herabgestuft werden.
+Nach dem Update im Browser die Serveradresse öffnen und mit dem bisherigen Konto anmelden. Bestehende Konten erhalten bei der Migration die Rolle **Admin**, ihre Kennwörter bleiben gültig. Neue Konten legt ein Admin im Zahnradmenü unter **Benutzerverwaltung** an; die vorausgewählte Rolle ist Viewer. Dort können Admins auch Rollen ändern, Kennwörter setzen und Konten löschen. Für neue Konten sind eine gültige E-Mail-Adresse als Benutzername sowie Vor- und Nachname erforderlich. Der Benutzername bleibt beim Bearbeiten unverändert; Namen können bearbeitet werden. Bestehende Logins werden bei Updates nicht umbenannt. Quittierungen speichern den vollständigen Namen zusätzlich zur internen Benutzerkennung; spätere Namensänderungen oder das Löschen des Kontos verändern diesen historischen Namen nicht. Bisherige Quittierungen ohne Namen werden beim erstmaligen Ergänzen des Profils zugeordnet. Der letzte Admin kann nicht gelöscht oder herabgestuft werden.
 
 Admins und User sehen das Zahnradmenü; User erhalten darin ausschließlich die Alarmmatrix. Viewer sehen weder Verwaltung noch Quittierschaltflächen. Telegramme sind eine Admin-Verwaltungsseite. Der Server verweigert die entsprechenden API-Aufrufe unabhängig vom Dashboard mit HTTP 403. Quittierungen protokollieren weiterhin den angemeldeten Benutzer und Zeitpunkt. Bisherige Quittierungsnamen bleiben auch nach Löschen eines Kontos erhalten.
 
@@ -299,7 +305,7 @@ sudo systemctl daemon-reload
 Falls ein Admin-Kennwort verloren geht, lässt sich über PuTTY ein Admin-Konto anlegen oder wiederherstellen; das Kennwort wird verdeckt abgefragt:
 
 ```bash
-sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver user-add admin --role admin
+sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver user-add admin@example.org --role admin
 ```
 
 Ohne `--role` bleibt bei vorhandenen Konten die Rolle erhalten. Das erste neue CLI-Konto wird Admin, weitere CLI-Konten werden standardmäßig Viewer. Die Datenbank bleibt auch bei Rückkehr zu einer älteren Programmversion um die Rollen- und Sitzungstabellen erweitert; vor Updates erzeugt der Installer ein konsistentes SQLite-Backup.

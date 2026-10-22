@@ -68,8 +68,8 @@ except sqlite3.Error:
 PY
 )
 if [[ $has_users == 0 ]]; then
-  echo 'Ersten Webbenutzer admin anlegen:'
-  runuser -u knx-alarmserver -- "$stage/venv/bin/knx-alarmserver" -c "$settings/config.toml" user-add admin
+  read -r -p 'E-Mail-Adresse des ersten Admins: ' initial_admin_email
+  runuser -u knx-alarmserver -- "$stage/venv/bin/knx-alarmserver" -c "$settings/config.toml" user-add "$initial_admin_email" --role admin
 fi
 previous=$(readlink -f "$base/current" || true)
 had_unit=false

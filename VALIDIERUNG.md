@@ -1,6 +1,12 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.13.4, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.13.5, Inbetriebnahmeversion.
+
+## Benutzerprofile und kompakte Vorgangsnummer
+
+- Registrierung mit E-Mail/Vor-/Nachname, serverseitige Ablehnung ungültiger/fehlender Angaben und E-Mail-Duplikate, Admin-Rechte, Profiländerung mit Sitzungswiderruf und CLI-Nachtrag ohne Passwort-/Rollenänderung geprüft.
+- Migration alter Benutzertabellen und Quittierungen mit erhaltenen Konten, Sitzungen und Alarmzuständen geprüft. Quittierungsnamen überleben Namensänderung und Kontolöschung; fehlende historische Namen werden bei Profilergänzung nachgetragen.
+- UI-Prüfung für Admin/User/Viewer: acht Spalten mit schmaler Vorgangsnummer, gemeinsame Bereich/GA/DPT-Zeile und voller Quittierungsname. Kontenformular mit Pflichtfeldern und E-Mail-Eingabetyp geprüft. Raspberry-Datenbank nicht direkt erreichbar; vorhandene Profile müssen nach dem Update per Benutzerverwaltung oder user-profile ergänzt werden.
 
 ## Gemeinsame Datumsauswahl und kompakter Seitenkopf
 

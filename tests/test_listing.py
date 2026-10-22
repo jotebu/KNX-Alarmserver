@@ -41,7 +41,7 @@ class ListingTests(unittest.TestCase):
     def test_paged_dashboard_preserves_full_counters_and_validates_dates(self):
         from fastapi.testclient import TestClient
         from knx_alarmserver.web import create_app
-        store=Store(':memory:',[ALARM]);store.create_user('reader','test-password-123','viewer')
+        store=Store(':memory:',[ALARM]);store.set_password('reader','test-password-123','viewer')
         try:
             with TestClient(create_app({'knx':{'enabled':False}},store)) as client:
                 auth=('reader','test-password-123')
@@ -58,7 +58,7 @@ class ListingTests(unittest.TestCase):
         from fastapi.testclient import TestClient
         from knx_alarmserver.web import create_app
         alarms=[replace(ALARM,id=f'p{i}',name=f'Alarm {i}',group_address=f'{i//2048}/{i//256%8}/{i%256}') for i in range(601)]
-        store=Store(':memory:',alarms);store.create_user('reader','test-password-123','viewer')
+        store=Store(':memory:',alarms);store.set_password('reader','test-password-123','viewer')
         try:
             with store.transaction():
                 store.db.execute("UPDATE states SET active=1,pending=1,last_seen='2026-10-21T12:00:00+00:00'")
@@ -103,7 +103,7 @@ class ListingTests(unittest.TestCase):
         from fastapi.testclient import TestClient
         from knx_alarmserver.web import create_app
         alarms=[replace(ALARM,id=f's{i}',group_address=f'1/2/{i}') for i in range(5)]
-        store=Store(':memory:',alarms);store.create_user('reader','test-password-123','viewer')
+        store=Store(':memory:',alarms);store.set_password('reader','test-password-123','viewer')
         try:
             with store.transaction():
                 for i,(active,pending) in enumerate([(1,1),(1,0),(0,1),(0,0)]):
@@ -158,7 +158,7 @@ class ListingTests(unittest.TestCase):
         from unittest.mock import patch
         from knx_alarmserver.web import create_app
         store=Store(':memory:',[ALARM])
-        for role in ['admin','user']:store.create_user(role,'test-password-123',role)
+        for role in ['admin','user']:store.set_password(role,'test-password-123',role)
         app=create_app({'knx':{'enabled':False}},store)
         try:
             with TestClient(app) as client:

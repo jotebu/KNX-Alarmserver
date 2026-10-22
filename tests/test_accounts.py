@@ -92,22 +92,22 @@ class Accounts(unittest.TestCase):
 
     def test_admin_create_edit_delete_and_revocation(self):
         self.login('admin')
-        data={'username':'new','role':'viewer','password':PASSWORD}
+        data={'username':'new@example.org','first_name':'New','last_name':'Person','role':'viewer','password':PASSWORD}
         self.assertEqual(self.client.post('/api/users',json=data,headers=ACTION).status_code,200)
-        token=self.store.login('new',PASSWORD)
-        self.assertEqual(self.client.put('/api/users/new',json={'role':'user'},headers=ACTION).status_code,200)
+        token=self.store.login('new@example.org',PASSWORD)
+        self.assertEqual(self.client.put('/api/users/new@example.org',json={'role':'user'},headers=ACTION).status_code,200)
         self.assertIsNone(self.store.session_user(token))
-        self.assertTrue(self.store.authenticate('new',PASSWORD))
-        token=self.store.login('new',PASSWORD)
-        self.assertEqual(self.client.put('/api/users/new',json={'role':'user','password':'changed-password-123'},headers=ACTION).status_code,200)
+        self.assertTrue(self.store.authenticate('new@example.org',PASSWORD))
+        token=self.store.login('new@example.org',PASSWORD)
+        self.assertEqual(self.client.put('/api/users/new@example.org',json={'role':'user','password':'changed-password-123'},headers=ACTION).status_code,200)
         self.assertIsNone(self.store.session_user(token))
-        self.assertFalse(self.store.authenticate('new',PASSWORD))
-        self.assertTrue(self.store.authenticate('new','changed-password-123'))
-        token=self.store.login('new','changed-password-123')
-        self.assertEqual(self.client.delete('/api/users/new',headers=ACTION).status_code,200)
+        self.assertFalse(self.store.authenticate('new@example.org',PASSWORD))
+        self.assertTrue(self.store.authenticate('new@example.org','changed-password-123'))
+        token=self.store.login('new@example.org','changed-password-123')
+        self.assertEqual(self.client.delete('/api/users/new@example.org',headers=ACTION).status_code,200)
         self.assertIsNone(self.store.session_user(token))
         listing=self.client.get('/api/users').json()
-        self.assertTrue(all(set(r)=={'username','role'} for r in listing))
+        self.assertTrue(all(set(r)=={'username','role','first_name','last_name'} for r in listing))
         self.assertEqual(self.client.delete('/api/users/missing',headers=ACTION).status_code,404)
 
     def test_last_admin_and_invalid_changes(self):

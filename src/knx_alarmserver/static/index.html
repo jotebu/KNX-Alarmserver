@@ -59,9 +59,11 @@
 <div class="toolbar"><h2 id="users-title">Benutzerverwaltung</h2><button id="users-add" type="button">Benutzer hinzufügen</button><button id="users-reload" type="button">Neu laden</button></div>
 <p>Admin: alle Funktionen · User: ansehen, quittieren und Alarmmatrix verwalten · Viewer: nur ansehen. Der letzte Admin bleibt erhalten.</p>
 <p id="users-feedback" role="status" aria-live="polite"></p>
-<div class="table-scroll"><table><thead><tr><th>Benutzer</th><th>Rolle</th><th>Aktionen</th></tr></thead><tbody id="users-rows"></tbody></table></div>
+<div class="table-scroll"><table><thead><tr><th>E-Mail-Adresse</th><th>Name</th><th>Rolle</th><th>Aktionen</th></tr></thead><tbody id="users-rows"></tbody></table></div>
 <form id="users-form" hidden><h3 id="users-form-title">Benutzer hinzufügen</h3><div class="knx-fields">
-<label>Benutzername<input id="users-name" required maxlength="64" autocomplete="off"></label>
+<label>E-Mail-Adresse<input id="users-name" type="email" required maxlength="254" autocomplete="off"></label>
+<label>Vorname<input id="users-first-name" required maxlength="64" autocomplete="given-name"></label>
+<label>Nachname<input id="users-last-name" required maxlength="64" autocomplete="family-name"></label>
 <label>Rolle<select id="users-role"><option value="viewer">Viewer</option><option value="user">User</option><option value="admin">Admin</option></select></label>
 <label>Neues Passwort<input id="users-password" type="password" minlength="12" maxlength="1024" autocomplete="new-password"></label>
 <label>Passwort wiederholen<input id="users-confirm" type="password" minlength="12" maxlength="1024" autocomplete="new-password"></label></div>

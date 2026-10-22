@@ -119,7 +119,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
         action(request, 'login')
         payload = await json_body(request)
         if (set(payload) != {'username', 'password'}
-                or not isinstance(payload['username'], str) or len(payload['username']) > 64
+                or not isinstance(payload['username'], str) or len(payload['username']) > 254
                 or not isinstance(payload['password'], str) or len(payload['password']) > 1024):
             raise HTTPException(status_code=422, detail='Benutzername und Passwort erforderlich')
         token = await asyncio.to_thread(store.login, payload['username'], payload['password'])
@@ -198,10 +198,10 @@ def create_app(config, store, update_manager=None, version_checker=None):
     async def create_user(request: Request, username=Depends(admin)):
         action(request, 'manage-users')
         payload = await json_body(request)
-        if set(payload) != {'username', 'password', 'role'}:
-            raise HTTPException(status_code=422, detail='Benutzername, Passwort und Rolle erforderlich')
+        if set(payload) != {'username', 'password', 'role', 'first_name', 'last_name'}:
+            raise HTTPException(status_code=422, detail='E-Mail-Adresse, Vorname, Nachname, Passwort und Rolle erforderlich')
         try:
-            await asyncio.to_thread(store.create_user, payload['username'], payload['password'], payload['role'])
+            await asyncio.to_thread(store.create_user, payload['username'], payload['password'], payload['role'], payload['first_name'], payload['last_name'])
         except ValueError as error:
             raise HTTPException(status_code=422, detail=str(error)) from None
         return {'ok': True}
@@ -210,10 +210,10 @@ def create_app(config, store, update_manager=None, version_checker=None):
     async def update_user(target: str, request: Request, username=Depends(admin)):
         action(request, 'manage-users')
         payload = await json_body(request)
-        if 'role' not in payload or set(payload) - {'role', 'password'}:
+        if 'role' not in payload or set(payload) - {'role', 'password', 'first_name', 'last_name'}:
             raise HTTPException(status_code=422, detail='Rolle und optional Passwort erforderlich')
         try:
-            await asyncio.to_thread(store.update_user, target, payload['role'], payload.get('password'))
+            await asyncio.to_thread(store.update_user, target, payload['role'], payload.get('password'), payload.get('first_name'), payload.get('last_name'))
         except KeyError:
             raise HTTPException(status_code=404, detail='Benutzer nicht gefunden') from None
         except ValueError as error:

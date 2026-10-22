@@ -37,6 +37,8 @@ class OccurrenceStore:
             CREATE INDEX IF NOT EXISTS occurrences_came ON occurrences(came_at);
         ''')
         with self.transaction():
+            if 'acknowledged_name' not in {row['name'] for row in self.db.execute('PRAGMA table_info(occurrences)')}:
+                self.db.execute('ALTER TABLE occurrences ADD COLUMN acknowledged_name TEXT')
             for table in ['states', 'events']:
                 if 'occurrence_id' not in {row['name'] for row in self.db.execute(f'PRAGMA table_info({table})')}:
                     self.db.execute(f'ALTER TABLE {table} ADD COLUMN occurrence_id INTEGER')
@@ -130,7 +132,7 @@ class OccurrenceStore:
             if row['acknowledged']:
                 return False
             timestamp = now()
-            self.db.execute('UPDATE occurrences SET acknowledged=1,acknowledged_at=?,acknowledged_by=? WHERE id=?', (timestamp, username, identifier))
+            self.db.execute('UPDATE occurrences SET acknowledged=1,acknowledged_at=?,acknowledged_by=?,acknowledged_name=? WHERE id=?', (timestamp, username, self.display_name(username), identifier))
             self.db.execute('''UPDATE states SET pending=0,acknowledged_by=?,acknowledged_at=?
                 WHERE id=? AND occurrence_id=?''', (username, timestamp, row['alarm_id'], identifier))
             self.db.execute('''INSERT INTO events(alarm_id,alarm_name,kind,timestamp,username,occurrence_id)
@@ -141,6 +143,7 @@ class OccurrenceStore:
         from .listing import alarms_page
         with self.lock:
             current = {row['id']: row for row in self.snapshot()}
+            people = {row['username']: (row['first_name']+' '+row['last_name']).strip() for row in self.users() if row['first_name'] and row['last_name']}
             names = {entry['priority']: entry['name'] for entry in self.priorities()['entries']}
             if status_filter == 'unknown':
                 rows = [dict(row, occurrence_id=None, came_at=None, went_at=None, acknowledged_at=None,
@@ -177,6 +180,7 @@ class OccurrenceStore:
                 rows = []
                 for record in self.db.execute(sql, args).fetchall():
                     row = dict(record)
+                    row['acknowledged_name'] = row['acknowledged_name'] or people.get(row['acknowledged_by'])
                     is_active = row['went_at'] is None and row['end_reason'] is None
                     row.update(occurrence_id=row['id'], status=('active' if not row['acknowledged'] else 'active_ack') if is_active else ('clear_pending' if not row['acknowledged'] else 'closed'),
                                pending=int(not row['acknowledged']), priority_name=names.get(row['priority'], ''),

@@ -55,7 +55,7 @@ function render(){
   const filterTitles={'':'Aktiv',active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen',closed:'Abgeschlossen',all:'Alle',unknown:'Unbekannt'};
   const titles={alarms:`Meldungen · ${filterTitles[alarmStatusFilter]||'Aktiv'}`,history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
-  const heads={alarms:['Priorität','Meldung / Bereich','Zustand','Gekommen','Quittiert','Gegangen','Aktion'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
+  const heads={alarms:['Priorität','#','Meldung / Bereich','Zustand','Gekommen','Quittiert','Gegangen','Aktion'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
   $('message-table').className=view==='alarms'?'alarm-list-table':'';
   const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
   const query=$('search').value.toLocaleLowerCase('de');
@@ -68,15 +68,14 @@ function render(){
     if(view==='alarms'){
       const priority=cell(row.priority_name||(row.priority==null?'—':'Ohne Bezeichnung'));
       if(row.priority!=null)priority.title='Priorität '+row.priority;
-      const name=cell(row.name);name.append(text('small',row.area||''));
-      name.append(text('small',[row.group_address,row.dpt?'DPT '+row.dpt:''].filter(Boolean).join(' · ')));
-      if(row.occurrence_id)name.append(text('small','Vorgang #'+row.occurrence_id));
+      const identifier=cell(''),number=text('span',row.occurrence_id??'—','occurrence-number');number.title=row.occurrence_id?'Vorgang #'+row.occurrence_id:'Noch kein Vorgang';identifier.append(number);
+      const name=cell(row.name);name.append(text('small',[row.area,row.group_address?'GA '+row.group_address:'',row.dpt?'DPT '+row.dpt:''].filter(Boolean).join(' · ')));
       const state=cell('');state.append(text('span',row.end_reason?(row.pending?'Beendet · offen':'Beendet · quittiert'):labels[row.status],'badge '+row.status));
       if(row.end_reason)state.append(text('small',({configuration_changed:'Konfiguration geändert',configuration_removed:'Alarm aus Matrix entfernt',historical_gap:'Historischer Verlauf unvollständig'})[row.end_reason]||row.end_reason));
       if(row.decode_error)state.append(text('small','DPT-/Regelfehler: '+row.decode_error));
       cell(date(row.came_at===undefined?row.changed_at:row.came_at));
       const ack=cell('');ack.append(text('span',row.acknowledged_at?date(row.acknowledged_at):row.acknowledged?'Quittiert · Zeitpunkt unbekannt':'—',row.acknowledged_at?'alarm-timestamp':''));
-      if(row.acknowledged_by)ack.append(text('small',row.acknowledged_by));else if(row.acknowledged)ack.append(text('small','Benutzer unbekannt'));
+      if(row.acknowledged_name)ack.append(text('small',row.acknowledged_name));else if(row.acknowledged)ack.append(text('small','Name nicht hinterlegt'));
       cell(date(row.went_at));
       const action=cell('');
       if(row.pending && access.acknowledge){const button=text('button','Quittieren','ack');button.onclick=async()=>{button.disabled=true;try{
@@ -425,6 +424,8 @@ function openUser(account=null){
   editingUser=account?account.username:null;
   $('users-form-title').textContent=account?'Benutzer bearbeiten':'Benutzer hinzufügen';
   $('users-name').value=editingUser||'';$('users-name').disabled=!!account;
+  $('users-first-name').value=account?account.first_name||'':'';
+  $('users-last-name').value=account?account.last_name||'':'';
   $('users-role').value=account?account.role:'viewer';
   for(const id of ['users-password','users-confirm']){$(id).value='';$(id).required=!account;}
   $('users-form').hidden=false;
@@ -433,7 +434,7 @@ async function loadUsers(){
   try{
     const accounts=await api('/api/users'),rows=document.createDocumentFragment();
     for(const account of accounts){
-      const tr=document.createElement('tr');tr.append(text('td',account.username),text('td',{admin:'Admin',user:'User',viewer:'Viewer'}[account.role]));
+      const tr=document.createElement('tr');tr.append(text('td',account.username),text('td',[account.first_name,account.last_name].filter(Boolean).join(' ')||'Name nicht hinterlegt'),text('td',{admin:'Admin',user:'User',viewer:'Viewer'}[account.role]));
       const td=document.createElement('td'),edit=text('button','Bearbeiten'),remove=text('button','Löschen');
       edit.type=remove.type='button';edit.onclick=()=>openUser(account);
       remove.onclick=async()=>{
@@ -462,7 +463,7 @@ $('users-cancel').onclick=()=>{$('users-form').hidden=true;$('users-password').v
 $('users-form').onsubmit=event=>{
   event.preventDefault();const password=$('users-password').value;
   if(password!==$('users-confirm').value){$('users-feedback').textContent='Passwörter stimmen nicht überein.';return;}
-  const payload={role:$('users-role').value};
+  const payload={role:$('users-role').value,first_name:$('users-first-name').value.trim(),last_name:$('users-last-name').value.trim()};
   if(editingUser===null){payload.username=$('users-name').value;payload.password=password;}else if(password)payload.password=password;
   saveUser('/api/users'+(editingUser===null?'':'/'+encodeURIComponent(editingUser)),editingUser===null?'POST':'PUT',payload);
 };

@@ -69,7 +69,7 @@ class PriorityWebTests(unittest.TestCase):
         from fastapi.testclient import TestClient
         from knx_alarmserver.web import create_app
         self.store=Store(':memory:',[])
-        for role in ['admin','user','viewer']:self.store.create_user(role,'test-password-123',role)
+        for role in ['admin','user','viewer']:self.store.set_password(role,'test-password-123',role)
         self.client=TestClient(create_app({'knx':{'enabled':False}},self.store));self.client.__enter__()
     def tearDown(self):
         self.client.__exit__(None,None,None);self.store.close()

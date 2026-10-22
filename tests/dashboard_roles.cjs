@@ -43,15 +43,15 @@ test('alarm timestamp displays the state transition rather than a later repeated
  const {nodes,context}=await setup('admin');
  await vm.runInContext("snapshot.alarms[0].changed_at='2026-10-21T12:00:00Z';snapshot.alarms[0].last_seen='2026-10-22T12:00:00Z';refresh()",context);
  const cells=all(nodes.get('table-body')).filter(node=>node.tagName==='td');
- assert.match(cells[3].textContent,/21\.10\.2026/);
- assert.doesNotMatch(cells[3].textContent,/22\.10\.2026/);
+ assert.match(cells[4].textContent,/21\.10\.2026/);
+ assert.doesNotMatch(cells[4].textContent,/22\.10\.2026/);
 });
 
 test('acknowledgement targets the displayed occurrence, with its own three timestamps',async()=>{
  const {nodes,context}=await setup('user');
  await vm.runInContext("snapshot.alarms[0].occurrence_id=73;snapshot.alarms[0].came_at='2026-10-20T12:00:00Z';snapshot.alarms[0].changed_at='2026-10-22T12:00:00Z';snapshot.alarms[0].went_at='2026-10-21T12:00:00Z';refresh()",context);
  const cells=all(nodes.get('table-body')).filter(node=>node.tagName==='td');
- assert.equal(cells.length,7);assert.match(cells[3].textContent,/20\.10\.2026/);assert.match(cells[5].textContent,/21\.10\.2026/);
+ assert.equal(cells.length,8);assert.match(cells[4].textContent,/20\.10\.2026/);assert.match(cells[6].textContent,/21\.10\.2026/);
  vm.runInContext("let ackPath='';api=async(path,options)=>{if(options){ackPath=path;return {changed:true};}return snapshot;}",context);
  await all(nodes.get('table-body')).find(node=>node.tagName==='button').onclick();
  assert.equal(vm.runInContext('ackPath',context),'/api/occurrences/73/acknowledge');

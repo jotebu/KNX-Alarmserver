@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.13.5 – 22.10.2026
+
+- Neue Benutzer mit E-Mail-Adresse als Benutzername sowie verpflichtendem Vor- und Nachnamen anlegen; serverseitig validieren. Benutzerverwaltung, CLI und Erstinstallation entsprechend ergänzen. Bestehende Konten, Kennwörter, Rollen und Logins erhalten.
+- Vollständigen Namen bei Quittierung zusätzlich zur internen Kennung speichern und in der Meldeliste anzeigen. Historische Namen bleiben bei späterer Profiländerung oder Kontolöschung erhalten; fehlende Namen beim Ergänzen des Kontoprofils nachtragen. CLI-Befehl user-profile zur gezielten Ergänzung vorhandener Konten.
+- GA und DPT mit Punkt getrennt rechts neben den Bereich setzen. Vorgangsnummer aus dem Meldungstext in eine schmale Spalte „#“ zwischen Priorität und Meldung verschieben; lange Nummern im Tooltip vollständig anzeigen.
+
 ## 0.13.4 – 22.10.2026
 
 - Versteckten Filterbereich samt Ansichtspulldown, Meldungssuche und Einblend-Schalter entfernen. Statusfilter direkt über die Zähler verwenden.

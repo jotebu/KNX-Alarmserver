@@ -117,7 +117,7 @@ class OccurrenceTests(unittest.TestCase):
 class MigrationTests(unittest.TestCase):
     def make_legacy(self, path):
         store = Store(path, [ALARM])
-        store.create_user('legacy-admin','test-password-123','admin')
+        store.set_password('legacy-admin','test-password-123','admin')
         self.legacy_token=store.login('legacy-admin','test-password-123')
         store.save_matrix(store.matrix()['rows'],store.matrix()['revision'],'legacy-admin')
         with store.transaction():
@@ -227,7 +227,7 @@ class OccurrenceApiTests(unittest.TestCase):
         from fastapi.testclient import TestClient
         from knx_alarmserver.web import create_app
         store=Store(':memory:',[ALARM])
-        for role in ['admin','user','viewer']:store.create_user(role,'test-password-123',role)
+        for role in ['admin','user','viewer']:store.set_password(role,'test-password-123',role)
         store.ingest(ALARM.group_address,1,'1.1.1')
         identifier=store.occurrence_list()['rows'][0]['occurrence_id']
         try:
