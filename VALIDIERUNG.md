@@ -1,6 +1,12 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.13.3, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.13.4, Inbetriebnahmeversion.
+
+## Gemeinsame Datumsauswahl und kompakter Seitenkopf
+
+- Gemeinsame Kalenderauswahl für Admin, User und Viewer im DOM geprüft: zwei Monate, Monatswechsel, Einzeltag, umgekehrte Auswahl, Jahreswechsel, Übernehmen/Abbrechen, Escape, Klick außerhalb und Zurücksetzen ohne Änderung des Statusfilters. Keine alten Filterfelder/Schalter oder „GEBÄUDEÜBERWACHUNG“-Elemente vorhanden.
+- Lokale Tagesgrenzen einschließlich Endtag sowie Sommer-/Winterzeitwechsel, ungültige Datumswerte und Leerung geprüft; kein zusätzlicher Abruf beim bloßen Auswählen/Abbrechen. Bestehende Dashboard-Regressionstests ausgeführt.
+- Kalenderdatei als lokales statisches Asset eingebunden, ohne zusätzliche Laufzeitabhängigkeit. Obere Seitenabstände und responsive Kalenderregeln anhand CSS geprüft; Sichtprüfung auf dem Raspberry steht aus.
 
 ## Zähler für abgeschlossene Vorgänge
 

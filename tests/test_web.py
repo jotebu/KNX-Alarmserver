@@ -25,7 +25,7 @@ class WebTests(unittest.TestCase):
         self.store.close()
 
     def test_all_building_data_requires_authentication(self):
-        for path in ("/", "/api/dashboard", "/api/status", "/api/alarms", "/api/history", "/api/telegrams", "/api/dpts", "/api/ets", "/api/ready", "/static/app.js"):
+        for path in ("/", "/api/dashboard", "/api/status", "/api/alarms", "/api/history", "/api/telegrams", "/api/dpts", "/api/ets", "/api/ready", "/static/app.js", "/static/date-range.js"):
             self.assertEqual(self.client.get(path).status_code, 401, path)
         self.assertEqual(self.client.get("/health/live").status_code, 200)
 
@@ -33,6 +33,10 @@ class WebTests(unittest.TestCase):
         response = self.client.get("/", auth=self.auth)
         self.assertEqual(response.status_code, 200)
         self.assertIn("Störungen", response.text)
+        self.assertIn("/static/date-range.js", response.text)
+        calendar = self.client.get("/static/date-range.js", auth=self.auth)
+        self.assertEqual(calendar.status_code, 200)
+        self.assertIn("window.AlarmDateRange", calendar.text)
         self.assertEqual(response.headers["x-frame-options"], "DENY")
         self.assertEqual(self.client.get("/static/unknown", auth=self.auth).status_code, 404)
 

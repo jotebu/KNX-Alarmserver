@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.13.3 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.13.4 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -178,9 +178,9 @@ Die Oberfläche führt aktuelle und abgeschlossene Alarmvorgänge in **einer Tab
 
 Spalten: **Priorität · Meldung/Bereich · Zustand · Gekommen · Quittiert · Gegangen · Aktion**. Die Quittierung enthält Datum/Uhrzeit und Benutzer. Wiederholte Telegramme oder Leseantworten mit gleicher Alarmbedingung verändern keinen dieser drei Zeitpunkte. Quittieren ist eine Kenntnisnahme und verändert nicht den KNX-Wert. Es ist vor oder nach dem Gehen möglich und gilt ausschließlich für die ausgewählte Vorgangsnummer. Ein älterer Vorgang lässt sich unabhängig vom neueren Auftreten derselben Störung quittieren.
 
-**Ansicht** bietet Offen (Standard: aktiv ODER unquittiert), Aktiv/offen, Aktiv/quittiert, Gegangen/offen, Abgeschlossen und Alle. Die vier Zähler wählen zusätzlich direkt ihren jeweiligen Filter; ein erneuter Klick kehrt zu Offen zurück. Unbekannt zeigt separat konfigurierte Punkte ohne bekannten Zustand; diese sind noch keine Alarmvorgänge. Die Zähler beziehen sich auf alle gespeicherten Vorgänge, unabhängig von Suche und Datum. Dadurch können mehrere gegangene offene Vorgänge derselben Alarmdefinition gezählt werden.
+Die fünf Statuszähler wählen direkt Aktiv/offen, Aktiv/quittiert, Gegangen/offen, Abgeschlossen oder Unbekannt; ein erneuter Klick kehrt zur Standardansicht zurück (aktiv ODER unquittiert). Rechts neben „Meldungen“ steht der ausgewählte Filter, im Standard „Aktiv“. Unbekannt zeigt separat konfigurierte Punkte ohne bekannten Zustand; diese sind noch keine Alarmvorgänge. Die Zähler beziehen sich auf alle gespeicherten Vorgänge, unabhängig vom Zeitraum. Dadurch können mehrere gegangene offene Vorgänge derselben Alarmdefinition gezählt werden.
 
-Die Tabelle scrollt innerhalb der Seite, mit sichtbaren Spaltenüberschriften. Offene Vorgänge werden vollständig angezeigt. **Alle** und **Abgeschlossen** zeigen höchstens die neuesten 500 passenden Vorgänge; Suche und Datumsfilter durchsuchen den gesamten gespeicherten Bestand vor der Begrenzung. Die Anzeige sortiert nach Priorität (1 zuerst), dann nach Gekommen absteigend. Suche berücksichtigt auch Quittierenden und Vorgangsnummer. **Filter anzeigen** klappt Suche und Datum ein/aus; eingeklappte Filter bleiben wirksam. Datum Von/Bis bezieht sich auf Gekommen und auf lokale Kalendertage, einschließlich des gesamten Bis-Tags. Fehlende Gekommen-Zeitpunkte werden bei Datumsfilter nicht berücksichtigt.
+Die Tabelle scrollt innerhalb der Seite, mit sichtbaren Spaltenüberschriften. Offene Vorgänge werden vollständig angezeigt. **Abgeschlossen** zeigt höchstens die neuesten 500 passenden Vorgänge; der Datumsfilter durchsucht den gesamten gespeicherten Bestand vor der Begrenzung. Die Anzeige sortiert nach Priorität (1 zuerst), dann nach Gekommen absteigend. **Zeitraum auswählen** öffnet einen gemeinsamen Kalender: Beginn und Ende durch zwei Klicks auswählen und **Übernehmen** wählen. Auch ein einzelner Tag oder ein Zeitraum über Monats-/Jahresgrenzen ist möglich. Der Filter bezieht sich auf Gekommen und lokale Kalendertage, einschließlich des gesamten Endtags. Fehlende Gekommen-Zeitpunkte werden bei Datumsfilter nicht berücksichtigt. **Zeitraum zurücksetzen** entfernt nur die zeitliche Eingrenzung; der gewählte Status bleibt erhalten. Die Datumsauswahl funktioniert auch mit Tastatur (Pfeile, Bild auf/ab, Enter; Escape zum Abbrechen). Die Telegrammseite behält ihr sichtbares Suchfeld.
 
 ### Übernahme bestehender Daten
 
@@ -226,7 +226,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.13.3
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.13.4
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -236,8 +236,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.13.3
-git push origin v0.13.3
+git tag v0.13.4
+git push origin v0.13.4
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.

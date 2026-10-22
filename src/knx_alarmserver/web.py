@@ -566,7 +566,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
 
     @app.get("/static/{filename}")
     def static(filename: str, username=Depends(user)):
-        if filename not in {"app.js", "style.css"}:
+        if filename not in {"app.js", "date-range.js", "style.css"}:
             raise HTTPException(status_code=404)
         return FileResponse(STATIC / filename)
 

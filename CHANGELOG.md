@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.13.4 – 22.10.2026
+
+- Versteckten Filterbereich samt Ansichtspulldown, Meldungssuche und Einblend-Schalter entfernen. Statusfilter direkt über die Zähler verwenden.
+- Ein gemeinsames Zeitraumfeld mit zwei Monatskalendern statt separater Von-/Bis-Felder: Beginn/Ende auswählen, Übernehmen, Abbrechen und Zurücksetzen; Tastaturbedienung und schmale Bildschirme unterstützen. Lokale Endtage vollständig berücksichtigen, Statusfilter beim Zurücksetzen beibehalten.
+- „GEBÄUDEÜBERWACHUNG“ auf allen Seiten einschließlich Anmeldung entfernen und obere Abstände verkleinern, um mehr Platz für Inhalte zu schaffen.
+
 ## 0.13.3 – 22.10.2026
 
 - Statusfilter rechts neben „Meldungen“ mit Punkt als Trennzeichen anzeigen: „Meldungen · Aktiv“, „Meldungen · Abgeschlossen“ usw.

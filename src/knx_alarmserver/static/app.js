@@ -17,6 +17,13 @@ function listQuery(selected){
 }
 const date = value => value ? new Date(value).toLocaleString('de-DE') : '—';
 const text = (tag, value, cls) => {const node=document.createElement(tag);node.textContent=value;if(cls)node.className=cls;return node;};
+function dateRangeBounds(from,until){
+  if(!from&&!until)return {from:'',until:''};
+  const valid=value=>/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(new Date(value+'T00:00:00').getTime())&&new Date(value+'T00:00:00').getDate()===Number(value.slice(-2));
+  if(!valid(from)||!valid(until)||from>until)throw Error('Bitte einen gültigen Zeitraum mit Beginn und Ende auswählen.');
+  const after=new Date(until+'T00:00:00');after.setDate(after.getDate()+1);
+  return {from:new Date(from+'T00:00:00').toISOString(),until:after.toISOString()};
+}
 async function api(path, options={}) {
   const controller=new AbortController();
   const timeoutMs=options.method && options.method!=='GET'?30000:path.startsWith('/api/version')||path==='/api/update'?20000:10000;
@@ -41,15 +48,8 @@ function failure(error) {$('error').hidden=false;$('error').textContent=`Keine a
 function render(){
   if(settingsOpen)return;
   for(const card of document.querySelectorAll('[data-status-filter]')){const selected=view==='alarms'&&card.dataset.statusFilter===alarmStatusFilter;card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));}
-  $('occurrence-filter-wrap').hidden=view!=='alarms';$('occurrence-filter').value=alarmStatusFilter;
-  const filterable=view!=='telegrams';
-  $('filter-toggle').hidden=!filterable;
-  $('list-filters').hidden=filterable&&!filtersOpen;
-  $('date-filters').hidden=!filterable;
-  $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: Gekommen; unbekannte Anfangszeiten sind bei Datumsfilter nicht enthalten';
-  const active=Boolean(listFilters.search||listFilters.from||listFilters.until||(view==='alarms'&&alarmStatusFilter));
-  $('filter-toggle').textContent=(filtersOpen?'Filter ausblenden':'Filter anzeigen')+(active?' · aktiv':'');
-  $('filter-toggle').setAttribute('aria-expanded',String(filtersOpen));
+  $('date-range-wrap').hidden=view!=='alarms';
+  $('telegram-search-wrap').hidden=view!=='telegrams';
   $('list-summary').textContent=listing?`Vorgänge: ${listing.total}`:'';
 
   const filterTitles={'':'Aktiv',active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen',closed:'Abgeschlossen',all:'Alle',unknown:'Unbekannt'};
@@ -570,22 +570,12 @@ document.addEventListener('click',event=>{for(const menu of menus)if(!menu.conta
 document.addEventListener('keydown',event=>{if(event.key==='Escape')for(const menu of menus)menu.open=false;});
 layoutPage();
 if(page!=='/versions')checkVersion();
-let searchTimer=null, filtersOpen=false;
-$('filter-toggle').onclick=()=>{filtersOpen=!filtersOpen;render();};
-function applyListFilters(){
-  try{
-    const from=$('date-from').value,until=$('date-until').value;
-    if(from&&until&&from>until)throw Error('Von darf nicht nach Bis liegen.');
-    const after=until?new Date(until+'T00:00:00'):null;if(after)after.setDate(after.getDate()+1);
-    listFilters={search:$('search').value,
-      from:from?new Date(from+'T00:00:00').toISOString():'',until:after?after.toISOString():''};
-    listGeneration++;refresh();
-  }catch(error){failure(error);}
+function applyListDateRange(from,until){
+  try{listFilters={search:'',...dateRangeBounds(from,until)};listing=null;listGeneration++;refresh();}
+  catch(error){failure(error);}
 }
-$('search').oninput=()=>{if(view==='telegrams')render();else{clearTimeout(searchTimer);searchTimer=setTimeout(applyListFilters,300);}};
-$('occurrence-filter').onchange=()=>{alarmStatusFilter=$('occurrence-filter').value;view='alarms';listing=null;listGeneration++;refresh();};
-$('date-apply').onclick=applyListFilters;
-$('date-clear').onclick=()=>{alarmStatusFilter='';$('date-from').value='';$('date-until').value='';$('search').value='';applyListFilters();};
+const dateRangePicker=new window.AlarmDateRange(applyListDateRange);
+$('search').oninput=()=>{if(view==='telegrams')render();};
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});
 refresh();
 
