@@ -34,9 +34,17 @@ class WebTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Störungen", response.text)
         self.assertIn("/static/date-range.js", response.text)
+        self.assertIn('/static/logo-dark.svg', response.text)
+        for theme in ('dark', 'light'):
+            logo = self.client.get('/static/logo-' + theme + '.svg')
+            self.assertEqual(logo.status_code, 200)
+            self.assertIn('image/svg+xml', logo.headers['content-type'])
+            self.assertIn('id="knx-original"', logo.text)
+            self.assertIn('id="alarmserver-wordmark"', logo.text)
         self.assertLess(response.text.index("/static/theme.js"),response.text.index("/static/style.css"))
         self.assertEqual(self.client.get("/static/theme.js").status_code,200)
         login=self.client.get("/login").text
+        self.assertIn('/static/logo-light.svg', login)
         self.assertLess(login.index("/static/theme.js"),login.index("/static/style.css"))
         calendar = self.client.get("/static/date-range.js", auth=self.auth)
         self.assertEqual(calendar.status_code, 200)

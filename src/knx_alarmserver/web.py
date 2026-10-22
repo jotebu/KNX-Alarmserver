@@ -650,6 +650,14 @@ def create_app(config, store, update_manager=None, version_checker=None):
     async def stylesheet():
         return FileResponse(STATIC / 'style.css')
 
+    @app.get('/static/logo-dark.svg')
+    async def logo_dark():
+        return FileResponse(STATIC / 'logo-dark.svg', media_type='image/svg+xml')
+
+    @app.get('/static/logo-light.svg')
+    async def logo_light():
+        return FileResponse(STATIC / 'logo-light.svg', media_type='image/svg+xml')
+
     @app.get("/static/{filename}")
     def static(filename: str, username=Depends(user)):
         if filename not in {"app.js", "date-range.js", "bus-test.js", "style.css"}:

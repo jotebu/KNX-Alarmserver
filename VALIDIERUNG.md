@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 23.10.2026. Projektversion 0.15.11, Inbetriebnahmeversion.
+Stand: 23.10.2026. Projektversion 0.15.12, Inbetriebnahmeversion.
+
+## Logo im Menüband
+
+- SVG-Varianten für Dark/Light auf Anmeldung und gemeinsamen Unterseiten eingebunden; beide Logo-Dateien ohne Anmeldung erreichbar. KNX-Originalgeometrie und Schriftausdehnung erhalten. Desktop-Überstand und kompakte Menüanordnung für schmale Bildschirme in DOM/CSS geprüft.
 
 ## KNX-Gesamtstatus
 

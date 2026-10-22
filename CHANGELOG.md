@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.12 – 23.10.2026
+
+- Freigegebenes ASK-Logo im festen Menüband aller Seiten einschließlich Anmeldung integrieren: originales KNX-Zeichen oben, gleich breiter Alarmserver-Schriftzug darunter. SVG mit Überstand unter die Menübandkante; angepasste Schriftfarbe für Dark/Light und kompakte Anordnung auf schmalen Bildschirmen.
+
 ## 0.15.11 – 23.10.2026
 
 - KNX-Icon nach dem schlechtesten Verbindungsstatus im Menü einfärben: Rot vor Gelb vor Grün. Ohne konfigurierte Verbindung gelb anzeigen; Speicherfehler bleiben rot.
