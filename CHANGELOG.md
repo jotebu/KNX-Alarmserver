@@ -2,6 +2,14 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.13.0 – 22.10.2026
+
+- Gemeinsame Vorgangsliste statt getrennter aktueller Meldungen und Ereignishistorie: eine Zeile pro Auftreten mit Gekommen, Quittiert/Benutzer und Gegangen. Wiederholte Telegramme verändern diese Zeiten nicht.
+- Separate Vorgangsnummern und gezielte Quittierung: erneutes Auftreten bleibt unabhängig von älteren noch offenen Quittierungen desselben Alarms. Viewer bleiben ohne Quittierungsrechte.
+- Ansichten Offen (Standard), Aktiv/offen, Aktiv/quittiert, Gegangen/offen, Abgeschlossen, Alle und separat Unbekannt. Zähler unabhängig von Suche/Datum; Priorität und Gekommen bestimmen die Reihenfolge. Historische Ansichten auf die neuesten 500 Treffer begrenzen, Filter durchsuchen den vollständigen Bestand.
+- Vorhandene Zustände und Ereignisse automatisch und transaktional übernehmen; vorab lokale SQLite-Sicherung bei gefüllter Datenbank. Bestehende Matrix, Benutzer, Sitzungen und Konfiguration beibehalten. Fehlende historische Zeiten kennzeichnen, keine Zeitpunkte erfinden.
+- Matrixänderungen/-entfernung ohne fingiertes Gehen protokollieren; aktive/unquittierte Vorgänge vor automatischer Löschung schützen. Technisches Ereignisprotokoll und bisherige API bleiben erhalten.
+
 ## 0.12.13 – 22.10.2026
 
 - Zeitstempel der Meldungsliste auf den bereits gespeicherten Zeitpunkt des Alarmzustandswechsels (gekommen/gegangen) umstellen. Wiederholte gleiche Telegramme und KNX-Leseantworten verschieben den Alarmzeitpunkt nicht mehr.

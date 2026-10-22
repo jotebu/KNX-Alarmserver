@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const labels = {unknown:'Unbekannt',active:'Störung aktiv',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · unquittiert',normal:'Normal'};
+const labels = {unknown:'Unbekannt',active:'Störung aktiv',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · unquittiert',normal:'Normal',closed:'Abgeschlossen'};
 const page=window.location.pathname;
 const managementPages=['/knx','/ets','/users','/priorities'];
 let pageInitialized=false, newerVersionKnown=false, checkingVersionStatus=false;
@@ -9,7 +9,7 @@ let view = page==='/telegrams'?'telegrams':'alarms', data = {alarms:[],history:[
 let listing=null, listGeneration=0, alarmStatusFilter='';
 let listFilters={search:'',from:'',until:''};
 function listQuery(selected){
-  let query='&list_mode=true&search='+encodeURIComponent(listFilters.search);
+  let query='&occurrences=true&list_mode=true&search='+encodeURIComponent(listFilters.search);
   if(selected==='alarms'&&alarmStatusFilter)query+='&status_filter='+encodeURIComponent(alarmStatusFilter);
   if(listFilters.from)query+='&from_time='+encodeURIComponent(listFilters.from);
   if(listFilters.until)query+='&until_time='+encodeURIComponent(listFilters.until);
@@ -41,18 +41,21 @@ function failure(error) {$('error').hidden=false;$('error').textContent=`Keine a
 function render(){
   if(settingsOpen)return;
   for(const card of document.querySelectorAll('[data-status-filter]')){const selected=view==='alarms'&&card.dataset.statusFilter===alarmStatusFilter;card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));}
+  $('occurrence-filter-wrap').hidden=view!=='alarms';$('occurrence-filter').value=alarmStatusFilter;
   const filterable=view!=='telegrams';
   $('filter-toggle').hidden=!filterable;
   $('list-filters').hidden=filterable&&!filtersOpen;
   $('date-filters').hidden=!filterable;
-  $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: Zeitstempel; ohne Zustandswechselzeit nicht im Datumsfilter enthalten';
+  $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: Gekommen; unbekannte Anfangszeiten sind bei Datumsfilter nicht enthalten';
   const active=Boolean(listFilters.search||listFilters.from||listFilters.until||(view==='alarms'&&alarmStatusFilter));
   $('filter-toggle').textContent=(filtersOpen?'Filter ausblenden':'Filter anzeigen')+(active?' · aktiv':'');
   $('filter-toggle').setAttribute('aria-expanded',String(filtersOpen));
-  $('list-summary').textContent=listing?(view==='history'?`${listing.shown} von ${listing.total} Treffern · höchstens 500 neueste Einträge`:`${listing.total} Meldungen${alarmStatusFilter?' · '+({active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen',unknown:'Unbekannt'})[alarmStatusFilter]:''}`):'';
+  const selectedTitle={'':'Offen',active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen',unknown:'Unbekannt',closed:'Abgeschlossen',all:'Alle'}[alarmStatusFilter];
+  $('list-summary').textContent=listing?`${listing.shown} von ${listing.total} Vorgängen · ${selectedTitle}${listing.limit?' · höchstens '+listing.limit+' neueste Treffer':''}`:'';
+
   const titles={alarms:'Meldungen',history:'Historie',telegrams:'Telegramme'};
   $('view-title').textContent=titles[view];
-  const heads={alarms:['Status','Meldung / Bereich','Status','Zeitstempel','Quittierung'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
+  const heads={alarms:['Priorität','Meldung / Bereich','Zustand','Gekommen','Quittiert','Gegangen','Aktion'],history:['Zeitpunkt','Meldung','Ereignis','Benutzer / Quelle'],telegrams:['Zeitpunkt','Verbindung','Quelle → Ziel','Dienst / DPT','Wert']};
   $('message-table').className=view==='alarms'?'alarm-list-table':'';
   const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
   const query=$('search').value.toLocaleLowerCase('de');
@@ -63,22 +66,31 @@ function render(){
     const tr=document.createElement('tr');
     const cell=(value)=>{const td=text('td',value);tr.append(td);return td;};
     if(view==='alarms'){
-      const state=cell('');state.append(text('span',labels[row.status],'badge '+row.status));
+      cell(row.priority===null?'—':String(row.priority)+(row.priority_name?' · '+row.priority_name:''));
+      const name=cell(row.name);name.append(text('small',row.area||''));
+      name.append(text('small',[row.group_address,row.dpt?'DPT '+row.dpt:''].filter(Boolean).join(' · ')));
+      if(row.occurrence_id)name.append(text('small','Vorgang #'+row.occurrence_id));
+      if(row.migration_note){const note=text('small',!row.came_at||row.end_reason==='historical_gap'?'Übernommen · Verlauf unvollständig':'Übernommener Vorgang');note.title=row.migration_note;name.append(note);}
+      const state=cell('');state.append(text('span',row.end_reason?(row.pending?'Beendet · offen':'Beendet · quittiert'):labels[row.status],'badge '+row.status));
+      if(row.end_reason)state.append(text('small',({configuration_changed:'Konfiguration geändert',configuration_removed:'Alarm aus Matrix entfernt',historical_gap:'Historischer Verlauf unvollständig'})[row.end_reason]||row.end_reason));
       if(row.decode_error)state.append(text('small','DPT-/Regelfehler: '+row.decode_error));
-      const name=cell(row.name);name.append(text('small',`${row.area} · Priorität ${row.priority}${row.priority_name?' · '+row.priority_name:''}`));
-      const value=cell(row.display_value===null?'—':`${row.display_value}${row.unit?' '+row.unit:''}`);
-      name.append(text('small',`${row.group_address} · DPT ${row.dpt}`));
-      cell(date(row.changed_at));
-      const ack=cell(row.acknowledged_by?`${row.acknowledged_by} · ${date(row.acknowledged_at)}`:'—');
-      if(row.pending && access.acknowledge){ack.textContent='';const button=text('button','Quittieren','ack');button.onclick=async()=>{button.disabled=true;try{await api(`/api/alarms/${encodeURIComponent(row.id)}/acknowledge`,{method:'POST',headers:{'X-Alarmserver-Action':'acknowledge'}});await refresh();}catch(e){failure(e);}finally{button.disabled=false;}};ack.append(button);}
+      cell(date(row.came_at===undefined?row.changed_at:row.came_at));
+      const ack=cell(row.acknowledged_at?date(row.acknowledged_at):row.acknowledged?'Quittiert · Zeitpunkt unbekannt':'—');
+      if(row.acknowledged_by)ack.append(text('small',row.acknowledged_by));else if(row.acknowledged)ack.append(text('small','Benutzer unbekannt'));
+      cell(date(row.went_at));
+      const action=cell('');
+      if(row.pending && access.acknowledge){const button=text('button','Quittieren','ack');button.onclick=async()=>{button.disabled=true;try{
+        const path=row.occurrence_id?`/api/occurrences/${encodeURIComponent(row.occurrence_id)}/acknowledge`:`/api/alarms/${encodeURIComponent(row.id)}/acknowledge`;
+        await api(path,{method:'POST',headers:{'X-Alarmserver-Action':'acknowledge'}});await refresh();
+      }catch(e){failure(e);}finally{button.disabled=false;}};action.append(button);}
     }else if(view==='history'){
       cell(date(row.timestamp));cell(row.alarm_name);cell({active:'Störung gekommen',clear:'Störung gegangen',acknowledge:'Quittiert',matrix_added:'Alarm angelegt',matrix_updated:'Alarmkonfiguration geändert',matrix_removed:'Alarm entfernt'}[row.kind]||row.kind);cell(row.username||row.source||'—');
     }else{cell(date(row.timestamp));cell(row.connection);const target=cell(`${row.source} → ${row.destination}`);if(row.name)target.append(text('small',row.name));if(row.ets_warning)target.append(text('small',row.ets_warning));cell(row.service+(row.dpt?' · '+row.dpt:''));cell(row.error||(row.display!==undefined?row.display+(row.unit?' '+row.unit:''):(row.raw===undefined?'—':JSON.stringify(row.raw))));}
     body.append(tr);
   }
   $('table-body').replaceChildren(body);$('empty').hidden=rows.length>0;
-  $('empty').textContent=view==='alarms'&&!data.alarms.length?'Noch keine Alarmmatrix hinterlegt. Admins und User können Alarme im Bereich Alarmmatrix einrichten.':view==='alarms'?(alarmStatusFilter==='unknown'?'Keine unbekannten Meldungen.':'Keine aktiven oder noch zu quittierenden Meldungen.'):'Keine passenden Einträge.';
-  $('hint').textContent={alarms:'Aktive oder noch zu quittierende Alarme und Störungen. Sortierung: Priorität, danach neuester Zeitstempel.',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
+  $('empty').textContent=view==='alarms'&&!data.alarms.length?'Keine passenden Alarmvorgänge.':view==='alarms'?(alarmStatusFilter==='unknown'?'Keine unbekannten Meldungen.':'Keine aktiven oder noch zu quittierenden Meldungen.'):'Keine passenden Einträge.';
+  $('hint').textContent={alarms:'Eine Zeile je Auftreten. Quittieren bestätigt die Kenntnisnahme; Gehen bestätigt das Ende der Alarmbedingung. Sortierung: Priorität, danach Gekommen.',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
 }
 async function refresh(){
   if(busy)return;
@@ -398,7 +410,7 @@ function layoutPage(){
   document.body.classList.toggle('scroll-list-page',!settingsOpen);
   document.body.classList.toggle('matrix-page',page==='/matrix');
   const separate=page!=='/';
-  $('counters').hidden=separate;$('main-nav').hidden=separate;$('back-dashboard').hidden=!separate;
+  $('counters').hidden=separate;$('main-nav').hidden=true;$('back-dashboard').hidden=!separate;
   if(names[page]){$('page-title').textContent=names[page][0];$('page-description').textContent=names[page][1];document.title=names[page][0]+' · KNX Alarmserver';}
   $('data-panel').hidden=settingsOpen;
   $('knx-settings').hidden=page!=='/knx';$('ets-panel').hidden=page!=='/ets';$('users-panel').hidden=page!=='/users';
@@ -570,6 +582,7 @@ function applyListFilters(){
   }catch(error){failure(error);}
 }
 $('search').oninput=()=>{if(view==='telegrams')render();else{clearTimeout(searchTimer);searchTimer=setTimeout(applyListFilters,300);}};
+$('occurrence-filter').onchange=()=>{alarmStatusFilter=$('occurrence-filter').value;view='alarms';listing=null;listGeneration++;refresh();};
 $('date-apply').onclick=applyListFilters;
 $('date-clear').onclick=()=>{alarmStatusFilter='';$('date-from').value='';$('date-until').value='';$('search').value='';applyListFilters();};
 document.addEventListener('visibilitychange',()=>{clearTimeout(pollTimer);if(!document.hidden)refresh();});

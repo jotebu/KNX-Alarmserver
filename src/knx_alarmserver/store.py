@@ -18,7 +18,10 @@ def now():
     return datetime.now(timezone.utc).isoformat(timespec="microseconds")
 
 
-class Store:
+from .occurrences import OccurrenceStore
+
+
+class Store(OccurrenceStore):
     def __init__(self, path, alarms, retention_days=365):
         self.alarms = {a.id: a for a in alarms}
         self.by_address = {a.group_address: a for a in alarms}
@@ -38,6 +41,7 @@ class Store:
                     self.alarms = {a.id: a for a in alarms}
                     self.by_address = {a.group_address: a for a in alarms}
             self._initialize(alarms)
+            self._initialize_occurrences()
             row = self.db.execute("SELECT value FROM settings WHERE name='ets'").fetchone()
             self._ets = json.loads(row['value']) if row else {}
         except Exception:
@@ -160,12 +164,14 @@ class Store:
             with self.transaction():
                 for identifier, alarm in old.items():
                     if identifier not in replacement:
+                        self._end_occurrence(identifier, 'configuration_removed', now())
                         self._event(alarm, 'matrix_removed', now(), username=username)
                 for alarm in alarms:
                     signature = json.dumps([alarm.group_address, alarm.dpt, alarm.operator, alarm.threshold,
                                             alarm.hysteresis, alarm.field], sort_keys=True, ensure_ascii=False)
                     state = self.db.execute('SELECT signature FROM states WHERE id=?', (alarm.id,)).fetchone()
                     if state and json.loads(state['signature']) != json.loads(signature):
+                        self._end_occurrence(alarm.id, 'configuration_changed', now())
                         self.db.execute('DELETE FROM states WHERE id=?', (alarm.id,))
                     self.db.execute('INSERT OR IGNORE INTO states(id,signature) VALUES (?,?)', (alarm.id, signature))
                     if old.get(alarm.id) != alarm:
@@ -181,9 +187,9 @@ class Store:
         with self.lock:
             self.db.close()
 
-    def _event(self, alarm, kind, timestamp, username=None, source=None):
-        self.db.execute("INSERT INTO events(alarm_id,alarm_name,kind,timestamp,username,source) VALUES (?,?,?,?,?,?)",
-                        (alarm.id, alarm.name, kind, timestamp, username, source))
+    def _event(self, alarm, kind, timestamp, username=None, source=None, occurrence_id=None):
+        self.db.execute("INSERT INTO events(alarm_id,alarm_name,kind,timestamp,username,source,occurrence_id) VALUES (?,?,?,?,?,?,?)",
+                        (alarm.id, alarm.name, kind, timestamp, username, source, occurrence_id))
 
     def ingest(self, address, value, source, display=None, unit=None):
         value = normalized(value)
@@ -199,14 +205,20 @@ class Store:
             if row["active"] == active:
                 self.db.execute("UPDATE states SET last_seen=?,source=? WHERE id=?", (timestamp, source, alarm.id))
                 return False
+            occurrence_id = row['occurrence_id']
+            if alarm.operator != 'monitor':
+                if active:
+                    occurrence_id = self._new_occurrence(alarm.id, timestamp)
+                elif occurrence_id:
+                    self.db.execute('UPDATE occurrences SET went_at=? WHERE id=? AND went_at IS NULL AND end_reason IS NULL', (timestamp, occurrence_id))
             pending = 1 if active else row["pending"]
             ack_by = None if active else row["acknowledged_by"]
             ack_at = None if active else row["acknowledged_at"]
             self.db.execute("""UPDATE states SET active=?,pending=?,acknowledged_by=?,acknowledged_at=?,
-                            last_seen=?,changed_at=?,source=? WHERE id=?""",
-                            (active, pending, ack_by, ack_at, timestamp, timestamp, source, alarm.id))
+                            last_seen=?,changed_at=?,source=?,occurrence_id=? WHERE id=?""",
+                            (active, pending, ack_by, ack_at, timestamp, timestamp, source, occurrence_id, alarm.id))
             if alarm.operator != "monitor":
-                self._event(alarm, "active" if active else "clear", timestamp, source=source)
+                self._event(alarm, "active" if active else "clear", timestamp, source=source, occurrence_id=occurrence_id)
         return True
 
     def decode_failed(self, address, message):
@@ -224,11 +236,9 @@ class Store:
             row = self.db.execute("SELECT * FROM states WHERE id=?", (alarm_id,)).fetchone()
             if not row["pending"]:
                 return False
-            timestamp = now()
-            self.db.execute("UPDATE states SET pending=0,acknowledged_by=?,acknowledged_at=? WHERE id=?",
-                            (username, timestamp, alarm_id))
-            self._event(alarm, "acknowledge", timestamp, username=username)
-        return True
+            if row['occurrence_id'] is None:
+                return False
+            return self.acknowledge_occurrence(row['occurrence_id'], username)
 
     def snapshot(self):
         with self.lock:
@@ -277,6 +287,7 @@ class Store:
         cutoff = (datetime.now(timezone.utc) - timedelta(days=self.retention_days)).isoformat()
         with self.transaction():
             self.db.execute("DELETE FROM events WHERE timestamp < ?", (cutoff,))
+            self.db.execute("DELETE FROM occurrences WHERE acknowledged=1 AND max(COALESCE(went_at,ended_at),COALESCE(acknowledged_at,went_at,ended_at)) < ?", (cutoff,))
 
     @staticmethod
     def _validate_account(username, password=None, role=None):

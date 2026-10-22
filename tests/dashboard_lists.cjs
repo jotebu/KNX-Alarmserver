@@ -15,7 +15,7 @@ test('date range includes the full local end day and filters search the full lis
  assert.equal(vm.runInContext('listFilters.from',s.ctx),'2026-10-20T22:00:00.000Z');
  assert.equal(vm.runInContext('listFilters.until',s.ctx),'2026-10-21T22:00:00.000Z');
  assert.equal(s.calls(),1);
- const query=vm.runInContext("listQuery('alarms')",s.ctx);assert.match(query,/list_mode=true&search=Pumpe/);
+ const query=vm.runInContext("listQuery('alarms')",s.ctx);assert.match(query,/occurrences=true&list_mode=true&search=Pumpe/);
  s.get('date-from').value='2026-10-22';vm.runInContext('applyListFilters()',s.ctx);
  assert.equal(s.calls(),1);assert.match(s.errors[0],/Von/);
 });

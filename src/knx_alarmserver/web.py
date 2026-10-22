@@ -249,15 +249,27 @@ def create_app(config, store, update_manager=None, version_checker=None):
         return {"version": __version__, **identity(request, username), "knx": monitor.status(), "started_at": store.started_at}
 
     @app.get("/api/dashboard")
-    def dashboard(request: Request, view: str = "alarms", paged: bool = False, list_mode: bool = False,
+    def dashboard(request: Request, view: str = "alarms", paged: bool = False, list_mode: bool = False, occurrences: bool = False,
                   page: int = Query(1, ge=1), from_time: datetime | None = None,
                   until_time: datetime | None = None, search: str = Query('', max_length=200),
-                  open_only: bool = False, status_filter: str = Query('', pattern='^(active|active_ack|clear_pending|unknown)?$'), username=Depends(user)):
+                  open_only: bool = False, status_filter: str = Query('', pattern='^(open|active|active_ack|clear_pending|unknown|closed|all)?$'), username=Depends(user)):
         if view not in {"alarms", "history", "telegrams"}:
             raise HTTPException(status_code=400, detail="Unbekannte Dashboard-Ansicht")
         result = {"status": {"version": __version__, **identity(request, username),
                              "knx": monitor.status(), "started_at": store.started_at},
                   "alarms": store.snapshot()}
+        if occurrences and view == 'alarms':
+            from .listing import bounds
+            try:
+                start, end = bounds(from_time, until_time)
+            except ValueError as error:
+                raise HTTPException(status_code=422, detail=str(error)) from None
+            with store.lock:
+                listing = store.occurrence_list(status_filter, start, end, search)
+                result['counts'] = store.occurrence_counts()
+                result['alarms'] = listing['rows']
+                result['list_info'] = {key: value for key, value in listing.items() if key != 'rows'}
+            return result
         if (paged or list_mode) and view in {'alarms', 'history'}:
             from .listing import bounds, alarms_page
             try:
@@ -506,6 +518,15 @@ def create_app(config, store, update_manager=None, version_checker=None):
             app.state.monitor = monitor
             logging.getLogger(__name__).info("KNX-Konfiguration durch %s aktualisiert", username)
             return store.knx_settings(config["knx"])
+
+    @app.post('/api/occurrences/{occurrence_id}/acknowledge')
+    def acknowledge_occurrence(occurrence_id: int, request: Request, username=Depends(acknowledger)):
+        if request.headers.get('X-Alarmserver-Action') != 'acknowledge' or request.headers.get('Sec-Fetch-Site') == 'cross-site':
+            raise HTTPException(status_code=403, detail='Aktionsheader fehlt oder fremde Herkunft')
+        try:
+            return {'changed': store.acknowledge_occurrence(occurrence_id, username)}
+        except KeyError:
+            raise HTTPException(status_code=404, detail='Alarmvorgang nicht gefunden') from None
 
     @app.post("/api/alarms/{alarm_id}/acknowledge")
     def acknowledge(alarm_id: str, request: Request, username=Depends(acknowledger)):

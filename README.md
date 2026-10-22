@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.13 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.13.0 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -172,13 +172,23 @@ sudo -u knx-alarmserver /opt/knx-alarmserver/current/venv/bin/knx-alarmserver dp
 
 Es ist in dieser Version ein Datenpunkt je Gruppenadresse vorgesehen. Für mehrere Regeln auf derselben Adresse ist später eine Trennung von Datenpunkt- und Regelkonfiguration nötig. Bei Änderungen von Gruppenadresse, DPT oder Regel im Dashboard wird nur der betroffene aktuelle Zustand zurückgesetzt, bis ein neues Telegramm eintrifft. Name, Bereich und Priorität können ohne Zustandsverlust geändert werden. Änderungen und Entfernen werden mit Benutzer und Zeit in der Historie protokolliert; bestehende Ereignisse bleiben erhalten.
 
-## Meldungen und Historie durchsuchen
+## Gemeinsame Meldungsliste: ein Vorgang je Auftreten
 
-Die Zähler **Aktiv · offen**, **Aktiv · quittiert** und **Gegangen · offen** filtern die Meldungsliste per Klick auf den jeweiligen Zustand. Ein erneuter Klick hebt den Zustandsfilter auf; Filter zurücksetzen ebenfalls. Die Zähler zeigen unabhängig vom Filter weiterhin die Gesamtsummen. **Unbekannt** zählt ausschließlich Alarme ohne bekannten Alarmzustand. Ein Klick auf diesen Zähler zeigt diese Alarme gezielt in der Liste, obwohl sie in der normalen Meldungsansicht ausgeblendet sind. Ein erneuter Klick kehrt zur normalen Meldungsansicht zurück.
+Die Oberfläche führt aktuelle und abgeschlossene Alarmvorgänge in **einer Tabelle**. Jede Zeile gehört zu einem konkreten Auftreten und erhält eine automatische Vorgangsnummer. Die Alarmdefinition in der Matrix behält ihre eigene ID. Ein erneutes Kommen nach dem Gehen erzeugt einen neuen Vorgang, auch wenn der vorherige noch unquittiert ist.
 
-Beide Tabellen scrollen innerhalb der verfügbaren Seitenhöhe mit sichtbaren Spaltenüberschriften, ohne Seitennavigation. Meldungen zeigt ausschließlich aktive, aktiv quittierte und gegangene noch nicht quittierte Alarme/Störungen, zuerst nach Priorität (1 zuerst), innerhalb derselben Priorität nach neuestem Zustandswechselzeitstempel. Normale und unbekannte Zustände erscheinen nicht in dieser Liste; die Übersichtszähler umfassen weiterhin die gesamte Matrix. Die Historie zeigt die **neuesten 500 Treffer**. **Filter anzeigen** klappt Suche und Datumsfilter ein oder aus. Eingeklappte Filter bleiben wirksam, der Button kennzeichnet aktive Filter. Die Historienfilter durchsuchen den gesamten gespeicherten Bestand vor der Begrenzung auf 500 Zeilen. Die Trefferzahl bleibt sichtbar. Die oberen Zähler zeigen weiterhin die gesamte Alarmmatrix.
+Spalten: **Priorität · Meldung/Bereich · Zustand · Gekommen · Quittiert · Gegangen · Aktion**. Die Quittierung enthält Datum/Uhrzeit und Benutzer. Wiederholte Telegramme oder Leseantworten mit gleicher Alarmbedingung verändern keinen dieser drei Zeitpunkte. Quittieren ist eine Kenntnisnahme und verändert nicht den KNX-Wert. Es ist vor oder nach dem Gehen möglich und gilt ausschließlich für die ausgewählte Vorgangsnummer. Ein älterer Vorgang lässt sich unabhängig vom neueren Auftreten derselben Störung quittieren.
 
-**Von/Bis** bezieht sich auf lokale Kalendertage im Browser; der Bis-Tag ist vollständig enthalten. In der Historie wird der Ereigniszeitpunkt gefiltert, in Meldungen der letzte Wechsel des Alarmzustands (gekommen/gegangen). Wiederholte Telegramme und Leseantworten mit gleichem Alarmzustand verändern diesen Zeitpunkt nicht; die Quittierung hat ihren eigenen Zeitpunkt. Alarme ohne Zustandswechselzeit erscheinen nicht bei gesetztem Datumsfilter. Der Datumsfilter ändert keine Zustände. Die konfigurierte Aufbewahrungsdauer (`retention_days`, standardmäßig 365 Tage) gilt weiterhin; bereits gelöschte Ereignisse können nicht wieder angezeigt werden. Der separate Telegrammmonitor enthält weiterhin die letzten 250 Telegramme im Arbeitsspeicher.
+**Ansicht** bietet Offen (Standard: aktiv ODER unquittiert), Aktiv/offen, Aktiv/quittiert, Gegangen/offen, Abgeschlossen und Alle. Die vier Zähler wählen zusätzlich direkt ihren jeweiligen Filter; ein erneuter Klick kehrt zu Offen zurück. Unbekannt zeigt separat konfigurierte Punkte ohne bekannten Zustand; diese sind noch keine Alarmvorgänge. Die Zähler beziehen sich auf alle gespeicherten Vorgänge, unabhängig von Suche und Datum. Dadurch können mehrere gegangene offene Vorgänge derselben Alarmdefinition gezählt werden.
+
+Die Tabelle scrollt innerhalb der Seite, mit sichtbaren Spaltenüberschriften. Offene Vorgänge werden vollständig angezeigt. **Alle** und **Abgeschlossen** zeigen höchstens die neuesten 500 passenden Vorgänge; Suche und Datumsfilter durchsuchen den gesamten gespeicherten Bestand vor der Begrenzung. Die Anzeige sortiert nach Priorität (1 zuerst), dann nach Gekommen absteigend. Suche berücksichtigt auch Quittierenden und Vorgangsnummer. **Filter anzeigen** klappt Suche und Datum ein/aus; eingeklappte Filter bleiben wirksam. Datum Von/Bis bezieht sich auf Gekommen und auf lokale Kalendertage, einschließlich des gesamten Bis-Tags. Fehlende Gekommen-Zeitpunkte werden bei Datumsfilter nicht berücksichtigt.
+
+### Übernahme bestehender Daten
+
+Beim ersten Start wird die bestehende SQLite-Datenbank automatisch ergänzt. Vor der Übernahme einer gefüllten Datenbank erstellt der Server eine konsistente lokale Sicherung neben der Datenbank: `alarmserver.sqlite3.before-occurrences-<Nummer>.sqlite3`, nur für den Dienstbenutzer lesbar. Scheitert diese Sicherung, wird die Migration nicht begonnen. Schemaänderung, Übernahme und Abschlussmarkierung erfolgen transaktional; ein Abbruch ist wiederholbar.
+
+Gespeicherte aktuelle Zustände, IDs, Werte, Empfangs-/Wechselzeiten, Quittierende, Benutzer, Sitzungen, Matrix, Prioritäten, KNX-Konfiguration und Ereignisse bleiben erhalten. Erhaltene Kommen-/Gehen-/Quittierungsereignisse werden zu Vorgängen zusammengeführt. Der gespeicherte aktuelle Zustand hat bei der Zuordnung Vorrang. Bereits früher gelöschte Ereignisse lassen sich nicht rekonstruieren: Fehlende Zeiten bleiben leer, unvollständige Verläufe werden gekennzeichnet. Historische Namen stammen soweit vorhanden aus den Ereignissen; Bereich, GA, DPT und Priorität alter Vorgänge werden soweit möglich aus der aktuellen Matrix übernommen. Neue Vorgänge speichern diese Angaben beim Auftreten.
+
+Änderung von Adresse/DPT/Regel oder Entfernen eines Alarms beendet die bisherige Auswertung mit einer ausdrücklichen Kennzeichnung. Dafür wird **kein fiktiver Gegangen-Zeitpunkt** erzeugt. Nicht quittierte alte Vorgänge bleiben bearbeitbar. Die Aufbewahrungsdauer (`retention_days`, standardmäßig 365 Tage) entfernt ausschließlich abgeschlossene Vorgänge, deren Ende und Quittierung lange genug zurückliegen. Aktive oder unquittierte Vorgänge bleiben erhalten. Das technische Ereignisprotokoll bleibt zusätzlich gespeichert und über `/api/history` erreichbar, erscheint aber nicht mehr als separate Bedienliste. Der Telegrammmonitor behält seinen bisherigen Ringpuffer.
 
 ## KNX-Status manuell abfragen
 
@@ -192,7 +202,7 @@ Dokumentation: [KNX Gruppenmonitor lesen](https://support.knx.org/hc/en-us/artic
 
 ## Zustände und Quittierung
 
-Ein kommender Alarm wird unquittiert gespeichert. Quittieren setzt den lokalen Quittierungsstatus, nicht den KNX-Wert. Geht eine unquittierte Störung, bleibt sie als „Gegangen · unquittiert“ stehen. Ein erneutes Kommen erfordert eine neue Quittierung. Wiederholte identische Telegramme aktualisieren den Empfangszeitpunkt ohne neue Alarmereignisse.
+Ein kommender Alarm wird unquittiert gespeichert. Quittieren setzt den lokalen Quittierungsstatus, nicht den KNX-Wert. Geht eine unquittierte Störung, bleibt sie als „Gegangen · unquittiert“ stehen. Ein erneutes Kommen erzeugt einen eigenen Vorgang mit neuer Quittierung; ältere Vorgänge bleiben unverändert. Wiederholte identische Telegramme aktualisieren den Empfangszeitpunkt ohne neue Alarmereignisse.
 
 Gespeicherte Zustände bleiben nach einem Neustart erhalten und werden nicht als alte Werte klassifiziert. Vor dem ersten Empfang heißt der Zustand „Unbekannt“. Ungültige Nutzdaten setzen einen sichtbaren DPT-/Regelfehler und behalten den letzten gültigen Alarmzustand. `Normal` bedeutet zuletzt empfangener Normalwert, nicht zyklisch geprüfte Erreichbarkeit. Eine manuelle Statusabfrage steht auf der Telegrammseite bereit. Zyklische Statusüberwachung, automatische Initialabfragen, Entprellung und Verzögerungen sind noch nicht enthalten. Zustandswechsel während eines Ausfalls können durch den rein passiven Empfänger nicht rekonstruiert werden.
 
@@ -216,7 +226,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.13
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.13.0
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -226,8 +236,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.12.13
-git push origin v0.12.13
+git tag v0.13.0
+git push origin v0.13.0
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.

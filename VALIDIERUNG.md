@@ -1,6 +1,14 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.13, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.13.0, Inbetriebnahmeversion.
+
+## Gemeinsame Alarmvorgänge
+
+- Eigene Vorgangsnummer, drei unabhängige Zeitpunkte, wiederholter Empfang, Quittierung vor/nach Gehen und erneutes Auftreten vor alter Quittierung geprüft. Quittieren eines älteren Vorgangs lässt einen neuen aktiven Vorgang unquittiert.
+- Migration mit erhaltenem Ereignisverlauf und nur aktuellen Zuständen geprüft; kein Vorgang bei initialem Normalwert. Aktuelle Zustände, gespeicherte Matrix, Benutzerkonto und Sitzung bleiben erhalten; lokale SQLite-Sicherung, idempotenter zweiter Start und transaktionaler Wiederanlauf nach absichtlichem Fehler geprüft.
+- Historienfilter vor 500er-Begrenzung, vollständige offene Liste, Entfernen eines Alarms ohne erfundenen Gehen-Zeitpunkt, atomarer Rollback bei Live-Schreibfehler und Aufbewahrung offener/zuletzt quittierter Vorgänge geprüft.
+- HTTP-Rechte und Herkunftsschutz für Admin/User/Viewer, genaue Vorgangsquittierung sowie UI-Integration mit einer Tabelle, drei Zeitspalten, Benutzer, Ansichtsauswahl, Zählerumschaltung und Viewer-Rechten geprüft.
+- Tatsächliche Raspberry-Datenbank und KNX-Geräte sind in dieser Umgebung nicht erreichbar. Die reale Übernahme erfolgt beim Update/ersten Start; visuelle Abnahme vor Ort steht aus.
 
 ## Stabiler Alarmzeitstempel
 
@@ -58,7 +66,7 @@ Stand: 22.10.2026. Projektversion 0.12.13, Inbetriebnahmeversion.
 
 ## Alarmmatrix im Dashboard
 
-- Gesamter Prüfstand: 113 Python-Tests und 20 Dashboard-Tests erfolgreich.
+- Gesamter Prüfstand: 124 Python-Tests und 21 Dashboard-Tests erfolgreich.
 
 - Gemeinsame Validierung für Tabellenzeilen und CSV, automatische IDs, sofortige Auswertung, Neustart-Persistenz, Bearbeitung mit Zustandserhalt bzw. gezieltem Reset, unveränderte Historie und Datenbankfehler mit Rücknahme geprüft.
 - API-Prüfungen für Admin/User/Viewer, fremde Herkunft, fehlenden Aktionsheader, parallele Revisionen, CSV-Vorlage und abgelehnten Doppelimport.
