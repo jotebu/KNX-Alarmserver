@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.7 – 22.10.2026
+
+- Gesamte Vorgangsnummernspalte „#“ einschließlich Zahlen, Platzhalter und begrenztem Nummerntext mittig ausrichten.
+
 ## 0.15.6 – 22.10.2026
 
 - Kleine Sortierpfeile neben den Spaltenüberschriften entfernen. Sortierung per Klick und zugänglicher Sortierstatus bleiben erhalten.

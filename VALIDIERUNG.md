@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.15.6, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.15.7, Inbetriebnahmeversion.
+
+## Zentrierte Vorgangsnummern
+
+- Spalte „#“ zentriert einschließlich der begrenzten Nummernspanne; mittige Außenabstände und Textausrichtung im DOM/CSS geprüft. Sortierung und Nummern-Tooltip bleiben erhalten.
 
 ## Update-Kasten nach bestätigter neuer Version
 
