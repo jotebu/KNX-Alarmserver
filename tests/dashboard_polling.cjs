@@ -12,7 +12,7 @@ function setup(fetch){
     setTimeout(fn,ms){timers.set(++id,{fn,ms});return id;},clearTimeout(key){timers.delete(key);}});
   const prefix=source.slice(0,source.indexOf('function failure('));
   const refresh=source.slice(source.indexOf('async function refresh(){'),source.indexOf('let settingsOpen='));
-  vm.runInContext(prefix+"\nlet settingsOpen=false;function applyAccess(){}function setKnxIndicator(){}function renderReadStatus(){}async function initializePage(){}function render(){}function failure(error){$('error').textContent=error.message;}\n"+refresh,context);
+  vm.runInContext(prefix+"\nlet settingsOpen=false;function applyAccess(){}function setKnxIndicator(){}function renderKnxStatus(){}function renderReadStatus(){}async function initializePage(){}function render(){}function failure(error){$('error').textContent=error.message;}\n"+refresh,context);
   return {context,timers,nodes,run:code=>vm.runInContext(code,context)};
 }
 const snapshot=()=>({status:{version:'test',user:'admin',knx:{enabled:false,ready:false,connections:[]}},alarms:[]});

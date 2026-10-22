@@ -29,9 +29,14 @@ class Monitor:
     def status(self):
         enabled = self.config.get("enabled", False)
         states = list(self.connections.values())
+        display_states = list(states)
+        for item in self.config.get("connections", []):
+            if not enabled or not item.get("enabled", True):
+                display_states = [state for state in display_states if state["name"] != item["name"]]
+                display_states.append({"name": item["name"], "state": "DISABLED", "last_received": None, "error": None})
         return {"enabled": enabled, "ready": enabled and bool(states) and
                 all(s["state"] == "CONNECTED" for s in states) and not self.failed,
-                "storage_error": self.failed, "connections": states,
+                "storage_error": self.failed, "connections": display_states,
                 "test": dict(self.bus_test.state),
                 "read": {**self.read_state, "answered": len(self.read_responses)}}
 

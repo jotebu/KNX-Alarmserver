@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.15.8, Inbetriebnahmeversion.
+Stand: 23.10.2026. Projektversion 0.15.9, Inbetriebnahmeversion.
+
+## Kompaktes KNX-Statusmenü
+
+- Verbindungsnamen und zugängliche Statuspunkte für aktiv, fehlerhaft und deaktiviert geprüft. Gemeinsamer Empfangszeitpunkt entspricht dem neuesten gültigen Empfang über alle Verbindungen; ohne Empfang erscheint ein Platzhalter. Speicherfehler bleiben sichtbar. Deaktivierte Konfigurationen werden ohne Verbindungsaufbau im Status ausgegeben.
 
 ## Schrittweise Darstellung der Meldeliste
 

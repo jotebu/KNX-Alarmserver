@@ -157,6 +157,28 @@ function render(){
   $('hint').textContent={alarms:'',history:'Die neuesten 500 passenden Ereignisse. Filter durchsuchen die gesamte gespeicherte Historie. Quittierungen ändern ausschließlich den lokalen Alarmstatus. Die konfigurierte Aufbewahrungsdauer gilt weiterhin.',telegrams:'Die letzten 250 empfangenen Gruppentelegramme im Arbeitsspeicher. Routing bestätigt keine Erreichbarkeit eines bestimmten Routers.'}[view];
   $('hint').hidden=view==='alarms';
 }
+function renderKnxStatus(knx){
+  const connections=knx.connections||[],list=document.createDocumentFragment();
+  for(const connection of connections){
+    const disabled=!knx.enabled||connection.enabled===false||connection.state==='DISABLED';
+    const color=disabled?'yellow':connection.state==='CONNECTED'?'green':'red';
+    const label=disabled?'Deaktiviert':color==='green'?'Aktiv':'Fehler';
+    const row=text('div','','knx-connection-row');row.append(text('span',connection.name));
+    const dot=text('span','','knx-connection-dot dot-'+color);dot.title=label;dot.setAttribute('role','img');dot.setAttribute('aria-label',label);row.append(dot);list.append(row);
+  }
+  if(!connections.length){
+    const row=text('div','','knx-connection-row knx-connection-empty'),dot=text('span','','knx-connection-dot dot-yellow');
+    dot.title='Nicht konfiguriert';dot.setAttribute('role','img');dot.setAttribute('aria-label','Nicht konfiguriert');row.append(text('span','Nicht konfiguriert'),dot);list.append(row);
+  }
+  $('connection-detail').replaceChildren(list);
+  const received=connections.map(c=>c.last_received).filter(value=>value&&Number.isFinite(Date.parse(value))).sort((a,b)=>Date.parse(b)-Date.parse(a))[0];
+  $('connection-last-received').textContent='Letzter Empfang '+date(received);
+  $('connection-error').hidden=!knx.storage_error;
+  $('connection-error').textContent=knx.storage_error?'Fehler beim Speichern; Dienstprotokoll prüfen.':'';
+  const label=!knx.enabled?'KNX deaktiviert':knx.ready?'KNX aktiv':'KNX-Verbindung fehlerhaft';
+  const color=knx.storage_error?'red':!knx.enabled?'yellow':knx.ready?'green':'red';
+  setKnxIndicator(color,label);
+}
 async function refresh(){
   if(busy)return;
   clearTimeout(pollTimer);busy=true;
@@ -183,11 +205,7 @@ async function refresh(){
     $('pending').textContent=snapshot.counts?snapshot.counts.pending:data.alarms.filter(r=>r.status==='clear_pending').length;
     $('closed').textContent=snapshot.counts?.closed??data.alarms.filter(r=>r.status==='closed').length;
     $('unknown').textContent=snapshot.counts?snapshot.counts.unknown:data.alarms.filter(r=>r.status==='unknown').length;
-    $('connection-status').textContent=!status.knx.enabled?'KNX deaktiviert':status.knx.ready?'Verbindungen bereit':'Verbindung gestört / wird aufgebaut';
-    $('connection-detail').textContent=status.knx.connections.map(c=>`${c.name}: ${c.state} · letzter Empfang ${date(c.last_received)}`).join(' | ')||'KNX-Empfang in der Konfiguration noch nicht aktiviert.';
-    if(status.knx.storage_error)$('connection-detail').textContent+=' | FEHLER beim Speichern; Dienstprotokoll prüfen.';
-    const knxColor=status.knx.storage_error?'red':!status.knx.enabled?'yellow':status.knx.ready?'green':'red';
-    setKnxIndicator(knxColor,$('connection-status').textContent);
+    renderKnxStatus(status.knx);
     renderReadStatus(status.knx);
     window.KnxBusTest?.status(status.knx);
     if(!pageInitialized){pageInitialized=true;await initializePage();}

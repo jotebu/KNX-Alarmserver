@@ -96,8 +96,15 @@ class KnxSettingsTests(unittest.TestCase):
             self.assertEqual(self.client.app.state.monitor.config,c)
             self.assertEqual(list(self.client.app.state.monitor.connections),['On'])
             self.assertEqual(run.await_count,1)
+            states = self.client.app.state.monitor.status()['connections']
+            self.assertEqual([(state['name'], state['state']) for state in states], [('On', 'CONNECTING'), ('Off', 'DISABLED')])
+            self.client.app.state.monitor.connections['On']['state'] = 'CONNECTED'
+            self.assertTrue(self.client.app.state.monitor.status()['ready'])
         self.assertEqual(self.save({'enabled':False,'connections':c['connections']}).status_code,200)
         self.assertFalse(self.client.app.state.monitor.tasks)
+        states = self.client.app.state.monitor.status()['connections']
+        self.assertEqual([(state['name'], state['state']) for state in states], [('On', 'DISABLED'), ('Off', 'DISABLED')])
+        self.assertFalse(self.client.app.state.monitor.status()['ready'])
 
     def test_storage_failure_restores_previous_monitor(self):
         previous=self.current()

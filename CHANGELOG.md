@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.9 – 23.10.2026
+
+- KNX-Statusmenü verkleinern: Verbindungsnamen mit grünem, rotem oder gelbem Statuspunkt; ein gemeinsamer letzter Empfang unter der Liste. Deaktivierte konfigurierte Verbindungen ebenfalls anzeigen. Zusammenfassende Statuszeile im Menü entfernen, Abstände und Breite anpassen.
+
 ## 0.15.8 – 22.10.2026
 
 - Meldeliste beim Öffnen mit 100 Zeilen darstellen und nahe dem Scrollende jeweils 100 weitere einblenden. Summenzähler, Filterergebnisse und Sortierung bleiben unabhängig von der sichtbaren Teilmenge; Filter- und Sortierwechsel beginnen wieder am Listenanfang.
