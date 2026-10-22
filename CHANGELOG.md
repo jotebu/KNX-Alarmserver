@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.7 – 22.10.2026
+
+- Sichtbare Beschriftung „Darstellung“ aus dem Benutzermenü entfernen. Position, zugänglicher Name und Funktion des dreistufigen Schalters bleiben erhalten.
+
 ## 0.14.6 – 22.10.2026
 
 - Rang aus der Kopfzeile ins aufgeklappte Benutzermenü unter den Benutzernamen verschieben. In der Kopfzeile ausschließlich das Benutzer-Icon anzeigen; Rollen und Berechtigungen beibehalten.

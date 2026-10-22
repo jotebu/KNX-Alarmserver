@@ -1,6 +1,6 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.14.6, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.14.7, Inbetriebnahmeversion.
 
 ## Rang im Benutzermenü
 
