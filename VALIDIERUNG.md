@@ -1,11 +1,11 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.14.4, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.14.5, Inbetriebnahmeversion.
 
 ## Darstellungsschalter in der Kopfzeile
 
-- Dreistufige Radioauswahl außerhalb und rechts neben dem Benutzermenü für alle Rollen; eindeutige Namen, Tooltips und sichtbare Fokusmarkierung. Animierter Schieber folgt der gespeicherten Auswahl auch bei Tab-Synchronisierung; Automatisch bleibt bei Systemwechsel ausgewählt.
-- 32 JavaScript-Tests und ergänzende DOM-Prüfung der echten Radioelemente mit Klicks, genau einer aktiven Stellung, gespeichertem Wert und Anwendung des Light/Dark-Designs erfolgreich. Kein Backend-Verhalten verändert; echte Browser-Sichtprüfung auf dem Raspberry steht aus.
+- Dreistufige Radioauswahl im Benutzermenü unter dem Benutzernamen für alle Rollen; eindeutige Namen, Tooltips und sichtbare Fokusmarkierung. Animierter Schieber folgt der gespeicherten Auswahl auch bei Tab-Synchronisierung; Automatisch bleibt bei Systemwechsel ausgewählt.
+- 32 JavaScript-Tests und ergänzende DOM-Prüfung der echten Radioelemente mit Klicks, genau einer aktiven Stellung, gespeichertem Wert und Anwendung des Light/Dark-Designs erfolgreich. Kompakte Maße 108 × 32 Pixel sowie Klickwechsel im geöffneten Menü im DOM geprüft. Kein Backend-Verhalten verändert; echte Browser-Sichtprüfung auf dem Raspberry steht aus.
 
 ## Telegrammzähler
 

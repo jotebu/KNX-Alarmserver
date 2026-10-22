@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.5 – 22.10.2026
+
+- Dreistufigen Darstellungsschalter ins Benutzermenü unter den Benutzernamen verschieben. Mit 108 × 32 Pixeln und kleineren Symbolen an die Menübuttons anpassen; Dark, Light und Automatisch sowie gespeicherte Auswahl beibehalten.
+- Zusätzliche Kopfzeilenumbrüche für den externen Schalter wieder entfernen.
+
 ## 0.14.4 – 22.10.2026
 
 - Darstellungsauswahl aus dem Benutzermenü rechts daneben in die feste Kopfzeile verschieben: kompakter dreistufiger Schiebeschalter mit Mond, Sonne und Automatik-Symbol.
