@@ -600,14 +600,24 @@ $('password-form').onsubmit=async event=>{
   finally{$('password-save').disabled=false;}
 };
 function renderVersionCheck(result){
-  newerVersionKnown=Boolean(result.check_ok&&result.update_available);
-  if(page==='/versions'&&result.check_ok){
-    $('versions-feedback').textContent=result.update_available?'Neue Version '+result.latest_version+' verfügbar.':'Installierte Version ist aktuell.';
+  // A failed follow-up check is not evidence that a confirmed update disappeared.
+  const previous=renderVersionCheck.confirmed;
+  const older=previous?.checked_at&&result.checked_at&&Date.parse(result.checked_at)<Date.parse(previous.checked_at);
+  if(!older&&previous&&result.current_version&&previous.current_version!==result.current_version)renderVersionCheck.confirmed=null;
+  if(result.check_ok&&!older){
+    const confirmed=renderVersionCheck.confirmed;
+    if(!confirmed||!confirmed.checked_at||!result.checked_at||Date.parse(result.checked_at)>=Date.parse(confirmed.checked_at))renderVersionCheck.confirmed={...result};
+  }
+  const checked=renderVersionCheck.confirmed||result;
+  newerVersionKnown=Boolean(checked.check_ok&&checked.update_available);
+  if(page==='/versions'&&checked.check_ok){
+    $('versions-feedback').textContent=checked.update_available?'Neue Version '+checked.latest_version+' verfügbar.':'Installierte Version ist aktuell.';
   }
   $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;
-  const link=$('version-link');link.textContent='Version '+result.current_version;
-  link.classList.toggle('update-available',result.check_ok&&result.update_available);
-  link.title=!result.check_ok?'Versionshistorie öffnen':result.update_available?'Neue Version '+result.latest_version+' verfügbar; Historie öffnen':'Aktuelle Version; Historie öffnen';
+  const link=$('version-link');link.textContent='Version '+(checked.current_version||result.current_version);
+  link.classList.toggle('update-available',newerVersionKnown);
+  link.title=!checked.check_ok?'Versionshistorie öffnen':checked.update_available?'Neue Version '+checked.latest_version+' verfügbar; Historie öffnen':'Aktuelle Version; Historie öffnen';
+  return checked;
 }
 async function checkVersion(){
   try{renderVersionCheck(await api('/api/version?refresh=true'));}
@@ -615,8 +625,8 @@ async function checkVersion(){
 }
 async function loadVersions(force=false){
   try{
-    const result=await api('/api/versions?refresh=true');renderVersionCheck(result);
-    $('versions-feedback').textContent=!result.check_ok?(force?'Versionsstatus konnte nicht aktualisiert werden. Bitte später erneut prüfen.':''):result.update_available?'Neue Version '+result.latest_version+' verfügbar.':'Installierte Version ist aktuell.';
+    const result=await api('/api/versions?refresh=true');const checked=renderVersionCheck(result);
+    $('versions-feedback').textContent=!result.check_ok&&force?'Versionsstatus konnte nicht aktualisiert werden. Bitte später erneut prüfen.':checked.check_ok?(checked.update_available?'Neue Version '+checked.latest_version+' verfügbar.':'Installierte Version ist aktuell.') :'';
     if(force&&result.check_ok)$('versions-feedback').textContent+=' Geprüft: '+date(result.checked_at)+'.';
     if(result.history_source==='local')$('versions-feedback').textContent+=' Lokale Versionshistorie.';
     const history=document.createDocumentFragment();let list=null;
@@ -629,8 +639,8 @@ async function loadVersions(force=false){
     $('versions-history').replaceChildren(history);
     return result.check_ok;
   }catch(error){
-    newerVersionKnown=false;$('update-panel').hidden=true;$('update-start').disabled=true;
-    $('version-link').classList.remove('update-available');
+    $('update-panel').hidden=page!=='/versions'||!access.configure||!newerVersionKnown;$('update-start').disabled=true;
+    if(!newerVersionKnown)$('version-link').classList.remove('update-available');
     $('versions-feedback').textContent=force?'Versionsstatus konnte nicht aktualisiert werden. Bitte später erneut prüfen.':'Versionshistorie konnte nicht geladen werden.';
     return false;
   }
@@ -644,7 +654,7 @@ async function checkVersionStatus(){
   $('update-start').disabled=true;
   try{
     const checked=await loadVersions(true);
-    if(access.configure&&checked)await loadUpdate();
+    if(access.configure&&(checked||newerVersionKnown))await loadUpdate();
   }finally{
     checkingVersionStatus=false;button.disabled=false;button.textContent='Status prüfen';
     $('versions-panel').setAttribute('aria-busy','false');
@@ -660,9 +670,9 @@ async function loadUpdate(){
     const active=['queued','fetching','installing'].includes(state.state);
     if(active)updateObserved=true;
     const showSuccess=state.state==='success'&&updateObserved;
-    renderVersionCheck(state);
+    const checked=renderVersionCheck(state)||state;
     $('update-version').textContent=state.current_version;
-    $('update-start').disabled=!state.available||active||!state.check_ok||!state.update_available;
+    $('update-start').disabled=!state.available||active||!checked.check_ok||!checked.update_available;
     $('update-refresh').hidden=!showSuccess;
     $('update-feedback').textContent=(state.state==='success'&&!showSuccess?'':state.message)||((newerVersionKnown&&!state.available)?'Update-Dienst fehlt. Bitte einmalig per PuTTY aktualisieren.':'');
     $('update-detail').textContent=state.target_version?'Zielversion: '+state.target_version+(state.updated_at?' · '+date(state.updated_at):''):'';

@@ -1,6 +1,11 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.15.4, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.15.5, Inbetriebnahmeversion.
+
+## Update-Kasten nach bestätigter neuer Version
+
+- Regression reproduziert: erfolgreiche Versionsprüfung, danach fehlgeschlagene Prüfung im Update-Status. Update-Kasten und Button bleiben mit bestätigter Versionsinfo für Admins sichtbar/erreichbar. Ältere Antwort überschreibt den bestätigten Stand nicht.
+- Erfolgreiche Prüfung nach Versionswechsel blendet den Kasten wieder aus und meldet „aktuell“. Bestehende Prüfungen für fehlende Erstbestätigung, fehlenden Update-Dienst, laufendes Update, stillen automatischen Fehlerfall und einmalige Erfolgsmeldung bleiben erfolgreich.
 
 ## Sortierbare Meldeliste
 

@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.5 – 22.10.2026
+
+- Bestätigte neue Version beim Abruf des Update-Dienststatus erhalten: eine fehlgeschlagene zweite Versionsprüfung darf den Update-Kasten und dessen Button nicht ausblenden, während die Versionsinfo weiterhin eine neue Version meldet.
+- Ältere Prüfergebnisse ignorieren. Eine neue erfolgreiche Prüfung bzw. ein geänderter installierter Softwarestand aktualisiert den bekannten Versionsstatus; nach erfolgreichem Update weiterhin „aktuell“ anzeigen.
+- Serverseitige erneute Versionsprüfung vor dem tatsächlichen Update bleibt erhalten; ohne jemals bestätigte neuere Version bleibt der Update-Button gesperrt. Rollen- und Dienstprüfung unverändert.
+
 ## 0.15.4 – 22.10.2026
 
 - Alle Spalten der Meldeliste per Überschrift auf-/absteigend sortieren: Priorität, Vorgangsnummer, Meldung/Bereich, Zustand, Gekommen, Quittiert, Gegangen und verfügbare Aktion. Aktuelle Richtung mit Pfeil und zugänglichem Sortierstatus kennzeichnen.

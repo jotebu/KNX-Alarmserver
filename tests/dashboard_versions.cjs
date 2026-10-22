@@ -104,3 +104,17 @@ test('observed update success reloads once after half a second; stored success n
  assert.equal(reloadTimers.length,1);assert.equal(reloads,0);
  reloadTimers[0].fn();assert.equal(reloads,1);
 });
+
+test('failed updater version check cannot hide a previously confirmed update or its button',async()=>{
+ const nodes=new Map(),get=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',hidden:false,disabled:false,classList:{toggle(){},remove(){}}});return nodes.get(id);};
+ let response={available:true,state:'idle',check_ok:false,update_available:false,current_version:'0.15.3'};
+ const ctx=vm.createContext({page:'/versions',access:{configure:true},newerVersionKnown:false,$:get,api:async()=>response,setTimeout:()=>0,clearTimeout(){},date:()=>''});
+ vm.runInContext(source.slice(source.indexOf('function renderVersionCheck('),source.indexOf('async function checkVersion('))+source.slice(source.indexOf('let updatePoll=null;'),source.indexOf("$('update-start').onclick=")),ctx);
+ vm.runInContext("renderVersionCheck({check_ok:true,update_available:true,current_version:'0.15.3',latest_version:'0.15.4',checked_at:'2026-10-22T12:00:00Z'})",ctx);
+ await vm.runInContext('loadUpdate()',ctx);
+ assert.equal(get('update-panel').hidden,false);assert.equal(get('update-start').disabled,false);assert.match(get('versions-feedback').textContent,/Neue Version 0.15.4/);
+ response={...response,check_ok:true,update_available:false,latest_version:'0.15.3',checked_at:'2026-10-22T11:59:00Z'};
+ await vm.runInContext('loadUpdate()',ctx);assert.equal(get('update-panel').hidden,false);assert.equal(get('update-start').disabled,false);
+ response={...response,check_ok:true,update_available:false,current_version:'0.15.4',latest_version:'0.15.4',checked_at:'2026-10-22T12:01:00Z'};
+ await vm.runInContext('loadUpdate()',ctx);assert.equal(get('update-panel').hidden,true);assert.equal(get('update-start').disabled,true);assert.match(get('versions-feedback').textContent,/aktuell/);
+});
