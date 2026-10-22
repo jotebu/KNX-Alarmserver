@@ -3,6 +3,7 @@
 import asyncio
 from collections import deque
 import logging
+from time import monotonic
 
 from .store import now
 
@@ -14,6 +15,7 @@ class Monitor:
         self.config, self.store = config, store
         self.connections = {}
         self.telegrams = deque(maxlen=250)
+        self.telegram_buckets = deque()
         self.tasks = []
         self.failed = False
         self.clients = {}
@@ -30,6 +32,19 @@ class Monitor:
                 "storage_error": self.failed, "connections": states,
                 "read": {**self.read_state, "answered": len(self.read_responses)}}
 
+    def _prune_telegram_buckets(self, second):
+        while self.telegram_buckets and self.telegram_buckets[0][0] <= second - 3600:
+            self.telegram_buckets.popleft()
+
+    def telegram_rates(self):
+        # One bucket per second: bounded memory, independent of the 250-row ring.
+        # Monotonic time is unaffected by NTP or daylight-saving clock changes.
+        with self.store.lock:
+            second = int(monotonic())
+            self._prune_telegram_buckets(second)
+            return {'minute': sum(count for stamp, count in self.telegram_buckets if stamp > second - 60),
+                    'hour': sum(count for _, count in self.telegram_buckets)}
+
     def received(self, telegram, connection_name):
         # Keep decoder selection and ingestion consistent with live matrix edits.
         with self.store.lock:
@@ -42,6 +57,12 @@ class Monitor:
 
         if telegram.direction != TelegramDirection.INCOMING or not isinstance(telegram.destination_address, GroupAddress):
             return
+        second = int(monotonic())
+        self._prune_telegram_buckets(second)
+        if self.telegram_buckets and self.telegram_buckets[-1][0] == second:
+            self.telegram_buckets[-1][1] += 1
+        else:
+            self.telegram_buckets.append([second, 1])
         timestamp = now()
         self.connections[connection_name]["last_received"] = timestamp
         address = str(telegram.destination_address)

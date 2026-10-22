@@ -46,6 +46,25 @@ class TelegramTests(unittest.TestCase):
             self.monitor.received(self.telegram(GroupValueRead()), "test")
         self.assertEqual(len(self.monitor.telegrams), 250)
 
+    def test_telegram_windows_ignore_ring_limit_and_outgoing(self):
+        from unittest.mock import patch
+        with patch('knx_alarmserver.knx.monotonic', return_value=10000):
+            for _ in range(300):
+                self.monitor.received(self.telegram(GroupValueRead()), 'test')
+            self.monitor.received(self.telegram(GroupValueRead(), TelegramDirection.OUTGOING), 'test')
+            self.assertEqual(self.monitor.telegram_rates(), {'minute': 300, 'hour': 300})
+            self.assertEqual(len(self.monitor.telegrams), 250)
+        with patch('knx_alarmserver.knx.monotonic', return_value=10059):
+            self.assertEqual(self.monitor.telegram_rates()['minute'], 300)
+        with patch('knx_alarmserver.knx.monotonic', return_value=10060):
+            self.monitor.received(self.telegram(GroupValueWrite(DPTBinary(1))), 'test')
+            self.assertEqual(self.monitor.telegram_rates(), {'minute': 1, 'hour': 301})
+        with patch('knx_alarmserver.knx.monotonic', return_value=13600):
+            self.assertEqual(self.monitor.telegram_rates(), {'minute': 0, 'hour': 1})
+        with patch('knx_alarmserver.knx.monotonic', return_value=13660):
+            self.assertEqual(self.monitor.telegram_rates(), {'minute': 0, 'hour': 0})
+            self.assertEqual(len(self.monitor.telegram_buckets), 0)
+
     def test_pinned_library_connection_api(self):
         # Real xknx objects, no sockets; detects incompatible constructor changes in CI.
         for kind, kwargs in [(ConnectionType.TUNNELING, {"gateway_ip": "192.0.2.1"}),

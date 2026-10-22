@@ -50,6 +50,7 @@ function render(){
   for(const card of document.querySelectorAll('[data-status-filter]')){const selected=view==='alarms'&&card.dataset.statusFilter===alarmStatusFilter;card.classList.toggle('selected',selected);card.setAttribute('aria-pressed',String(selected));}
   $('date-range-wrap').hidden=view!=='alarms';
   $('telegram-search-wrap').hidden=view!=='telegrams';
+  $('telegram-rates').hidden=view!=='telegrams';
   $('list-summary').textContent=listing?`Vorgänge: ${listing.total}`:'';
 
   const filterTitles={'':'Aktiv',active:'Aktiv · offen',active_ack:'Aktiv · quittiert',clear_pending:'Gegangen · offen',closed:'Abgeschlossen',all:'Alle',unknown:'Unbekannt'};
@@ -100,6 +101,9 @@ async function refresh(){
     const snapshot=await api('/api/dashboard?view='+encodeURIComponent(requestedView)+(!settingsOpen&&requestedView!=='telegrams'?listQuery(requestedView):''));
     if(generation!==listGeneration)return;
     listing=snapshot.list_info||null;
+    if(requestedView==='telegrams'){
+      for(const period of ['minute','hour'])$('telegram-'+period).textContent=Number.isFinite(snapshot.telegram_rates?.[period])?snapshot.telegram_rates[period].toLocaleString('de-DE'):'—';
+    }
     const status=snapshot.status;
     access={role:status.role,matrix:['admin','user'].includes(status.role),...status.permissions};
     applyAccess();

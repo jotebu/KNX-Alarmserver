@@ -1,6 +1,12 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.14.2, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.14.3, Inbetriebnahmeversion.
+
+## Telegrammzähler
+
+- Empfang von 300 Telegrammen trotz auf 250 Zeilen begrenztem Ringpuffer vollständig gezählt; ausgehende Telegramme ausgeschlossen. Minuten-/Stundengrenzen, Auslaufen ohne weitere Telegramme und Entfernen alter Zählwerte mit kontrollierter monotoner Uhr geprüft.
+- Dashboard-API liefert beide Zähler nur in der Admin-Telegrammansicht. UI zeigt formatierte Werte nur auf der Telegrammseite und aktualisiert auch auf null. Insgesamt 14 KNX-, sieben Web- und 32 JavaScript-Tests erfolgreich.
+- Keine zusätzliche KNX-Abfrage oder Datenbankspeicherung; echte Buslastanzeige nach dem Update auf dem Raspberry noch abzunehmen.
 
 ## Dark und Light Mode
 

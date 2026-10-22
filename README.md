@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.14.2 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.14.3 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -274,7 +274,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.14.2
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.14.3
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -284,8 +284,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.14.2
-git push origin v0.14.2
+git tag v0.14.3
+git push origin v0.14.3
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -299,6 +299,8 @@ Die Hauptseite zeigt Zähler, Meldungen und Historie. Die Kopfzeile bleibt auf a
 - **Benutzersymbol mit Rang:** Aufklappen zeigt den Benutzernamen, Kennwort ändern (`/account/password`) und Abmelden. Alle Rollen können ausschließlich ihr eigenes Kennwort mit Prüfung des bisherigen Kennworts ändern. Danach erneut anmelden; sämtliche bisherigen Sitzungen dieses Kontos werden beendet.
 
 Im **Benutzermenü → Darstellung** können alle Rollen **Dark**, **Light** oder **Automatisch** wählen. Dark erhält das bisherige Farbdesign und ist die Voreinstellung. Automatisch folgt der Hell-/Dunkel-Einstellung des Betriebssystems, auch bei Änderungen während der Nutzung. Die Auswahl gilt auf allen Seiten einschließlich Anmeldung und wird im jeweiligen Browser für diese Serveradresse gespeichert; andere geöffnete Tabs übernehmen sie ebenfalls. Bei gesperrtem Browserspeicher bleibt der Wechsel für die laufende Seite möglich.
+
+Die Seite **Telegramme** zeigt außerdem **Letzte Minute** und **Letzte Stunde**: die empfangenen Gruppentelegramme aller Verbindungen der letzten 60 Sekunden bzw. 60 Minuten, mit sekundengenauen Zeitfenstern. Auch Leseanfragen, unbekannte DPT und Decodierfehler werden gezählt; ausgehende Telegramme nicht. Die Zähler sind unabhängig von Suche und dem Tabellenlimit von 250 Einträgen und werden mit jeder regulären Datenabfrage aktualisiert. Nach Dienstneustart beginnen sie bei null; sie sind keine Hochrechnung.
 
 Menüs lassen sich per Maus, Tastatur und Touch bedienen, außerhalb anklicken oder mit Escape schließen. Ein Link führt von jeder Unterseite zum Dashboard zurück.
 

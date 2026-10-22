@@ -74,6 +74,8 @@ class WebTests(unittest.TestCase):
             self.assertEqual(result["alarms"][0]["status"], "active")
             if view != "alarms":
                 self.assertIsInstance(result[view], list)
+            if view == "telegrams":
+                self.assertEqual(result["telegram_rates"], {"minute": 0, "hour": 0})
         self.assertEqual(self.client.get("/api/dashboard?view=invalid", auth=self.auth).status_code, 400)
 
     def test_liveness_remains_responsive_while_password_worker_is_busy(self):

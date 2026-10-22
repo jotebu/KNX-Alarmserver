@@ -336,7 +336,9 @@ def create_app(config, store, update_manager=None, version_checker=None):
         elif view == "telegrams":
             if request.state.account['role'] != 'admin':
                 raise HTTPException(status_code=403, detail='Nur fuer Admins erlaubt')
-            result["telegrams"] = list(monitor.telegrams)
+            with store.lock:
+                result["telegrams"] = list(monitor.telegrams)
+                result["telegram_rates"] = monitor.telegram_rates()
         return result
 
     @app.get("/api/ready")

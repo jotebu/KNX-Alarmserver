@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.3 – 22.10.2026
+
+- Minuten- und Stundenzähler auf der Telegrammseite: empfangene Gruppentelegramme aller Verbindungen in den letzten 60 Sekunden bzw. 60 Minuten, laufend mit den Telegrammdaten aktualisiert.
+- Unabhängig von Suche, DPT-Erkennung und dem 250-Zeilen-Limit zählen; ausgehende Telegramme ausschließen. Sekundengenaue Zeitfenster mit monotoner Uhr und maximal 3600 Zählwerten im Speicher; nach Dienstneustart bei null beginnen.
+
 ## 0.14.2 – 22.10.2026
 
 - Bisheriges Farbdesign unverändert als Dark Mode erhalten und vollständigen Light Mode für Dashboard, Verwaltungsseiten, Formulare, Tabellen, Kalender, Dialoge und Anmeldung ergänzen.
