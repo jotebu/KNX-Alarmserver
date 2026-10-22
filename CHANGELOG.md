@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.14.4 – 22.10.2026
+
+- Darstellungsauswahl aus dem Benutzermenü rechts daneben in die feste Kopfzeile verschieben: kompakter dreistufiger Schiebeschalter mit Mond, Sonne und Automatik-Symbol.
+- Schieber und Symbole an beide Farbpaletten anpassen; gespeicherte Auswahl, Systemautomatik und Tab-Synchronisierung erhalten. Tastaturbedienung, zugängliche Namen, Tooltips und reduzierte Animation berücksichtigen; Kopfzeile auf schmalen Bildschirmen umbrechen.
+
 ## 0.14.3 – 22.10.2026
 
 - Minuten- und Stundenzähler auf der Telegrammseite: empfangene Gruppentelegramme aller Verbindungen in den letzten 60 Sekunden bzw. 60 Minuten, laufend mit den Telegrammdaten aktualisiert.
