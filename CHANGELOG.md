@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.12.13 – 22.10.2026
+
+- Zeitstempel der Meldungsliste auf den bereits gespeicherten Zeitpunkt des Alarmzustandswechsels (gekommen/gegangen) umstellen. Wiederholte gleiche Telegramme und KNX-Leseantworten verschieben den Alarmzeitpunkt nicht mehr.
+- Sortierung und Datumsfilter verwenden denselben Zustandswechselzeitpunkt. Quittierungszeit bleibt separat; Empfangszeit wird weiterhin intern aktualisiert. Vorhandene Zustandswechselzeiten werden ohne Datenmigration verwendet.
+
 ## 0.12.12 – 22.10.2026
 
 - Matrix-Werkzeuge samt Erläuterungen, Speichern, Hinzufügen, CSV-Import und Downloads zunächst einklappen; über „Werkzeuge anzeigen“ einblenden.

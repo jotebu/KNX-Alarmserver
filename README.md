@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.12 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.12.13 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -176,9 +176,9 @@ Es ist in dieser Version ein Datenpunkt je Gruppenadresse vorgesehen. Für mehre
 
 Die Zähler **Aktiv · offen**, **Aktiv · quittiert** und **Gegangen · offen** filtern die Meldungsliste per Klick auf den jeweiligen Zustand. Ein erneuter Klick hebt den Zustandsfilter auf; Filter zurücksetzen ebenfalls. Die Zähler zeigen unabhängig vom Filter weiterhin die Gesamtsummen. **Unbekannt** zählt ausschließlich Alarme ohne bekannten Alarmzustand. Ein Klick auf diesen Zähler zeigt diese Alarme gezielt in der Liste, obwohl sie in der normalen Meldungsansicht ausgeblendet sind. Ein erneuter Klick kehrt zur normalen Meldungsansicht zurück.
 
-Beide Tabellen scrollen innerhalb der verfügbaren Seitenhöhe mit sichtbaren Spaltenüberschriften, ohne Seitennavigation. Meldungen zeigt ausschließlich aktive, aktiv quittierte und gegangene noch nicht quittierte Alarme/Störungen, zuerst nach Priorität (1 zuerst), innerhalb derselben Priorität nach neuestem Empfangszeitstempel. Normale und unbekannte Zustände erscheinen nicht in dieser Liste; die Übersichtszähler umfassen weiterhin die gesamte Matrix. Die Historie zeigt die **neuesten 500 Treffer**. **Filter anzeigen** klappt Suche und Datumsfilter ein oder aus. Eingeklappte Filter bleiben wirksam, der Button kennzeichnet aktive Filter. Die Historienfilter durchsuchen den gesamten gespeicherten Bestand vor der Begrenzung auf 500 Zeilen. Die Trefferzahl bleibt sichtbar. Die oberen Zähler zeigen weiterhin die gesamte Alarmmatrix.
+Beide Tabellen scrollen innerhalb der verfügbaren Seitenhöhe mit sichtbaren Spaltenüberschriften, ohne Seitennavigation. Meldungen zeigt ausschließlich aktive, aktiv quittierte und gegangene noch nicht quittierte Alarme/Störungen, zuerst nach Priorität (1 zuerst), innerhalb derselben Priorität nach neuestem Zustandswechselzeitstempel. Normale und unbekannte Zustände erscheinen nicht in dieser Liste; die Übersichtszähler umfassen weiterhin die gesamte Matrix. Die Historie zeigt die **neuesten 500 Treffer**. **Filter anzeigen** klappt Suche und Datumsfilter ein oder aus. Eingeklappte Filter bleiben wirksam, der Button kennzeichnet aktive Filter. Die Historienfilter durchsuchen den gesamten gespeicherten Bestand vor der Begrenzung auf 500 Zeilen. Die Trefferzahl bleibt sichtbar. Die oberen Zähler zeigen weiterhin die gesamte Alarmmatrix.
 
-**Von/Bis** bezieht sich auf lokale Kalendertage im Browser; der Bis-Tag ist vollständig enthalten. In der Historie wird der Ereigniszeitpunkt gefiltert, in Meldungen der letzte Empfang. Alarme ohne Empfangszeit erscheinen nicht bei gesetztem Datumsfilter. Der Datumsfilter ändert keine Zustände. Die konfigurierte Aufbewahrungsdauer (`retention_days`, standardmäßig 365 Tage) gilt weiterhin; bereits gelöschte Ereignisse können nicht wieder angezeigt werden. Der separate Telegrammmonitor enthält weiterhin die letzten 250 Telegramme im Arbeitsspeicher.
+**Von/Bis** bezieht sich auf lokale Kalendertage im Browser; der Bis-Tag ist vollständig enthalten. In der Historie wird der Ereigniszeitpunkt gefiltert, in Meldungen der letzte Wechsel des Alarmzustands (gekommen/gegangen). Wiederholte Telegramme und Leseantworten mit gleichem Alarmzustand verändern diesen Zeitpunkt nicht; die Quittierung hat ihren eigenen Zeitpunkt. Alarme ohne Zustandswechselzeit erscheinen nicht bei gesetztem Datumsfilter. Der Datumsfilter ändert keine Zustände. Die konfigurierte Aufbewahrungsdauer (`retention_days`, standardmäßig 365 Tage) gilt weiterhin; bereits gelöschte Ereignisse können nicht wieder angezeigt werden. Der separate Telegrammmonitor enthält weiterhin die letzten 250 Telegramme im Arbeitsspeicher.
 
 ## KNX-Status manuell abfragen
 
@@ -216,7 +216,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.12
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.12.13
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -226,8 +226,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.12.12
-git push origin v0.12.12
+git tag v0.12.13
+git push origin v0.12.13
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.

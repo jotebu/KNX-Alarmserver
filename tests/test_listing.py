@@ -33,7 +33,7 @@ class ListingTests(unittest.TestCase):
             self.assertEqual([len(alarms_page(rows,p)['rows']) for p in [1,2,3]],[200,200,66])
             self.assertEqual(alarms_page(rows,start='2026')['total'],0)
             self.assertEqual(alarms_page(rows,query='not found')['total'],0)
-            rows[0].update(status='normal',quality='ok',last_seen='2026-10-21T10:00:00.000000+00:00')
+            rows[0].update(status='normal',quality='ok',last_seen='2026-10-21T10:00:00.000000+00:00',changed_at='2026-10-21T10:00:00.000000+00:00')
             self.assertEqual(alarms_page(rows,open_only=True)['total'],465)
             self.assertEqual(alarms_page(rows,start='2026-10-21',end='2026-10-22')['total'],1)
         finally:store.close()
@@ -87,7 +87,7 @@ class ListingTests(unittest.TestCase):
 
     def test_incident_list_excludes_normal_unknown_and_sorts_priority_then_time(self):
         def row(identifier,priority,status,time,quality='ok'):
-            return {'id':identifier,'name':identifier,'priority':priority,'status':status,'last_seen':time,'quality':quality}
+            return {'id':identifier,'name':identifier,'priority':priority,'status':status,'last_seen':time,'changed_at':time,'quality':quality}
         rows=[row('normal',1,'normal','2026-10-22T13:00:00+00:00','restored'),
               row('unknown',1,'unknown',None,'unseen'),
               row('low-new',4,'active','2026-10-22T14:00:00+00:00'),
@@ -118,6 +118,40 @@ class ListingTests(unittest.TestCase):
                     self.assertEqual(body['counts'],{'active':1,'acked':1,'pending':1,'unknown':1})
                 self.assertEqual(client.get('/api/dashboard?list_mode=true&status_filter=normal',auth=('reader','test-password-123')).status_code,422)
         finally:store.close()
+
+    def test_incident_timestamp_survives_repeats_reads_ack_and_restart(self):
+        from unittest.mock import patch
+        from tempfile import TemporaryDirectory
+        from pathlib import Path
+        with TemporaryDirectory() as folder:
+            path=Path(folder)/'alarm.sqlite3'
+            store=Store(path,[ALARM])
+            first='2026-10-21T10:00:00.000000+00:00'
+            repeated='2026-10-22T11:00:00.000000+00:00'
+            cleared='2026-10-22T12:00:00.000000+00:00'
+            try:
+                with patch('knx_alarmserver.store.now',return_value=first):store.ingest(ALARM.group_address,1,'1.1.1')
+                with patch('knx_alarmserver.store.now',return_value=repeated):
+                    self.assertFalse(store.ingest(ALARM.group_address,1,'1.1.2'))
+                    store.acknowledge(ALARM.id,'andy')
+                    self.assertFalse(store.ingest(ALARM.group_address,1,'1.1.2'))
+                row=store.snapshot()[0]
+                self.assertEqual(row['changed_at'],first)
+                self.assertEqual(row['last_seen'],repeated)
+                self.assertEqual(row['acknowledged_at'],repeated)
+                self.assertEqual(len(store.history()),2)
+                self.assertEqual(alarms_page([row],start='2026-10-22',unlimited=True)['total'],0)
+                self.assertEqual(alarms_page([row],start='2026-10-21',end='2026-10-22',unlimited=True)['total'],1)
+            finally:store.close()
+            store=Store(path,[ALARM])
+            try:
+                self.assertEqual(store.snapshot()[0]['changed_at'],first)
+                with patch('knx_alarmserver.store.now',return_value=cleared):store.ingest(ALARM.group_address,0,'1.1.1')
+                self.assertEqual(store.snapshot()[0]['changed_at'],cleared)
+            finally:store.close()
+        rows=[{'id':'older','priority':1,'status':'active','quality':'ok','last_seen':repeated,'changed_at':first},
+              {'id':'newer','priority':1,'status':'active','quality':'ok','last_seen':first,'changed_at':repeated}]
+        self.assertEqual([r['id'] for r in alarms_page(rows,unlimited=True)['rows']],['newer','older'])
 
     def test_read_api_roles_headers_and_reported_start(self):
         from fastapi.testclient import TestClient

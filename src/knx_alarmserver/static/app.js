@@ -45,7 +45,7 @@ function render(){
   $('filter-toggle').hidden=!filterable;
   $('list-filters').hidden=filterable&&!filtersOpen;
   $('date-filters').hidden=!filterable;
-  $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: Zeitstempel; ohne Empfangszeit nicht im Datumsfilter enthalten';
+  $('date-hint').textContent=view==='history'?'Filter: Ereigniszeitpunkt':'Filter: Zeitstempel; ohne Zustandswechselzeit nicht im Datumsfilter enthalten';
   const active=Boolean(listFilters.search||listFilters.from||listFilters.until||(view==='alarms'&&alarmStatusFilter));
   $('filter-toggle').textContent=(filtersOpen?'Filter ausblenden':'Filter anzeigen')+(active?' · aktiv':'');
   $('filter-toggle').setAttribute('aria-expanded',String(filtersOpen));
@@ -57,7 +57,7 @@ function render(){
   const head=document.createElement('tr');for(const label of heads[view])head.append(text('th',label));$('table-head').replaceChildren(head);
   const query=$('search').value.toLocaleLowerCase('de');
   const rows=listing&&view!=='telegrams'?data[view]:data[view].filter(r=>JSON.stringify(r).toLocaleLowerCase('de').includes(query)).filter(r=>view!=='alarms'||(alarmStatusFilter?r.status===alarmStatusFilter:['active','active_ack','clear_pending'].includes(r.status)));
-  if(view==='alarms'&&!listing)rows.sort((a,b)=>Number(a.priority)-Number(b.priority)||(Date.parse(b.last_seen)||0)-(Date.parse(a.last_seen)||0)||String(a.id).localeCompare(String(b.id)));
+  if(view==='alarms'&&!listing)rows.sort((a,b)=>Number(a.priority)-Number(b.priority)||(Date.parse(b.changed_at)||0)-(Date.parse(a.changed_at)||0)||String(a.id).localeCompare(String(b.id)));
   const body=document.createDocumentFragment();
   for(const row of rows){
     const tr=document.createElement('tr');
@@ -68,7 +68,7 @@ function render(){
       const name=cell(row.name);name.append(text('small',`${row.area} · Priorität ${row.priority}${row.priority_name?' · '+row.priority_name:''}`));
       const value=cell(row.display_value===null?'—':`${row.display_value}${row.unit?' '+row.unit:''}`);
       name.append(text('small',`${row.group_address} · DPT ${row.dpt}`));
-      cell(date(row.last_seen));
+      cell(date(row.changed_at));
       const ack=cell(row.acknowledged_by?`${row.acknowledged_by} · ${date(row.acknowledged_at)}`:'—');
       if(row.pending && access.acknowledge){ack.textContent='';const button=text('button','Quittieren','ack');button.onclick=async()=>{button.disabled=true;try{await api(`/api/alarms/${encodeURIComponent(row.id)}/acknowledge`,{method:'POST',headers:{'X-Alarmserver-Action':'acknowledge'}});await refresh();}catch(e){failure(e);}finally{button.disabled=false;}};ack.append(button);}
     }else if(view==='history'){

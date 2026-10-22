@@ -1,6 +1,10 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.12.12, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.12.13, Inbetriebnahmeversion.
+
+## Stabiler Alarmzeitstempel
+
+- Wiederholte identische Zustände, abweichende Quelle, Quittierung, erneuter Empfang, Neustart, Gehen sowie Sortierung und Datumsfilter nach changed_at geprüft. Last_seen darf sich ändern, changed_at bleibt bis zum nächsten Alarmzustandswechsel erhalten. Dashboard-Regressionstest zeigt den Zustandswechsel des Vortags trotz späterem Empfang am Folgetag.
 
 ## Einklappbare Matrix-Werkzeuge
 
@@ -54,7 +58,7 @@ Stand: 22.10.2026. Projektversion 0.12.12, Inbetriebnahmeversion.
 
 ## Alarmmatrix im Dashboard
 
-- Gesamter Prüfstand: 112 Python-Tests und 19 Dashboard-Tests erfolgreich.
+- Gesamter Prüfstand: 113 Python-Tests und 20 Dashboard-Tests erfolgreich.
 
 - Gemeinsame Validierung für Tabellenzeilen und CSV, automatische IDs, sofortige Auswertung, Neustart-Persistenz, Bearbeitung mit Zustandserhalt bzw. gezieltem Reset, unveränderte Historie und Datenbankfehler mit Rücknahme geprüft.
 - API-Prüfungen für Admin/User/Viewer, fremde Herkunft, fehlenden Aktionsheader, parallele Revisionen, CSV-Vorlage und abgelehnten Doppelimport.

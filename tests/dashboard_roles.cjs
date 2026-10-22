@@ -39,3 +39,10 @@ test('KNX icon shows yellow when disabled, green when ready, red for fault or st
 test('non-admin management navigation is redirected away',async()=>{
  const {redirects}=await setup('viewer',undefined,'/users');assert.deepEqual(redirects,['/']);
 });
+test('alarm timestamp displays the state transition rather than a later repeated reception',async()=>{
+ const {nodes,context}=await setup('admin');
+ await vm.runInContext("snapshot.alarms[0].changed_at='2026-10-21T12:00:00Z';snapshot.alarms[0].last_seen='2026-10-22T12:00:00Z';refresh()",context);
+ const cells=all(nodes.get('table-body')).filter(node=>node.tagName==='td');
+ assert.match(cells[3].textContent,/21\.10\.2026/);
+ assert.doesNotMatch(cells[3].textContent,/22\.10\.2026/);
+});
