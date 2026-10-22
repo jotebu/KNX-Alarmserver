@@ -1,6 +1,16 @@
 # Prüfstand
 
-Stand: 22.10.2026. Projektversion 0.14.10, Inbetriebnahmeversion.
+Stand: 22.10.2026. Projektversion 0.15.0, Inbetriebnahmeversion.
+
+## KNX-Testmodus zur Ersteinrichtung
+
+- Gesamtprüfung: 153 Python-Tests und 33 JavaScript-Tests erfolgreich.
+
+- Regelwerte nach realer xknx-Codierung/Decodierung für eq/ne, gt/ge/lt/le, between/outside, Enumeration/in und Text/contains einschließlich aktiver Hysterese geprüft. Nicht darstellbare Grenzwerte, strukturierte Feldregeln und reine Beobachtung werden ausgeschlossen.
+- Mit simuliertem KNX-Transport: echte GroupValueWrite-Objekte, mindestens eine Sekunde Abstand, Einzellauf, Stoppen, Revisionen/Matrixänderung, Verbindungs-/Transportfehler und fehlgeschlagenes Abschalten des Mailversands geprüft. Lokale Vorgänge mit Testquelle; keine fingierten eingehenden Telegramme.
+- SMTP-Sperre wartet auf bereits laufenden Versand; global deaktivierte Einstellung bleibt nach Test erhalten. Reaktivierung während Test blockiert. Admin-/User-/Viewer-Rechte, Aktionsheader/fremde Herkunft und authentifiziertes Testscript geprüft.
+- JavaScript-Regressionen einschließlich Admin-Einzeltest-Icon, Sperre bei ungespeicherter Matrix und fehlendem Icon für User erfolgreich. DOM-Prüfung: Vorschau, nicht testbare Zeilen, Auswahl, expliziter Sendestart, Fortschritt/Stoppen, separater Normal-Durchlauf und einzelner Matrixeintrag; bestehende Mail-/Profil-/Kalenderprüfungen erfolgreich.
+- Kein echter KNX-Schreibvorgang oder SMTP-Versand aus dieser Umgebung. Abnahme auf dem Raspberry zunächst mit einem einzelnen bewusst ausgewählten Eintrag durchführen. Automatische Wertvorschläge sind keine Freigabe einer physischen Gerätefunktion.
 
 ## Kompakte Meldetabelle und Zeitraum
 

@@ -51,6 +51,7 @@ function render(){
   $('date-range-wrap').hidden=view!=='alarms';
   $('data-panel').classList.toggle('alarm-view',view==='alarms');
   $('telegram-search-wrap').hidden=view!=='telegrams';
+  $('bus-test-controls').hidden=view!=='telegrams'||!access.configure;
   $('telegram-rates').hidden=view!=='telegrams';
   $('list-summary').textContent=listing?`Vorgänge: ${listing.total}`:'';
 
@@ -126,6 +127,7 @@ async function refresh(){
     const knxColor=status.knx.storage_error?'red':!status.knx.enabled?'yellow':status.knx.ready?'green':'red';
     setKnxIndicator(knxColor,$('connection-status').textContent);
     renderReadStatus(status.knx);
+    window.KnxBusTest?.status(status.knx);
     if(!pageInitialized){pageInitialized=true;await initializePage();}
     $('clock').textContent='Aktualisiert: '+new Date().toLocaleTimeString('de-DE');$('error').hidden=true;refreshFailures=0;render();
   }catch(error){refreshFailures+=1;setKnxIndicator('red','Server nicht erreichbar; KNX-Status unbekannt');failure(error);}finally{busy=false;if(generation!==listGeneration)refresh();else scheduleRefresh();}
@@ -263,7 +265,8 @@ function renderPriorities(){
     number.oninput=()=>{entry.priority=Number(number.value);changed();};name.oninput=()=>{entry.name=name.value;changed();};
     for(const input of [number,name]){const td=document.createElement('td');td.append(input);tr.append(td);}
     const remove=text('button','Entfernen');remove.type='button';remove.onclick=()=>{priorityEntries=priorityEntries.filter(row=>row!==entry);changed();renderPriorities();};
-    const td=document.createElement('td');td.append(remove);tr.append(td);fragment.append(tr);
+    const td=document.createElement('td');td.append(remove);
+    tr.append(td);fragment.append(tr);
   }
   $('priorities-rows').replaceChildren(fragment);
 }
@@ -315,7 +318,10 @@ function renderMatrix(){
       input.oninput=()=>{row[field]=input.value;matrixChanged();};td.append(input);tr.append(td);
     }
     const td=document.createElement('td'),remove=text('button','Entfernen');remove.type='button';
-    remove.onclick=()=>{if(row.id&&!confirm('Alarm „'+row.name+'“ aus der Matrix entfernen? Die Historie bleibt erhalten.'))return;matrixRows=matrixRows.filter(item=>item!==row);matrixChanged();renderMatrix();};td.append(remove);tr.append(td);fragment.append(tr);
+    remove.onclick=()=>{if(row.id&&!confirm('Alarm „'+row.name+'“ aus der Matrix entfernen? Die Historie bleibt erhalten.'))return;matrixRows=matrixRows.filter(item=>item!==row);matrixChanged();renderMatrix();};td.append(remove);
+    if(access.configure){const test=text('button','▷','matrix-test');test.type='button';test.title='Einzeltest auf dem KNX-Bus';test.setAttribute('aria-label','KNX-Test · '+(row.name||row.id));test.disabled=matrixBusy||matrixDirty||!row.id;
+      test.onclick=()=>{if(matrixDirty){$('matrix-feedback').textContent='Vor dem Test Änderungen speichern.';return;}window.KnxBusTest?.open(row.id);};td.append(test);}
+    tr.append(td);fragment.append(tr);
   }
   $('matrix-rows').replaceChildren(fragment);$('matrix-count').textContent=matrixRows.length+' Alarme';
 }

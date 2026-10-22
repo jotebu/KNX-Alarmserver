@@ -30,6 +30,8 @@ class Store(MailStore, OccurrenceStore):
         self.started_at = now()
         self.retention_days = retention_days
         self.lock = threading.RLock()
+        self.mail_send_lock = threading.RLock()
+        self.bus_test_active = False
         self.db = sqlite3.connect(path, check_same_thread=False, timeout=30)
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA journal_mode=WAL")

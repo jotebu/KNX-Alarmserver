@@ -109,9 +109,24 @@ class MailStore:
             if revision!=current['revision']:raise RuntimeError('Mail-Konfiguration wurde geändert. Bitte neu laden.')
             proposed=copy.deepcopy(proposed)
             if isinstance(proposed,dict) and proposed.get('password')=='':proposed['password']='' if clear_password else current['config']['password']
+            if self.bus_test_active and isinstance(proposed, dict) and proposed.get('enabled'):
+                raise RuntimeError('Mailversand während eines KNX-Tests gesperrt')
             validate_config(proposed)
             self.db.execute("INSERT OR REPLACE INTO settings(name,value) VALUES ('mail',?)",(json.dumps({'revision':secrets.token_hex(16),'config':proposed},ensure_ascii=False),))
         return self.mail_settings()
+
+    def begin_bus_test(self):
+        # Wait for an already sending message before the first bus write.
+        with self.mail_send_lock, self.transaction():
+            current = self._mail_settings()
+            current['config']['enabled'] = False
+            current['revision'] = secrets.token_hex(16)
+            self.db.execute("INSERT OR REPLACE INTO settings(name,value) VALUES ('mail',?)", (json.dumps(current),))
+            self.bus_test_active = True
+
+    def end_bus_test(self):
+        with self.lock:
+            self.bus_test_active = False
 
     def set_mail_enabled(self,username,enabled):
         if type(enabled) is not bool:raise ValueError('Mail-Aktivierung muss wahr oder falsch sein')
@@ -199,6 +214,10 @@ class MailWorker:
             except asyncio.TimeoutError:pass
 
     def tick(self):
+        with self.store.mail_send_lock:
+            return self._tick()
+
+    def _tick(self):
         from .store import now
         claimed=self.store.claim_mail()
         if claimed is None:return False

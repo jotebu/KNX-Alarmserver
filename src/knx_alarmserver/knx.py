@@ -23,6 +23,8 @@ class Monitor:
         self.read_state = {'state': 'idle', 'total': 0, 'sent': 0}
         self.read_responses = set()
         self.read_targets = set()
+        from .bus_test import BusTest
+        self.bus_test = BusTest(self)
 
     def status(self):
         enabled = self.config.get("enabled", False)
@@ -30,6 +32,7 @@ class Monitor:
         return {"enabled": enabled, "ready": enabled and bool(states) and
                 all(s["state"] == "CONNECTED" for s in states) and not self.failed,
                 "storage_error": self.failed, "connections": states,
+                "test": dict(self.bus_test.state),
                 "read": {**self.read_state, "answered": len(self.read_responses)}}
 
     def _prune_telegram_buckets(self, second):
@@ -103,6 +106,8 @@ class Monitor:
                 LOG.exception("Alarmzustand konnte nicht gespeichert werden")
 
     def request_read(self, mode='unknown', connection=''):
+        if self.bus_test.active:
+            raise FileExistsError('Ein KNX-Test läuft bereits')
         if self.read_task and not self.read_task.done():
             raise FileExistsError('Eine KNX-Statusabfrage laeuft bereits')
         ready = [name for name in self.clients if self.connections.get(name, {}).get('state') == 'CONNECTED']
@@ -191,6 +196,7 @@ class Monitor:
             self.tasks.append(asyncio.create_task(self._run_connection(item)))
 
     async def stop(self):
+        await self.bus_test.close()
         if self.read_task and not self.read_task.done():
             self.read_task.cancel()
             await asyncio.gather(self.read_task, return_exceptions=True)

@@ -208,6 +208,12 @@ def create_app(config, store, update_manager=None, version_checker=None):
         except RuntimeError as error:raise HTTPException(status_code=409,detail=str(error)) from None
         except ValueError as error:raise HTTPException(status_code=422,detail=str(error)) from None
 
+    def guarded_test_mail(settings, job):
+        with store.mail_send_lock:
+            if store.bus_test_active:
+                raise HTTPException(status_code=409, detail='Testmail während eines KNX-Tests gesperrt')
+            send_smtp(settings, job)
+
     @app.post('/api/mail/test')
     async def test_mail(request: Request, username=Depends(admin)):
         action(request,'manage-mail')
@@ -218,7 +224,8 @@ def create_app(config, store, update_manager=None, version_checker=None):
         with store.lock:settings=store._mail_settings()['config']
         if not settings['host'] or not settings['from_email']:raise HTTPException(status_code=422,detail='Zuerst SMTP-Konfiguration speichern')
         from email.utils import make_msgid
-        try:await asyncio.to_thread(send_smtp,settings,{'recipient':payload['recipient'],'subject':'Testmail · KNX Alarmserver','body':'Der Mailversand wurde erfolgreich vom Alarmserver ausgelöst.','message_id':make_msgid(domain='knx-alarmserver.local')})
+        try:await asyncio.to_thread(guarded_test_mail,settings,{'recipient':payload['recipient'],'subject':'Testmail · KNX Alarmserver','body':'Der Mailversand wurde erfolgreich vom Alarmserver ausgelöst.','message_id':make_msgid(domain='knx-alarmserver.local')})
+        except HTTPException:raise
         except Exception as error:raise HTTPException(status_code=502,detail=mail_error(error)) from None
         return {'ok':True,'message':'Testmail vom SMTP-Server angenommen.'}
 
@@ -378,6 +385,35 @@ def create_app(config, store, update_manager=None, version_checker=None):
             raise HTTPException(status_code=422, detail=str(error)) from None
         logging.getLogger(__name__).info('Prioritaeten durch %s aktualisiert', username)
         return result
+
+    @app.get('/api/knx/test/plan')
+    async def bus_test_plan(alarm_id: str = '', username=Depends(admin)):
+        try:
+            async with settings_lock:
+                return await asyncio.to_thread(monitor.bus_test.plan, alarm_id)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+
+    @app.post('/api/knx/test/start')
+    async def bus_test_start(request: Request, username=Depends(admin)):
+        action(request, 'test-knx')
+        payload = await json_body(request, max_bytes=262144)
+        if set(payload) != {'ids', 'mode', 'revision', 'connection'}:
+            raise HTTPException(status_code=422, detail='Auswahl, Modus, Revision und Verbindung erforderlich')
+        try:
+            async with settings_lock:
+                result = monitor.bus_test.start(payload['ids'], payload['mode'], payload['revision'], payload['connection'], username)
+        except RuntimeError as error:
+            raise HTTPException(status_code=409, detail=str(error)) from None
+        except (ValueError, TypeError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+        logging.getLogger(__name__).info('KNX-Bustest durch %s gestartet: %s', username, payload['mode'])
+        return JSONResponse(result, status_code=202)
+
+    @app.post('/api/knx/test/stop')
+    def bus_test_stop(request: Request, username=Depends(admin)):
+        action(request, 'test-knx')
+        return monitor.bus_test.stop()
 
     @app.post('/api/knx/read')
     async def read_knx_values(request: Request, username=Depends(matrix_editor)):
@@ -612,7 +648,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
 
     @app.get("/static/{filename}")
     def static(filename: str, username=Depends(user)):
-        if filename not in {"app.js", "date-range.js", "style.css"}:
+        if filename not in {"app.js", "date-range.js", "bus-test.js", "style.css"}:
             raise HTTPException(status_code=404)
         return FileResponse(STATIC / filename)
 

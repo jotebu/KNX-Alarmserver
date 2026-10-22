@@ -2,6 +2,15 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.0 – 22.10.2026
+
+- KNX-Testmodus zur Ersteinrichtung unter Telegramme: Vorschau mit Alarm-/Normalwerten, Auswahl je Alarm-GA und aktiver Verbindung, getrennte Durchläufe für Alarm und Normal, Fortschritt und Stoppen. Ausschließlich Admins dürfen Bus-Schreibtelegramme auslösen.
+- Testwerte aus DPT, Operator, Grenzwert und Hysterese bestimmen und nach KNX-Codierung/Decodierung erneut gegen die Alarmregel prüfen. Unmögliche Wertepaare, reine Beobachtung und strukturierte Feldregeln begründet ausschließen; keine pauschale 0/1-Annahme.
+- Fester Abstand von einer Sekunde zwischen abgeschlossenen Schreibvorgängen; nur ein Test oder eine Statusabfrage gleichzeitig. Bei Matrixänderung, Verbindungsverlust oder Dienstwechsel abbrechen; keine automatische Fortsetzung und keine automatische Rücksetzung auf Normal.
+- Vor dem ersten Bus-Schreiben laufenden SMTP-Versand abwarten und Mailversand dauerhaft ausschalten. Während des Tests erneutes Aktivieren und Testmails sperren. Benutzerbezogene Empfängereinstellungen bleiben erhalten; bestehende Versandaufträge pausieren. Keine automatische Reaktivierung.
+- Nach erfolgreicher Übergabe an die KNX-Schnittstelle Testwerte lokal mit Quelle „KNX-Test“ auswerten und reguläre Vorgänge/Historie führen; keine erfundene Empfangsbestätigung. Normal-Testwerte stellen keine früheren Messwerte wieder her.
+- Test-Icon rechts in jeder gespeicherten Matrixzeile für Admins: dieselbe Vorschau und beide Testaktionen für genau einen Eintrag. Bei ungespeicherten Änderungen zunächst Speichern verlangen.
+
 ## 0.14.10 – 22.10.2026
 
 - Quittieren-Button in der Meldetabelle mit kleinerer Schrift und geringerem Innenabstand gestalten; Beschriftung ohne Zeilenumbruch vollständig in der kompakten Aktionsspalte darstellen.

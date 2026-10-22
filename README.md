@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.14.10 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.15.0 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -274,7 +274,7 @@ Ereignisse werden standardmäßig 365 Tage behalten und stündlich bereinigt (`r
 Sobald ein entsprechender geprüfter Versionstag veröffentlicht wurde:
 
 ```bash
-sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.14.10
+sudo bash /opt/knx-alarmserver/current/source/scripts/update.sh v0.15.0
 ```
 
 Der Befehl installiert genau diesen Tag, prüft die Paketversion und erhält die lokale Konfiguration. Das ist ein über GitHub verwaltetes **Python-Paket mit systemd-Installer**, noch kein Debian-APT-Repository und kein `.deb`-Paket. Python-Abhängigkeiten werden von PyPI geladen; Internetzugang ist erforderlich. Direkte Abhängigkeiten sind fest versioniert, transitive Abhängigkeiten sind noch nicht vollständig mit Hashes gesperrt.
@@ -284,8 +284,8 @@ Vor einem Update wird eine konsistente SQLite-Sicherung angelegt. Schlägt der a
 Entwickler veröffentlichen nach erfolgreichen Tests einen Tag, dessen Name der Paketversion entspricht:
 
 ```bash
-git tag v0.14.10
-git push origin v0.14.10
+git tag v0.15.0
+git push origin v0.15.0
 ```
 
 Der Release-Workflow testet erneut, baut Wheel und Source-Paket und veröffentlicht ein GitHub-Vorab-Release mit SHA256-Prüfsummen. Er installiert nichts auf dem Raspberry. Release-Tags werden nicht vom Alarmserver automatisch erzeugt oder verändert. Der erste echte KNX-/Pi-Test ist vor produktiver Freigabe erforderlich.
@@ -303,6 +303,18 @@ Die Hauptseite zeigt Zähler, Meldungen und Historie. Die Kopfzeile bleibt auf a
 Die Seite **Telegramme** zeigt außerdem **Letzte Minute** und **Letzte Stunde**: die empfangenen Gruppentelegramme aller Verbindungen der letzten 60 Sekunden bzw. 60 Minuten, mit sekundengenauen Zeitfenstern. Auch Leseanfragen, unbekannte DPT und Decodierfehler werden gezählt; ausgehende Telegramme nicht. Die Zähler sind unabhängig von Suche und dem Tabellenlimit von 250 Einträgen und werden mit jeder regulären Datenabfrage aktualisiert. Nach Dienstneustart beginnen sie bei null; sie sind keine Hochrechnung.
 
 Menüs lassen sich per Maus, Tastatur und Touch bedienen, außerhalb anklicken oder mit Escape schließen. Ein Link führt von jeder Unterseite zum Dashboard zurück.
+
+## KNX-Testmodus zur Ersteinrichtung
+
+Admins öffnen unter **Telegramme → KNX-Testmodus** die Vorschau aller Alarmadressen oder über das **▷-Icon rechts in der Alarmmatrix** die Vorschau genau eines gespeicherten Eintrags. Ungespeicherte Matrixänderungen zuerst speichern. Die Vorschau erzeugt noch keinen Busverkehr und ändert keine Mail-Konfiguration.
+
+Die Tabelle zeigt DPT/Regel, Hysterese und daraus berechnete Alarm-/Normalwerte. Werte werden mit dem exakten DPT codiert, zurückdecodiert und mit derselben Regelauswertung geprüft; Normalwerte müssen auch einen bereits aktiven Alarm unter Berücksichtigung der Hysterese beenden. Nicht sicher erzeugbare Wertepaare, unbekannte DPT, reine Beobachtung und strukturierte Feldregeln bleiben mit Begründung abgewählt und werden nicht gesendet. Die auswählbaren Einträge und eine aktive KNX-Verbindung bestimmen, dann ausdrücklich **Alarmwerte auf Bus senden** oder **Normalwerte auf Bus senden** betätigen. Einträge derselben GA werden nicht widersprüchlich mehrfach beschrieben.
+
+Vor dem ersten Schreibvorgang wird laufender SMTP-Versand abgewartet und der globale Mailversand dauerhaft deaktiviert. Während des Tests kann er nicht aktiviert werden; auch Testmails sind gesperrt. Empfänger-Schalter bleiben erhalten. Vorhandene Versandaufträge bleiben pausiert und können nach späterem manuellen Aktivieren wieder versendet werden. Beim Test entstandene neue Vorgänge erzeugen keine Mailaufträge. Nach Abschluss/Abbruch unter **Mail-Konfiguration** bewusst wieder aktivieren, wenn die Inbetriebnahme beendet ist.
+
+Es werden echte KNX-Gruppenschreibtelegramme übertragen, mit mindestens **1 Sekunde Abstand** zwischen abgeschlossenen Sendevorgängen. Andere KNX-Teilnehmer können darauf reagieren. Der Fortschritt zählt Übergaben an die KNX-Schnittstelle, keine Bestätigungen aller Geräte. Erfolgreich übergebene Werte werden zusätzlich lokal ausgewertet (Quelle **KNX-Test · Benutzer**), da eigene ausgehende Telegramme sonst nicht in die Alarmauswertung eingehen. Testvorgänge und Zeitstempel bleiben regulär in der Historie. Der Normal-Durchlauf ist eine separate Aktion und stellt keine vorherigen Messwerte wieder her; physische Sensoren können erneut ihren tatsächlichen Zustand senden.
+
+**Stoppen** beendet weitere Schreibvorgänge; ein bereits laufender Schreibvorgang kann noch abgeschlossen werden. Matrixänderungen, Verbindungsverlust und Dienstwechsel brechen den Lauf ab. Nur ein Bus-Test oder eine Statusabfrage gleichzeitig; nach Neustart keine automatische Fortsetzung. Mailversand bleibt auch nach Abbruch/Neustart ausgeschaltet. User und Viewer können keine Bus-Tests starten.
 
 ## Versionsanzeige und Update über das Dashboard
 

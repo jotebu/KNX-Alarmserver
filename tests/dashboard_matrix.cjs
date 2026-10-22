@@ -10,7 +10,7 @@ function setup(){
  const nodes=new Map(),requests=[];let confirmCalls=0;
  const get=id=>{if(!nodes.has(id))nodes.set(id,new Node());return nodes.get(id);};
  const row={id:'alarm-000001',name:'Pumpe',group_address:'1/2/3',dpt:'1.005',operator:'eq',threshold:'true',hysteresis:'0',field:'',area:'Technik',priority:'2'};
- const ctx=vm.createContext({page:'/matrix',$:get,document:{createDocumentFragment:()=>new Node('fragment'),createElement:tag=>new Node(tag)},
+ const ctx=vm.createContext({access:{configure:true},page:'/matrix',$:get,document:{createDocumentFragment:()=>new Node('fragment'),createElement:tag=>new Node(tag)},
  text:(tag,value)=>Object.assign(new Node(tag),{textContent:value}),confirm:()=>{confirmCalls++;return true;},window:{addEventListener(){}},
  api:async(url,options={})=>{requests.push({url,options});if(!options.method)return {rows:[{...row}],revision:'r1',priorities:[{priority:2,name:'Warnung'}]};const body=JSON.parse(options.body);return {rows:(body.rows||[row]).map((r,i)=>({...r,id:r.id||'alarm-00000'+(i+1)})),revision:'r2',priorities:[{priority:2,name:'Warnung'}]};}});
  vm.runInContext(source.slice(source.indexOf('let matrixRows='),source.indexOf('function applyAccess(){')),ctx);
@@ -54,4 +54,13 @@ test('priority table renames labels while sending stable numeric keys',async()=>
  assert.equal(vm.runInContext('prioritiesDirty',ctx),false);
  assert.equal(vm.runInContext('priorityEntries[0].priority',ctx),1);
  assert.match(get('priorities-feedback').textContent,/gespeichert/);
+});
+
+test('single bus test is admin-only and unavailable with unsaved matrix edits',async()=>{
+ const s=setup();await vm.runInContext('loadMatrix()',s.ctx);
+ function buttons(node){return [node,...node.children.flatMap(buttons)].filter(n=>n.tagName==='button'&&n.textContent==='▷');}
+ let tests=buttons(s.get('matrix-rows'));assert.equal(tests.length,1);assert.equal(tests[0].disabled,false);
+ let opened='';s.ctx.window.KnxBusTest={open:id=>opened=id};tests[0].onclick();assert.equal(opened,'alarm-000001');
+ vm.runInContext('matrixChanged();renderMatrix()',s.ctx);assert.equal(buttons(s.get('matrix-rows'))[0].disabled,true);
+ vm.runInContext('access.configure=false;renderMatrix()',s.ctx);assert.equal(buttons(s.get('matrix-rows')).length,0);
 });
