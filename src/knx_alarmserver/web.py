@@ -21,7 +21,10 @@ from .ets import MAX_BYTES, parse_export
 STATIC = Path(__file__).parent / "static"
 
 
-def create_app(config, store, update_manager=None, version_checker=None):
+def create_app(config, store, update_manager=None, version_checker=None, license_manager=None):
+    from .licensing import LicenseManager
+    from .license_protocol import LicenseError
+    licenses = license_manager if license_manager is not None else LicenseManager(store)
     from .versions import VersionChecker
     versions = version_checker if version_checker is not None else VersionChecker()
     from .updates import DashboardUpdate
@@ -110,7 +113,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
 
     @app.exception_handler(HTTPException)
     async def auth_page(request, error):
-        if error.status_code == 401 and request.url.path in {'/', '/telegrams', '/knx', '/ets', '/users', '/versions', '/account/password', '/matrix', '/priorities', '/mail'}:
+        if error.status_code == 401 and request.url.path in {'/', '/telegrams', '/knx', '/ets', '/users', '/versions', '/account/password', '/matrix', '/priorities', '/mail', '/license'}:
             return FileResponse(STATIC / 'login.html', status_code=401)
         return await http_exception_handler(request, error)
 
@@ -159,6 +162,32 @@ def create_app(config, store, update_manager=None, version_checker=None):
         response = JSONResponse({'ok': True})
         response.delete_cookie(cookie_name, path='/')
         return response
+
+    @app.get('/api/license')
+    def license_status(username=Depends(user)):
+        return licenses.status()
+
+    @app.post('/api/license/request')
+    async def license_request(request: Request, username=Depends(admin)):
+        action(request, 'manage-license')
+        payload = await json_body(request)
+        if set(payload) != {'email'}:
+            raise HTTPException(status_code=422, detail='Lizenz-E-Mail erforderlich')
+        try:
+            return licenses.request(payload['email'])
+        except LicenseError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+
+    @app.post('/api/license/activate')
+    async def license_activate(request: Request, username=Depends(admin)):
+        action(request, 'manage-license')
+        payload = await json_body(request, max_bytes=16384)
+        if set(payload) != {'email', 'code'}:
+            raise HTTPException(status_code=422, detail='Lizenz-E-Mail und Lizenzcode erforderlich')
+        try:
+            return licenses.activate(payload['email'], payload['code'])
+        except LicenseError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
 
     @app.get('/api/version')
     async def version_check(refresh: bool = False, username=Depends(user)):
@@ -630,6 +659,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
         return FileResponse(STATIC / 'index.html')
 
     @app.get('/versions')
+    @app.get('/license')
     @app.get('/account/password')
     def password_page(username=Depends(user)):
         return FileResponse(STATIC / 'index.html')
@@ -660,7 +690,7 @@ def create_app(config, store, update_manager=None, version_checker=None):
 
     @app.get("/static/{filename}")
     def static(filename: str, username=Depends(user)):
-        if filename not in {"app.js", "date-range.js", "bus-test.js", "style.css"}:
+        if filename not in {"app.js", "date-range.js", "bus-test.js", "style.css", "license.js"}:
             raise HTTPException(status_code=404)
         return FileResponse(STATIC / filename)
 

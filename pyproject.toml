@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "knx-alarmserver"
-version = "0.15.14"
+version = "0.15.15"
 description = "KNX/IP Alarmserver mit Weboberflaeche fuer Raspberry Pi OS"
 requires-python = ">=3.11"
-dependencies = ["fastapi==0.143.0", "uvicorn==0.53.0", "xknx==4.0.0"]
+dependencies = ["fastapi==0.143.0", "uvicorn==0.53.0", "xknx==4.0.0", "cryptography==50.0.2"]
 
 [project.optional-dependencies]
 test = ["httpx>=0.27,<1"]
@@ -16,7 +16,7 @@ test = ["httpx>=0.27,<1"]
 knx-alarmserver = "knx_alarmserver.cli:main"
 
 [tool.setuptools.package-data]
-knx_alarmserver = ["static/*"]
+knx_alarmserver = ["static/*", "license-keys.json"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

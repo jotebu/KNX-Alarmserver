@@ -16,6 +16,8 @@ def main():
     commands.add_parser("serve")
     commands.add_parser("check")
     commands.add_parser("dpt-list")
+    license_key = commands.add_parser("license-key-install", help="Öffentlichen Generator-Schlüssel installieren (sudo)")
+    license_key.add_argument("file")
     account = commands.add_parser("user-add")
     account.add_argument("username")
     account.add_argument("--role", choices=("admin", "user", "viewer"))
@@ -29,6 +31,10 @@ def main():
     backup.add_argument("destination")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    if args.command == 'license-key-install':
+        from .licensing import install_public_key
+        print('Öffentlicher Prüfschlüssel installiert: ' + install_public_key(args.file))
+        return
     config = load_config(args.config)
     alarms = load_configured_alarms(config)
     from .dpt import catalog, transcoder
