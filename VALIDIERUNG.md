@@ -293,3 +293,14 @@ Stand: 23.10.2026. Projektversion 0.15.14, Inbetriebnahmeversion.
 - NAS-Backup anpassen; alter Timer bleibt bis dahin deaktiviert.
 
 Änderungen stehen in [CHANGELOG.md](CHANGELOG.md).
+
+
+## Lizenzintegration
+
+- Generator-kompatibler Anfragecode und signierter Testvektor (nur öffentlicher Testschlüssel) werden geprüft.
+- E-Mail-/Gerätebindung, manipulierte Signaturen, unbekannte Schlüssel und Fehlversuche mit bereits gültiger Aktivierung werden getestet.
+- Persistenz nach Neustart, unveränderter Aktivierungszeitpunkt bei Wiederholung, Hardwarewechsel und unlesbare Kennungen sind abgedeckt.
+- Öffentliches Anbieter-Schlüsselmaterial wird beim Paketbau eingebunden. Kein privates Schlüsselmaterial enthalten.
+- API-Tests prüfen Admin-/User-/Viewer-Rechte, Sitzungsanforderung, CSRF-/Herkunftsschutz und Größenlimits.
+- Frontend-Tests prüfen Anfrageerzeugung, Verwerfen alter Anfragen nach E-Mail-Änderung, Aktivierungsrückmeldung und deaktivierte Aktionen bei fehlenden Voraussetzungen.
+- Produktionsabnahme mit dem echten Generator und Raspberry steht noch aus. Bis dahin keine Laufzeitbegrenzung.

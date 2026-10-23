@@ -215,7 +215,7 @@ async function refresh(){
     $('clock').textContent='Aktualisiert: '+new Date().toLocaleTimeString('de-DE');$('error').hidden=true;refreshFailures=0;render();
   }catch(error){refreshFailures+=1;setKnxIndicator('red','Server nicht erreichbar; KNX-Status unbekannt');failure(error);}finally{busy=false;if(generation!==listGeneration)refresh();else scheduleRefresh();}
 }
-let settingsOpen=managementPages.includes(page)||page==='/account/password'||page==='/versions'||page==='/matrix', knxConfig=null, knxRevision=null, editingConnection=null, savingKnx=false;
+let settingsOpen=managementPages.includes(page)||page==='/account/password'||page==='/versions'||page==='/matrix'||page==='/license', knxConfig=null, knxRevision=null, editingConnection=null, savingKnx=false;
 function knxFeedback(message){$('knx-feedback').textContent=message;}
 function renderKnx(){
   $('knx-enabled').checked=knxConfig.enabled;
@@ -475,6 +475,7 @@ $('knx-read-start').onclick=async()=>{
 };
 
 function applyAccess(){
+  $('license-admin').hidden=!access.configure;
   $('settings-menu').hidden=!access.configure&&!access.matrix;
   $('matrix-link').hidden=!access.matrix;
   for(const id of ['telegrams-link','knx-settings-tab','ets-tab','users-tab','priorities-link','mail-link'])$(id).hidden=!access.configure;
@@ -496,6 +497,7 @@ async function initializePage(){
 }
 function layoutPage(){
   const names={'/mail':['Mail-Konfiguration','SMTP-Server, Vorlagen und Versandstatus verwalten.'],'/priorities':['Prioritäten','Rangfolge und Bezeichnungen der Alarmprioritäten festlegen.'],
+    '/license':['Lizenz & Info','Lizenzanfrage, Aktivierung und Informationen zum Programm.'],
     '/matrix':['Alarmmatrix','Alarmregeln manuell bearbeiten oder als CSV ergänzen.'],
     '/telegrams':['Telegramme','Empfangene KNX-Gruppentelegramme und decodierte Werte.'],
     '/knx':['KNX Verbindungen','Verbindungen zum KNX-Netz verwalten.'],
@@ -513,6 +515,7 @@ function layoutPage(){
   $('data-panel').hidden=settingsOpen;
   $('knx-settings').hidden=page!=='/knx';$('ets-panel').hidden=page!=='/ets';$('users-panel').hidden=page!=='/users';
   $('mail-panel').hidden=page!=='/mail';
+  $('license-panel').hidden=page!=='/license';
   $('priorities-panel').hidden=page!=='/priorities';
   $('matrix-panel').hidden=page!=='/matrix';
   $('password-panel').hidden=page!=='/account/password';$('versions-panel').hidden=page!=='/versions';

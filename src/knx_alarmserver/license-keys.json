@@ -1,0 +1,10 @@
+{
+  "keys": [
+    {
+      "format": "ASK-PUBLIC-KEY-1",
+      "algorithm": "Ed25519",
+      "key_id": "cb3bb009da270f7e38bb4c04ae947c29",
+      "public_key": "VzT9Ca1yOsxHZVO5vo13iKL-RhVFyS1-Sm-i3Y1fH98"
+    }
+  ]
+}

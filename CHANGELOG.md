@@ -2,6 +2,14 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.15 – 23.10.2026
+
+- Lizenzbereich im festen Menüband mit Anbieterinfo, PayPal-Link und Statusanzeige hinzufügen.
+- Anfragecodes für Lizenz-E-Mail und Gerätefingerabdruck erzeugen, kopieren und als Datei herunterladen.
+- Generator-kompatible Ed25519-Lizenzen prüfen und dauerhaft in der bestehenden Datenbank aktivieren; Rollen- und Herkunftsschutz für Änderungen.
+- Öffentlichen Anbieterschlüssel integrieren; lokale Ergänzung weiterer öffentlicher Schlüssel für spätere Rotation ermöglichen.
+- Kompatibilität, Manipulationsschutz, Gerätewechsel, Speicherung und Benutzerrechte testen. Alarmbegrenzung bleibt bis zur Abnahme der eigenen Lizenz deaktiviert.
+
 ## 0.15.14 – 23.10.2026
 
 - Kennwort-Mindestlänge für Alarmserver-Benutzer auf zehn Zeichen reduzieren; Benutzerverwaltung, persönliche Kennwortänderung, CLI und Eingabehinweise einheitlich anpassen.
