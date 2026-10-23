@@ -189,6 +189,19 @@ def create_app(config, store, update_manager=None, version_checker=None, license
         except LicenseError as error:
             raise HTTPException(status_code=422, detail=str(error)) from None
 
+    @app.post('/api/license/import')
+    async def license_import(request: Request, username=Depends(admin)):
+        action(request, 'manage-license')
+        raw = bytearray()
+        async for chunk in request.stream():
+            raw.extend(chunk)
+            if len(raw) > 8192:
+                raise HTTPException(status_code=413, detail='Lizenzdatei größer als 8 KiB')
+        try:
+            return licenses.activate_file(bytes(raw))
+        except LicenseError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from None
+
     @app.get('/api/version')
     async def version_check(refresh: bool = False, username=Depends(user)):
         return await asyncio.to_thread(versions.check, force=refresh)
@@ -321,7 +334,8 @@ def create_app(config, store, update_manager=None, version_checker=None, license
 
     @app.get("/api/status")
     def status(request: Request, username=Depends(user)):
-        return {"version": __version__, **identity(request, username), "knx": monitor.status(), "started_at": store.started_at}
+        return {"version": __version__, **identity(request, username), "knx": monitor.status(), "started_at": store.started_at,
+                "license": licenses.status()}
 
     @app.get("/api/dashboard")
     def dashboard(request: Request, view: str = "alarms", paged: bool = False, list_mode: bool = False, occurrences: bool = False,
@@ -331,7 +345,7 @@ def create_app(config, store, update_manager=None, version_checker=None, license
         if view not in {"alarms", "history", "telegrams"}:
             raise HTTPException(status_code=400, detail="Unbekannte Dashboard-Ansicht")
         result = {"status": {"version": __version__, **identity(request, username),
-                             "knx": monitor.status(), "started_at": store.started_at},
+                             "knx": monitor.status(), "started_at": store.started_at, "license": licenses.status()},
                   "alarms": store.snapshot()}
         if occurrences and view == 'alarms':
             from .listing import bounds

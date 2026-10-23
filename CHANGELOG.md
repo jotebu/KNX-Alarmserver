@@ -2,6 +2,15 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.17 – 23.10.2026
+
+- `.asklicense`-Dateien direkt einlesen, prüfen und aktivieren; E-Mail ausschließlich aus der geprüften Lizenz übernehmen. Größenlimit und bestehende Rollen-/Herkunftsprüfung beibehalten.
+
+- Lizenz-Icon im Stil der Menübandknöpfe unmittelbar links neben dem KNX-Verbindungsbutton platzieren: gelb während der Probezeit, rot nach Ablauf ohne gültige Lizenz, normale Menüfarbe bei aktiver Lizenz.
+- Siebentägige Probezeit beim ersten Webdienststart dieser Version speichern; Updates und Neustarts verlängern sie nicht. Alarmbegrenzung bleibt bis zur Abnahme deaktiviert.
+- Lizenzseite als Statusübersicht, getrennte aufklappbare Schritte für Anfrage und Aktivierung, kompakte Kaufkarte und ausblendbare Anbieterinfo gestalten. Dark/Light-Farben und schmale Ansichten berücksichtigen.
+- Lizenzstatus im normalen Dashboard-Abruf mitführen und Menüicon nach Aktivierung unmittelbar aktualisieren.
+
 ## 0.15.16 – 23.10.2026
 
 - Reine Testversion zur Prüfung der Dashboard-Updatefunktion. Keine Funktionsänderungen gegenüber 0.15.15.

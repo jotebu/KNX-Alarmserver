@@ -303,4 +303,11 @@ Stand: 23.10.2026. Projektversion 0.15.14, Inbetriebnahmeversion.
 - Öffentliches Anbieter-Schlüsselmaterial wird beim Paketbau eingebunden. Kein privates Schlüsselmaterial enthalten.
 - API-Tests prüfen Admin-/User-/Viewer-Rechte, Sitzungsanforderung, CSRF-/Herkunftsschutz und Größenlimits.
 - Frontend-Tests prüfen Anfrageerzeugung, Verwerfen alter Anfragen nach E-Mail-Änderung, Aktivierungsrückmeldung und deaktivierte Aktionen bei fehlenden Voraussetzungen.
-- Produktionsabnahme mit dem echten Generator und Raspberry steht noch aus. Bis dahin keine Laufzeitbegrenzung.
+- Die erste produktive Aktivierung mit dem echten Generator und Raspberry wurde vom Anwender bestätigt. Bis dahin keine Laufzeitbegrenzung.
+
+
+## Lizenzanzeige und Probezeit
+
+Probezeitgrenze von sieben Tagen, verbleibende Tage, Erhalt des Startzeitpunkts nach Neustart, Aktivierung nach Ablauf und beschädigte Probezeitdaten werden getestet. Die Dashboard-Tests prüfen gelbes, rotes und neutrales Menüicon, Position vor dem KNX-Button und die getrennten Aktivierungsschritte. Eine Alarmbegrenzung bleibt deaktiviert.
+
+Lizenzdatei-Import prüft UTF-8/BOM, Größenlimit, Rollen, Signatur und Erhalt einer gültigen Aktivierung nach Fehlversuchen.

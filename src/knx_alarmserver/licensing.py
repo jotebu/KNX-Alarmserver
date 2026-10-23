@@ -5,7 +5,8 @@ import logging
 import os
 import re
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+import math
 from pathlib import Path
 
 from .license_protocol import LicenseError, make_request, normalize_email, read_public, verify_license
@@ -96,11 +97,33 @@ def install_public_key(source, destination=KEY_FILE):
 
 
 class LicenseManager:
-    def __init__(self, store, key_file=KEY_FILE, fingerprint=device_fingerprint, bundled_keys=BUNDLED_KEYS):
+    def __init__(self, store, key_file=KEY_FILE, fingerprint=device_fingerprint, bundled_keys=BUNDLED_KEYS, clock=None):
         self.store = store
         self.key_file = key_file
         self.fingerprint = fingerprint
         self.bundled_keys = bundled_keys
+        self.clock = clock or (lambda: datetime.now(timezone.utc))
+        with self.store.transaction():
+            self.store.db.execute("INSERT OR IGNORE INTO settings(name,value) VALUES ('license_trial',?)",
+                                  (json.dumps({'started_at': self.clock().isoformat()}),))
+
+    def trial(self):
+        with self.store.lock:
+            row = self.store.db.execute("SELECT value FROM settings WHERE name='license_trial'").fetchone()
+        result = {'trial_active': False, 'trial_started_at': None, 'trial_expires_at': None,
+                  'trial_days_remaining': 0, 'trial_error': None}
+        try:
+            start = datetime.fromisoformat(json.loads(row['value'])['started_at'])
+            if start.tzinfo is None:
+                raise ValueError()
+            end = start + timedelta(days=7)
+            remaining = (end - self.clock()).total_seconds()
+            result.update(trial_active=remaining > 0, trial_started_at=start.isoformat(),
+                          trial_expires_at=end.isoformat(),
+                          trial_days_remaining=max(0, min(7, math.ceil(remaining / 86400))))
+        except (ValueError, KeyError, TypeError, RecursionError):
+            result['trial_error'] = 'Gespeicherte Probezeit konnte nicht gelesen werden.'
+        return result
 
     def keys(self):
         try:
@@ -113,7 +136,9 @@ class LicenseManager:
 
     def status(self):
         keys, key_error = self.keys()
-        result = {'state': 'unlicensed', 'licensed': False, 'enforcement_enabled': False,
+        trial = self.trial()
+        result = {'state': 'trial' if trial['trial_active'] else 'expired', 'licensed': False, 'enforcement_enabled': False,
+                  **trial,
                   'trusted_keys': len(keys), 'key_error': key_error,
                   'device': None, 'device_source': None, 'device_error': None,
                   'license_email': None, 'license_id': None, 'issued_at': None,
@@ -165,3 +190,17 @@ class LicenseManager:
             self.store.db.execute("INSERT OR REPLACE INTO settings(name,value) VALUES ('license',?)",
                                   (json.dumps(saved),))
         return self.status()
+
+    def activate_file(self, raw):
+        if not raw or len(raw) > 8192:
+            raise LicenseError('Lizenzdatei ist leer oder größer als 8 KiB.')
+        try:
+            code = raw.decode('utf-8-sig').strip()
+        except UnicodeError as exc:
+            raise LicenseError('Lizenzdatei muss UTF-8-Text enthalten.') from exc
+        keys, error = self.keys()
+        if error or not keys:
+            raise LicenseError('Noch kein gültiger öffentlicher Prüfschlüssel installiert.')
+        device, _ = self.fingerprint()
+        data = verify_license(code, keys, device=device)
+        return self.activate(data['email'], code)
