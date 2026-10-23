@@ -209,6 +209,7 @@ async function refresh(){
     $('closed').textContent=snapshot.counts?.closed??data.alarms.filter(r=>r.status==='closed').length;
     $('unknown').textContent=snapshot.counts?snapshot.counts.unknown:data.alarms.filter(r=>r.status==='unknown').length;
     renderKnxStatus(status.knx);
+    window.AlarmLicense?.status(status.license);
     renderReadStatus(status.knx);
     window.KnxBusTest?.status(status.knx);
     if(!pageInitialized){pageInitialized=true;await initializePage();}

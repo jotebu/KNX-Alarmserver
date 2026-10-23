@@ -1,6 +1,6 @@
 # KNX Alarmserver
 
-Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.15.16 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
+Eigenständiger Störungs- und Alarmserver für Raspberry Pi OS (64 Bit, Bookworm/Trixie, Python ≥ 3.11). Version **0.15.17 – Inbetriebnahmeversion**. Der Empfang echter KNX-Gruppentelegramme über einen MDT-IP-Router wurde auf Raspberry Pi bestätigt. ETS-Import und Telegrammempfang wurden vom Anwender bestätigt; Wiederverbindung und Alarmmatrix-Abnahme stehen noch aus.
 
 ## Funktionen
 
@@ -19,15 +19,15 @@ Die Anwendung beobachtet empfangene Gruppentelegramme (Write und Response). Sie 
 
 ## Lizenz anfordern und aktivieren
 
-Im festen Menüband **Lizenz** öffnen. Alle angemeldeten Benutzer können Lizenzstatus und Anbieterinfo lesen. Nur Admins können Anfragecodes erzeugen oder eine Lizenz aktivieren.
+Im festen Menüband das schildförmige **Lizenz-Icon links neben der KNX-Verbindung** öffnen. Alle angemeldeten Benutzer können Lizenzstatus und Anbieterinfo lesen. Nur Admins können Anfragecodes erzeugen oder eine Lizenz aktivieren.
 
 1. Lizenz-E-Mail eintragen (unabhängig vom Login) und **Anfragecode erzeugen** wählen. Den Code kopieren oder als `.askrequest` herunterladen.
 2. Anfragecode im privaten Windows-Lizenzgenerator öffnen, Zahlung manuell bestätigen und Lizenzcode ausstellen.
-3. Den erhaltenen Code im Alarmserver unter derselben Lizenz-E-Mail einfügen und **Lizenz prüfen und aktivieren** wählen.
+3. Unter **Lizenz aktivieren** dieselbe Lizenz-E-Mail und den erhaltenen Code einfügen und **Prüfen und aktivieren** wählen. Alternativ die exportierte `.asklicense`-Datei auswählen und **Datei prüfen & aktivieren** wählen; die E-Mail wird aus der geprüften Lizenz übernommen. Dateien sind auf 8 KiB begrenzt und werden nicht als Upload auf dem Server abgelegt.
 
 Die Aktivierung wird in der vorhandenen SQLite-Datenbank gespeichert und ist im regulären Datenbankbackup enthalten. Bei jedem Abruf des Lizenzstatus werden Signatur und Gerätezuordnung erneut geprüft. Nur bestätigte Aktivierungen werden gespeichert. Eine ungültige Eingabe überschreibt keine bestehende Lizenz. Der öffentliche Prüfschlüssel des Anbieters ist bereits im Paket enthalten; private Signaturschlüssel gehören ausschließlich auf den Windows-Rechner des Anbieters.
 
-**In dieser Inbetriebnahmeversion ist die 5-GA-Begrenzung noch nicht aktiviert und es läuft noch keine begrenzende Testfrist.** Die vereinbarte Sieben-Tage-Testphase mit anschließender Begrenzung wird erst nach erfolgreicher Lizenzierung der eigenen produktiven Installation eingebaut. Alarmmatrix, Vorgänge, Quittierungen und KNX-Empfang werden durch die Lizenzprüfung nicht eingeschränkt.
+**Die 5-GA-Begrenzung ist weiterhin nicht aktiviert.** Ab dem ersten Webdienststart mit Version 0.15.17 wird eine siebentägige Probezeit in der Datenbank gespeichert und im Lizenzbereich angezeigt. Updates, Neustarts und eine Lizenzaktivierung setzen diesen Zeitpunkt nicht zurück. Das Icon ist während der Probezeit gelb, nach ihrem Ablauf ohne gültige Lizenz rot und bei aktiver Dauerlizenz ohne besondere Farbmarkierung. Ein abgelaufener Anzeigestatus schränkt in dieser Inbetriebnahmeversion noch keine Alarme ein; die Begrenzung folgt erst nach erfolgreicher Abnahme der eigenen produktiven Lizenz. Alarmmatrix, Vorgänge, Quittierungen und KNX-Empfang werden durch die Lizenzprüfung nicht eingeschränkt.
 
 Der Fingerabdruck verwendet bevorzugt die Raspberry-Seriennummer, ersatzweise eine lesbare DMI-UUID oder `/etc/machine-id`. Nur ein produktspezifischer SHA-256-Hash wird im Anfragecode ausgegeben; rohe Kennungen werden nicht an den Browser übertragen. Eine Änderung der IP-Adresse oder des Hostnamens verändert die Lizenzidentität nicht. Bei der Machine-ID als Rückfall kann eine Betriebssystem-Neuinstallation die Identität ändern; geklonte Systeme mit derselben Machine-ID sind darüber nicht unterscheidbar. Bei Hardwaretausch ist eine Neuausstellung erforderlich. Die Oberfläche zeigt einen Fehler, wenn keine stabile Kennung lesbar ist.
 

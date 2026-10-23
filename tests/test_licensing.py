@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from knx_alarmserver.license_protocol import (
     DOMAIN, LicenseError, b64, canonical, key_id, make_request, public_document,
-    read_public, read_request, request_hash, verify_license,
+    read_public, read_request, request_hash, unb64, verify_license,
 )
 from knx_alarmserver.licensing import LicenseManager, device_fingerprint, install_public_key, read_key_file
 from knx_alarmserver.store import Store
@@ -56,6 +56,32 @@ class LicensingTests(unittest.TestCase):
         keys = read_key_file(BUNDLED_KEYS)
         self.assertIn('cb3bb009da270f7e38bb4c04ae947c29', keys)
 
+    def test_trial_is_seven_days_and_updates_do_not_reset_it(self):
+        from datetime import datetime, timedelta
+        start = datetime.fromisoformat(self.manager.status()['trial_started_at'])
+        self.manager.clock = lambda: start
+        self.assertEqual(self.manager.status()['trial_days_remaining'], 7)
+        self.manager.clock = lambda: start + timedelta(days=6, hours=23)
+        self.assertEqual(self.manager.status()['trial_days_remaining'], 1)
+        self.assertTrue(self.manager.status()['trial_active'])
+        self.manager.clock = lambda: start + timedelta(days=7)
+        self.assertFalse(self.manager.status()['trial_active'])
+        self.assertEqual(self.manager.status()['state'], 'expired')
+        restarted = LicenseManager(self.store, self.key_file, self.manager.fingerprint,
+                                   bundled_keys=None, clock=self.manager.clock)
+        self.assertEqual(restarted.status()['trial_started_at'], start.isoformat())
+        self.assertFalse(restarted.status()['trial_active'])
+        self.assertTrue(restarted.activate(EMAIL, test_token(self.key))['licensed'])
+
+    def test_corrupt_trial_is_not_restarted(self):
+        with self.store.transaction():
+            self.store.db.execute("UPDATE settings SET value='invalid' WHERE name='license_trial'")
+        restarted = LicenseManager(self.store, self.key_file, self.manager.fingerprint, bundled_keys=None)
+        state = restarted.status()
+        self.assertFalse(state['trial_active'])
+        self.assertIsNotNone(state['trial_error'])
+        self.assertFalse(state['enforcement_enabled'])
+
     def test_request_normalization_and_invalid_email(self):
         result = self.manager.request(' Kunde@EXAMPLE.DE ')
         self.assertEqual(result['request_code'], make_request(EMAIL, DEVICE))
@@ -77,7 +103,11 @@ class LicensingTests(unittest.TestCase):
     def test_bad_signature_identity_or_key_never_replaces_valid_license(self):
         code = test_token(self.key)
         valid = self.manager.activate(EMAIL, code)
-        for email, token in ((EMAIL, code[:-2] + 'AA'), ('other@example.de', code),
+        body, signature = code.rsplit('.', 1)
+        corrupted = bytearray(unb64(signature))
+        corrupted[0] ^= 1
+        changed = body + '.' + b64(corrupted)
+        for email, token in ((EMAIL, changed), ('other@example.de', code),
                              (EMAIL, test_token(self.key, device='sha256:' + 'b' * 64)),
                              (EMAIL, test_token(Ed25519PrivateKey.generate())), (EMAIL, None)):
             with self.subTest(email=email, code=str(token)[-15:]), self.assertRaises(LicenseError):
@@ -208,6 +238,25 @@ class LicenseApiTests(unittest.TestCase):
         self.assertNotIn('code', state)
         self.assertEqual(state['license_email'], EMAIL)
         self.assertFalse(state['enforcement_enabled'])
+
+    def test_license_file_import_uses_signed_email_and_keeps_valid_license_on_errors(self):
+        path = '/api/license/import'
+        response = self.client.post(path, auth=self.auth, headers=self.headers,
+                                    content=('\ufeff' + FIXTURE['license'] + '\n').encode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['license_email'], EMAIL)
+        original_id = response.json()['license_id']
+        for raw, expected in ((b'', 422), (b'\xff\xfe', 422), (b'bad', 422), (b'x' * 8193, 413)):
+            result = self.client.post(path, auth=self.auth, headers=self.headers, content=raw)
+            self.assertEqual(result.status_code, expected)
+            self.assertEqual(self.client.get('/api/license', auth=self.auth).json()['license_id'], original_id)
+
+    def test_license_file_import_requires_admin_and_origin_protection(self):
+        for role in ('user', 'viewer'):
+            result = self.client.post('/api/license/import', auth=(role, 'test-password-123'),
+                                      headers=self.headers, content=FIXTURE['license'])
+            self.assertEqual(result.status_code, 403)
+        self.assertEqual(self.client.post('/api/license/import', auth=self.auth, content=FIXTURE['license']).status_code, 403)
 
 
 if __name__ == '__main__':
