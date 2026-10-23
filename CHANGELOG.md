@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier pro Version dokumentiert, neueste Version zuerst.
 
+## 0.15.16 – 23.10.2026
+
+- Reine Testversion zur Prüfung der Dashboard-Updatefunktion. Keine Funktionsänderungen gegenüber 0.15.15.
+
 ## 0.15.15 – 23.10.2026
 
 - Lizenzbereich im festen Menüband mit Anbieterinfo, PayPal-Link und Statusanzeige hinzufügen.
