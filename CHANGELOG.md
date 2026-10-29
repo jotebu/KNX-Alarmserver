@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier dokumentiert.
 
+## 1.0.14 – 29.10.2026
+
+- Testrelease zur Überprüfung der automatisierten Build-, Signatur-, Veröffentlichungs- und Dashboard-Updatekette.
+- Keine funktionalen Änderungen gegenüber Version 1.0.13.
+
 ## 1.0.13 – 29.10.2026
 
 - Signierter Binär-Updater: Bereits installierte oder ältere Versionen werden nicht erneut installiert.
