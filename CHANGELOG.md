@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier dokumentiert.
 
+## 1.0.16 – 31.10.2026
+
+- Login-Dialog um „Abbrechen“ ergänzt: Rückkehr zur öffentlichen Alarmliste ohne Anmeldung.
+
 ## 1.0.15 – 31.10.2026
 
 - Öffentliche, schreibgeschützte Alarmansicht ohne Anmeldung; Historie, Telegramme und Verwaltung bleiben geschützt.
