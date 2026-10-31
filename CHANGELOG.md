@@ -2,6 +2,13 @@
 
 Alle folgenden Projektänderungen werden hier dokumentiert.
 
+## 1.0.15 – 31.10.2026
+
+- Öffentliche, schreibgeschützte Alarmansicht ohne Anmeldung; Historie, Telegramme und Verwaltung bleiben geschützt.
+- Gastbenutzer werden beim Quittieren gezielt zur Anmeldung geführt; nach der Anmeldung stehen die bisherigen Rollen und Rechte unverändert zur Verfügung.
+- Versionsprüfung und Update-Rückmeldungen stabilisiert, damit fehlgeschlagene Prüfungen bestätigte Updates nicht ausblenden und historische Erfolgsmeldungen nach einem Neuladen nicht erneut erscheinen.
+- Dashboard-Abfragen, Rollenanzeige und Testumgebung für Gast- und angemeldeten Betrieb abgesichert.
+
 ## 1.0.14 – 29.10.2026
 
 - Testrelease zur Überprüfung der automatisierten Build-, Signatur-, Veröffentlichungs- und Dashboard-Updatekette.
