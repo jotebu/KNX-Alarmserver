@@ -2,6 +2,11 @@
 
 Alle folgenden Projektänderungen werden hier dokumentiert.
 
+## 1.0.18 – 01.11.2026
+
+- CSV-Import der Alarmmatrix aktualisiert jetzt bestehende Gruppenadressen unter Erhalt von Alarm-IDs und Historie und ergänzt neue Adressen mit demselben Import-Button.
+- Wiederholte Importe sind ohne doppelte Gruppenadressen möglich; Konflikte und doppelte CSV-Zeilen werden geprüft.
+
 ## 1.0.17 – 31.10.2026
 
 - Versionshinweis auf dem angemeldeten Dashboard zeigt verfügbare Updates wieder rot an.
