@@ -2,6 +2,10 @@
 
 Alle folgenden Projektänderungen werden hier dokumentiert.
 
+## 1.0.19 – 01.11.2026
+
+- Alarmliste zeigt bei bestehenden Alarmvorgängen die aktuelle Priorität und deren Bezeichnung aus der Alarmmatrix an; die gespeicherten historischen Alarmdaten bleiben unverändert.
+
 ## 1.0.18 – 01.11.2026
 
 - CSV-Import der Alarmmatrix aktualisiert jetzt bestehende Gruppenadressen unter Erhalt von Alarm-IDs und Historie und ergänzt neue Adressen mit demselben Import-Button.
