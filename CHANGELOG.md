@@ -2,6 +2,12 @@
 
 Alle folgenden Projektänderungen werden hier dokumentiert.
 
+## 1.0.17 – 31.10.2026
+
+- Versionshinweis auf dem angemeldeten Dashboard zeigt verfügbare Updates wieder rot an.
+- Login-Dialog: Abbrechen-Schaltfläche im gleichen Stil wie Anmelden, rechtsbündig angeordnet.
+- Alarm-Wischer: Monotone Zeitmessung und inklusive Grenzwertprüfung mit zusätzlichen Tests für kurze und längere Impulse.
+
 ## 1.0.16 – 31.10.2026
 
 - Login-Dialog um „Abbrechen“ ergänzt: Rückkehr zur öffentlichen Alarmliste ohne Anmeldung.
