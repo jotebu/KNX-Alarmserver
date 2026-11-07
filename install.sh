@@ -93,11 +93,11 @@ echo 'id;name;group_address;dpt;operator;threshold;hysteresis;field;area;priorit
 chown root:knx-alarmserver /etc/knx-alarmserver/{config.toml,alarms.csv}
 chmod 0640 /etc/knx-alarmserver/{config.toml,alarms.csv}
 ln -s "$release" /opt/knx-alarmserver/current
-runuser -u knx-alarmserver -- "$binary" -c /etc/knx-alarmserver/config.toml check
+runuser -u knx-alarmserver -- "$binary" --config /etc/knx-alarmserver/config.toml check
 echo "Ersten Administrator anlegen:"
 read -r -p "Admin-E-Mail-Adresse: " email
 [[ -n $email ]] || { echo "E-Mail fehlt." >&2; exit 1; }
-runuser -u knx-alarmserver -- "$binary" -c /etc/knx-alarmserver/config.toml user-add "$email" --role admin
+runuser -u knx-alarmserver -- "$binary" --config /etc/knx-alarmserver/config.toml user-add "$email" --role admin
 cat > /etc/systemd/system/knx-alarmserver.service <<'UNIT'
 [Unit]
 Description=KNX Alarmserver (signed ARM64)
@@ -108,7 +108,7 @@ Type=simple
 User=knx-alarmserver
 Group=knx-alarmserver
 WorkingDirectory=/var/lib/knx-alarmserver
-ExecStart=/opt/knx-alarmserver/current/nuitka_entry.dist/knx-alarmserver -c /etc/knx-alarmserver/config.toml serve
+ExecStart=/opt/knx-alarmserver/current/nuitka_entry.dist/knx-alarmserver --config /etc/knx-alarmserver/config.toml serve
 Restart=on-failure
 RestartSec=10
 UMask=0077
