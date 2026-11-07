@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.20 – 07.11.2026
+
+- Testrelease für den neuen signierten ARM64-Binär-Updater inklusive Dashboard-Auslösung, SQLite-Backup und Health-Check.
+- Reverse-Proxy-Anmeldung: HTTPS-Weiterleitungsheader ausschließlich von ausdrücklich vertrauenswürdigen Proxy-IP-Adressen auswerten (KNX_TRUSTED_PROXIES); direkte LAN-Anmeldung bleibt erhalten.
+- Login-Anzeige behandelt leere oder nicht als JSON formatierte Fehlerantworten ohne JavaScript-Abbruch.
+
 Alle folgenden Projektänderungen werden hier dokumentiert.
 
 ## 1.0.19 – 01.11.2026
