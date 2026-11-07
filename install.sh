@@ -131,6 +131,11 @@ systemctl enable --now knx-alarmserver
 for i in $(seq 1 30); do
     if curl -fsS --max-time 2 http://127.0.0.1/health/live; then
         echo
+        echo "Installiere signierten Dashboard-Update-Dienst ..."
+        curl --proto '=https' --tlsv1.2 -fsSL --retry 3 \
+          https://raw.githubusercontent.com/jotebu/KNX-Alarmserver/784e4aac1f4f5ee809dd0566ef5ac7d8f58bd4b8/setup-updates.sh \
+          -o "$work/setup-updates.sh"
+        bash "$work/setup-updates.sh"
         echo "Installation erfolgreich: http://$(hostname -I | awk '{print $1}')/"
         exit 0
     fi
